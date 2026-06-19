@@ -1,0 +1,23 @@
+{
+  "name": "techvault-store",
+  "version": "1.0.0",
+  "description": "TechVault - Loja Virtual de Tecnologia",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "nodemailer": "^6.9.0",
+    "cors": "^2.8.5",
+    "body-parser": "^1.20.2",
+    "express-session": "^1.17.3",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

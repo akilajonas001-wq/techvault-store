@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Como Usar - TechVault</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0a0a0f;
+      color: #ffffff;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #00d4ff;
+      margin-bottom: 30px;
+      font-size: 36px;
+    }
+    h2 {
+      color: #00d4ff;
+      margin: 30px 0 15px;
+      font-size: 24px;
+    }
+    .step {
+      background: #12121a;
+      border: 2px solid #2a2a3e;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .step-number {
+      display: inline-block;
+      background: #00d4ff;
+      color: #0a0a0f;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    code {
+      background: #1a1a2e;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      color: #00ff88;
+    }
+    .alert {
+      background: rgba(0, 212, 255, 0.1);
+      border-left: 4px solid #00d4ff;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .success {
+      border-left-color: #00ff88;
+      background: rgba(0, 255, 136, 0.1);
+    }
+    a {
+      color: #00d4ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    ul {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+    li {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 TechVault - Guia de Uso</h1>
+    
+    <div class="alert">
+      <strong>📧 Configuração do Email:</strong> Para receber os pedidos, configure sua senha de aplicativo do Gmail no arquivo <code>.env</code>.
+      Veja o README.md para instruções detalhadas.
+    </div>
+
+    <h2>📋 Para o Cliente (Quem vai comprar)</h2>
+    
+    <div class="step">
+      <span class="step-number">1</span>
+      <strong>Acessar a Loja</strong>
+      <p>O cliente acessa <code>http://localhost:3000</code> e navega pelas categorias de produtos.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">2</span>
+      <strong>Adicionar Produtos ao Carrinho</strong>
+      <p>O cliente clica em "Adicionar" nos produtos desejados. O carrinho pode ser visto clicando no ícone no topo da página.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">3</span>
+      <strong>Finalizar Compra</strong>
+      <p>Ao clicar em "Finalizar Compra", o cliente é direcionado para o checkout.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">4</span>
+      <strong>Registro/Login</strong>
+      <p>Se não tiver conta, o cliente se registra com nome, email, telefone e senha. Se já tiver, faz login.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">5</span>
+      <strong>Preencher Endereço</strong>
+      <p>O cliente preenche o CEP (que é buscado automaticamente), número, complemento, e confirma os dados.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">6</span>
+      <strong>Confirmar Pedido</strong>
+      <p>Ao confirmar, o pedido é registrado e <strong>você recebe um email</strong> com todos os detalhes!</p>
+    </div>
+
+    <h2>💼 Para Você (Lojista)</h2>
+    
+    <div class="step">
+      <span class="step-number">1</span>
+      <strong>Receber o Email</strong>
+      <p>Você recebe um email em <code>akilajonas001@gmail.com</code> com:</p>
+      <ul>
+        <li>Nome e email do cliente</li>
+        <li>Telefone de contato</li>
+        <li>Endereço completo de entrega</li>
+        <li>Lista de produtos comprados</li>
+        <li>Valores e total do pedido</li>
+        <li>Número do pedido</li>
+      </ul>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">2</span>
+      <strong>Receber o Pagamento</strong>
+      <p>O sistema de pagamento será implementado futuramente. Por enquanto, você combina diretamente com o cliente.</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">3</span>
+      <strong>Comprar do Fornecedor</strong>
+      <p>Você usa o dinheiro recebido para comprar o produto no fornecedor (Amazon, Kabum, Pichau, etc.).</p>
+    </div>
+    
+    <div class="step">
+      <span class="step-number">4</span>
+      <strong>Enviar para o Cliente</strong>
+      <p>No checkout, você coloca o endereço do cliente final. O fornecedor envia direto para ele (dropshipping) ou você recebe e reenvia.</p>
+    </div>
+
+    <h2>🔧 Comandos Úteis</h2>
+    
+    <div class="alert success">
+      <strong>Iniciar a loja:</strong><br>
+      <code>cd ~/techvault-store && npm start</code><br><br>
+      Ou use o script:<br>
+      <code>./start.sh</code>
+    </div>
+    
+    <div class="alert">
+      <strong>Ver o log do servidor:</strong><br>
+      O servidor mostra mensagens no terminal onde foi iniciado.
+    </div>
+    
+    <div class="alert">
+      <strong>Ver pedidos registrados:</strong><br>
+      <code>cat ~/techvault-store/backend/data/orders.json</code>
+    </div>
+    
+    <div class="alert">
+      <strong>Ver usuários registrados:</strong><br>
+      <code>cat ~/techvault-store/backend/data/users.json</code>
+    </div>
+
+    <h2>📂 Arquivos Importantes</h2>
+    
+    <ul>
+      <li><code>backend/data/users.json</code> - Usuários registrados</li>
+      <li><code>backend/data/orders.json</code> - Pedidos realizados</li>
+      <li><code>.env</code> - Configurações de email e segredos</li>
+      <li><code>README.md</code> - Documentação completa</li>
+    </ul>
+
+    <h2>🎨 URLs da Loja</h2>
+    
+    <ul>
+      <li><a href="http://localhost:3000">http://localhost:3000</a> - Página inicial</li>
+      <li><a href="http://localhost:3000/login">http://localhost:3000/login</a> - Login</li>
+      <li><a href="http://localhost:3000/registro">http://localhost:3000/registro</a> - Registro</li>
+      <li><a href="http://localhost:3000/checkout">http://localhost:3000/checkout</a> - Checkout (requer login)</li>
+      <li><a href="http://localhost:3000/categoria/processadores">http://localhost:3000/categoria/processadores</a> - Processadores</li>
+      <li><a href="http://localhost:3000/categoria/ram">http://localhost:3000/categoria/ram</a> - Memória RAM</li>
+      <li><a href="http://localhost:3000/categoria/ssds">http://localhost:3000/categoria/ssds</a> - SSDs</li>
+    </ul>
+
+    <div class="alert success">
+      <strong>✅ Loja está rodando!</strong><br>
+      Acesse <a href="http://localhost:3000">http://localhost:3000</a> para começar a usar.
+    </div>
+  </div>
+</body>
+</html>

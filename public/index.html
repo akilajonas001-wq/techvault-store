@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechVault - Sua Loja de Tecnologia</title>
+  <link rel="stylesheet" href="/styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <i class="fas fa-vault"></i>
+        <span>TechVault</span>
+      </div>
+      
+      <nav class="nav">
+        <a href="/" class="nav-link active">Início</a>
+        <a href="/categoria/processadores" class="nav-link">Processadores</a>
+        <a href="/categoria/ram" class="nav-link">RAM</a>
+        <a href="/categoria/ssds" class="nav-link">SSDs</a>
+        <a href="/categoria/hds" class="nav-link">HDs</a>
+        <a href="/categoria/monitores" class="nav-link">Monitores</a>
+        <a href="/categoria/gabinetes" class="nav-link">Gabinetes</a>
+        <a href="/categoria/pcs-premontados" class="nav-link">PCs Premontados</a>
+        <a href="/categoria/acessorios" class="nav-link">Acessórios</a>
+        <a href="/categoria/utilitarios" class="nav-link">Utilitários</a>
+      </nav>
+      
+      <div class="user-actions">
+        <div class="cart-icon" onclick="viewCart()">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </div>
+        <div id="authButtons">
+          <button class="btn btn-outline" onclick="window.location.href='/login'">Login</button>
+          <button class="btn btn-primary" onclick="window.location.href='/registro'">Registrar</button>
+        </div>
+        <div id="userMenu" style="display: none;">
+          <span class="user-name" id="userName"></span>
+          <button class="btn btn-outline" onclick="logout()">Sair</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h1>Bem-vindo à <span class="highlight">TechVault</span></h1>
+      <p>O seu cofre de tecnologia com os melhores produtos do mercado</p>
+      <div class="hero-buttons">
+        <button class="btn btn-primary btn-large" onclick="scrollToProducts()">Ver Produtos</button>
+        <button class="btn btn-outline btn-large" onclick="showOffers()">Ofertas Especiais</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories Grid -->
+  <section class="categories-section">
+    <div class="container">
+      <h2 class="section-title">Navegue por Categorias</h2>
+      <div class="categories-grid">
+        <div class="category-card" onclick="window.location.href='/categoria/processadores'">
+          <i class="fas fa-microchip"></i>
+          <h3>Processadores</h3>
+          <p>Intel e AMD de última geração</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/ram'">
+          <i class="fas fa-memory"></i>
+          <h3>Memória RAM</h3>
+          <p>DDR4, DDR5 para todos os usos</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/ssds'">
+          <i class="fas fa-hdd"></i>
+          <h3>SSDs</h3>
+          <p>Velocidade extrema NVMe e SATA</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/hds'">
+          <i class="fas fa-database"></i>
+          <h3>HDs</h3>
+          <p>Armazenamento de alta capacidade</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/monitores'">
+          <i class="fas fa-desktop"></i>
+          <h3>Monitores</h3>
+          <p>Gaming, profissionais e ultrawide</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/gabinetes'">
+          <i class="fas fa-box"></i>
+          <h3>Gabinetes</h3>
+          <p>Design e refrigeração premium</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/pcs-premontados'">
+          <i class="fas fa-computer"></i>
+          <h3>PCs Premontados</h3>
+          <p>Prontos para usar, do básico ao extremo</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/acessorios'">
+          <i class="fas fa-headset"></i>
+          <h3>Acessórios</h3>
+          <p>Periféricos e complementos</p>
+        </div>
+        <div class="category-card" onclick="window.location.href='/categoria/utilitarios'">
+          <i class="fas fa-tools"></i>
+          <h3>Utilitários</h3>
+          <p>Ferramentas e organização</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section class="products-section">
+    <div class="container">
+      <h2 class="section-title">Produtos em Destaque</h2>
+      <div class="products-grid" id="featuredProducts">
+        <!-- Produtos serão carregados via JavaScript -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="benefits-section">
+    <div class="container">
+      <h2 class="section-title">Por que comprar na TechVault?</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <i class="fas fa-truck"></i>
+          <h3>Entrega Rápida</h3>
+          <p>Enviamos para todo o Brasil</p>
+        </div>
+        <div class="benefit-card">
+          <i class="fas fa-shield-alt"></i>
+          <h3>Compra Segura</h3>
+          <p>Seus dados protegidos</p>
+        </div>
+        <div class="benefit-card">
+          <i class="fas fa-headset"></i>
+          <h3>Suporte 24/7</h3>
+          <p>Atendimento especializado</p>
+        </div>
+        <div class="benefit-card">
+          <i class="fas fa-credit-card"></i>
+          <h3>Parcele em até 12x</h3>
+          <p>Sem juros no cartão</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>TechVault</h3>
+          <p>Sua loja de tecnologia de confiança</p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h3>Categorias</h3>
+          <ul>
+            <li><a href="/categoria/processadores">Processadores</a></li>
+            <li><a href="/categoria/ram">Memória RAM</a></li>
+            <li><a href="/categoria/ssds">SSDs</a></li>
+            <li><a href="/categoria/monitores">Monitores</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Atendimento</h3>
+          <ul>
+            <li><a href="/como-usar.html">Como Usar</a></li>
+            <li><a href="#">FAQ</a></li>
+            <li><a href="#">Trocas e Devoluções</a></li>
+            <li><a href="#">Política de Privacidade</a></li>
+            <li><a href="#">Contato</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Contato</h3>
+          <p><i class="fas fa-envelope"></i> akilajonas001@gmail.com</p>
+          <p><i class="fas fa-phone"></i> (11) 99999-9999</p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 TechVault. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" class="cart-modal">
+    <div class="cart-modal-content">
+      <div class="cart-modal-header">
+        <h2><i class="fas fa-shopping-cart"></i> Seu Carrinho</h2>
+        <button class="close-cart" onclick="closeCart()"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="cartItems"></div>
+      <div class="order-total" style="margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--primary-color);">
+        <span>Total:</span>
+        <span class="total-value" id="cartTotal">R$ 0,00</span>
+      </div>
+      <button class="btn btn-primary btn-large btn-block" style="margin-top: 20px;" onclick="proceedToCheckout()">
+        <i class="fas fa-check-circle"></i> Finalizar Compra
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/js/home.js"></script>
+</body>
+</html>
