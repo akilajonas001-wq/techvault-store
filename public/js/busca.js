@@ -1,0 +1,204 @@
+// Estado da busca
+let currentFilters = {
+  q: '',
+  categoria: '',
+  precoMin: '',
+  precoMax: '',
+  ordem: 'relevancia'
+};
+
+// Carregar página
+document.addEventListener('DOMContentLoaded', async () => {
+  // Pegar parâmetros da URL
+  const params = new URLSearchParams(window.location.search);
+  currentFilters.q = params.get('q') || '';
+  currentFilters.categoria = params.get('categoria') || '';
+  currentFilters.precoMin = params.get('priceMin') || '';
+  currentFilters.precoMax = params.get('priceMax') || '';
+  currentFilters.ordem = params.get('ordem') || 'relevancia';
+
+  // Preencher campo de busca
+  if (currentFilters.q) {
+    document.getElementById('searchInput').value = currentFilters.q;
+  }
+
+  // Carregar categorias para filtro
+  await loadCategoriesFilter();
+  
+  // Carregar produtos
+  await loadProducts();
+});
+
+// Carregar categorias no filtro
+async function loadCategoriesFilter() {
+  try {
+    const response = await fetch('/api/categories');
+    const categorias = await response.json();
+    
+    const container = document.getElementById('categoriesFilter');
+    if (!container) return;
+    
+    container.innerHTML = categorias.map(function(cat) {
+      return '<div class="filter-option">' +
+        '<input type="checkbox" id="cat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
+        '<label for="cat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
+      '</div>';
+    }).join('');
+  } catch (error) {
+    console.error('Erro ao carregar categorias:', error);
+  }
+}
+
+// Selecionar categoria
+function selectCategory(categoria) {
+  currentFilters.categoria = currentFilters.categoria === categoria ? '' : categoria;
+  
+  // Verificar filtro de frete grátis
+  const freteGratisCheckbox = document.getElementById('freteGratis');
+  if (freteGratisCheckbox) {
+    currentFilters.freteGratis = freteGratisCheckbox.checked;
+  }
+  
+  loadProducts();
+}
+
+// Carregar produtos
+async function loadProducts() {
+  try {
+    var params = new URLSearchParams();
+    if (currentFilters.q) params.set('q', currentFilters.q);
+    if (currentFilters.categoria) params.set('categoria', currentFilters.categoria);
+    if (currentFilters.precoMin) params.set('precoMin', currentFilters.precoMin);
+    if (currentFilters.precoMax) params.set('precoMax', currentFilters.precoMax);
+    if (currentFilters.ordem && currentFilters.ordem !== 'relevancia') {
+      params.set('ordem', currentFilters.ordem);
+    }
+
+    const response = await fetch('/api/products/search?' + params);
+    let products = await response.json();
+    
+    // Aplicar filtro de preço por referência se existir
+    if (currentFilters.referencePrice && currentFilters.referencePrice > 0) {
+      const order = currentFilters.priceOrder || 'mais-proximo';
+      
+      if (order === 'mais-proximo') {
+        // Ordenar por proximidade do valor de referência (do mais próximo ao mais distante)
+        products = products.map(p => ({
+          ...p,
+          diff: Math.abs(p.preco - currentFilters.referencePrice)
+        })).sort((a, b) => a.diff - b.diff);
+      } else if (order === 'mais-barato') {
+        // Ordenar do mais barato ao mais caro
+        products = products.sort((a, b) => a.preco - b.preco);
+      } else if (order === 'mais-caro') {
+        // Ordenar do mais caro ao mais barato
+        products = products.sort((a, b) => b.preco - a.preco);
+      }
+    }
+    
+    const container = document.getElementById('productsGrid');
+    const countElement = document.getElementById('resultsCount');
+    
+    if (!container) return;
+    
+    if (products.length === 0) {
+      container.innerHTML = '<div class="no-results" style="grid-column: 1 / -1;">' +
+        '<i class="fas fa-search"></i>' +
+        '<h2>Nenhum produto encontrado</h2>' +
+        '<p>Tente ajustar os filtros ou buscar por outros termos</p>' +
+      '</div>';
+      countElement.textContent = '0 produtos encontrados';
+      return;
+    }
+    
+    var plural = products.length !== 1 ? 's' : '';
+    countElement.textContent = products.length + ' produto' + plural + ' encontrado' + plural;
+    
+    container.innerHTML = products.map(function(product) {
+      return '<div class="product-card" onclick="window.location.href=\'/produto/' + product.id + '\'">' +
+        '<div class="product-image">' +
+          '<i class="fas ' + product.imagem + '"></i>' +
+        '</div>' +
+        '<div class="product-info">' +
+          '<div class="product-price">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
+          (product.frete === 'Grátis' ? '<div class="product-shipping"><i class="fas fa-truck"></i> Frete grátis</div>' : '') +
+          '<div class="product-name">' + product.nome + '</div>' +
+          '<div class="product-rating">' +
+            '<i class="fas fa-star"></i> ' +
+            product.avaliacao.toFixed(1) + ' (' + product.reviews + ')' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch (error) {
+    console.error('Erro ao carregar produtos:', error);
+    document.getElementById('productsGrid').innerHTML = '<div class="no-results" style="grid-column: 1 / -1;">' +
+      '<i class="fas fa-exclamation-circle"></i>' +
+      '<h2>Erro ao carregar produtos</h2>' +
+      '<p>Tente recarregar a página</p>' +
+    '</div>';
+  }
+}
+
+// Mudar ordenação
+function changeSort() {
+  currentFilters.ordem = document.getElementById('sortSelect').value;
+  loadProducts();
+}
+
+// Ordenar produtos (chamado pelo select)
+function sortProducts() {
+  currentFilters.ordem = document.getElementById('sortSelect').value;
+  currentFilters.referencePrice = null; // Limpa filtro de referência ao usar ordenação padrão
+  currentFilters.priceOrder = null;
+  loadProducts();
+}
+
+// Buscar produtos
+function searchProducts() {
+  const query = document.getElementById('searchInput').value;
+  window.location.href = '/busca?q=' + encodeURIComponent(query);
+}
+
+var searchInput = document.getElementById('searchInput');
+if (searchInput) {
+  searchInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      searchProducts();
+    }
+  });
+}
+
+// Modal de Filtro de Preço
+function openPriceFilterModal() {
+  document.getElementById('priceFilterModal').style.display = 'flex';
+}
+
+function closePriceFilterModal() {
+  document.getElementById('priceFilterModal').style.display = 'none';
+}
+
+function applyPriceFilter() {
+  const referencePrice = parseFloat(document.getElementById('referencePrice').value) || 0;
+  const order = document.getElementById('priceOrder').value;
+  
+  // Armazenar preferências de filtro
+  currentFilters.referencePrice = referencePrice;
+  currentFilters.priceOrder = order;
+  
+  // Fechar modal
+  closePriceFilterModal();
+  
+  // Recarregar produtos com novo filtro
+  loadProducts();
+  
+  showNotification('Filtro de preço aplicado!', 'success');
+}
+
+// Fechar modal ao clicar fora
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('priceFilterModal');
+  if (e.target === modal) {
+    closePriceFilterModal();
+  }
+});

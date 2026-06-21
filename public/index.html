@@ -3,197 +3,1090 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TechVault - Sua Loja de Tecnologia</title>
+  <title>TechVault - Marketplace de Tudo</title>
   <link rel="stylesheet" href="/styles/main.css">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-light: #4285f4;
+      --primary-dark: #1557b0;
+      --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      --secondary: #1e293b;
+      --accent: #0ea5e9;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --text-muted: #94a3b8;
+      --bg-light: #f8fafc;
+      --bg-cool: #f1f5f9;
+      --white: #ffffff;
+      --success: #10b981;
+      --success-light: #34d399;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Header estilo moderno */
+    .header {
+      background: var(--white);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-md);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 24px;
+    }
+
+    .logo {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: opacity 0.2s;
+    }
+
+    .logo:hover {
+      opacity: 0.8;
+    }
+
+    .logo img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .search-box {
+      flex: 1;
+      display: flex;
+      background: var(--bg-cool);
+      border-radius: 12px;
+      padding: 4px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus-within {
+      background: var(--white);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      color: var(--text);
+      background: transparent;
+      padding: 10px 16px;
+      font-family: inherit;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-box button {
+      background: var(--primary-gradient);
+      border: none;
+      color: var(--white);
+      cursor: pointer;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+    }
+
+    .search-box button:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .header-menu {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .header-menu a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .header-menu a:hover {
+      color: var(--primary);
+    }
+
+    .header-menu a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--primary);
+      transition: width 0.3s ease;
+    }
+
+    .header-menu a:hover::after {
+      width: 100%;
+    }
+
+    .cart-icon {
+      position: relative;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .cart-icon:hover {
+      background: var(--bg-cool);
+    }
+
+    .cart-count {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--primary-gradient);
+      color: var(--white);
+      border-radius: 50%;
+      min-width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Banner rotativo sofisticado */
+    .hero-banner {
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+
+    .banner {
+      background: var(--primary-gradient);
+      border-radius: 20px;
+      padding: 48px;
+      color: var(--white);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+      box-shadow: var(--shadow-xl);
+      min-height: 280px;
+    }
+
+    .banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .banner-content {
+      flex: 1;
+      z-index: 1;
+    }
+
+    .banner h1 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .banner p {
+      font-size: 18px;
+      opacity: 0.95;
+      margin-bottom: 28px;
+      font-weight: 400;
+    }
+
+    .banner-button {
+      background: var(--white);
+      color: var(--primary);
+      padding: 14px 36px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: 700;
+      display: inline-block;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-md);
+      font-size: 15px;
+    }
+
+    .banner-button:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .banner-shapes {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 450px;
+      height: 100%;
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    /* Categorias */
+    .categories-section {
+      max-width: 1400px;
+      margin: 48px auto;
+      padding: 0 24px;
+    }
+
+    .section-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 28px;
+      background: var(--primary-gradient);
+      border-radius: 2px;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+
+    .category-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .category-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--primary-gradient);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .category-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .category-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: var(--shadow-xl);
+      border-color: transparent;
+    }
+
+    .category-card i {
+      font-size: 42px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+      display: block;
+    }
+
+    .category-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    /* Produtos em destaque */
+    .products-section {
+      max-width: 1400px;
+      margin: 60px auto;
+      padding: 0 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .see-all {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .see-all:hover {
+      gap: 10px;
+      color: var(--primary-dark);
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: var(--white);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-xl);
+      border-color: transparent;
+    }
+
+    .product-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.03) 0%, transparent 100%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .product-card:hover::after {
+      opacity: 1;
+    }
+
+    .product-image {
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-image::before {
+      content: '';
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .product-image i {
+      font-size: 90px;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .product-card:hover .product-image i {
+      transform: scale(1.1);
+      color: var(--primary);
+    }
+
+    .product-info {
+      padding: 20px;
+    }
+
+    .product-price {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .product-shipping {
+      color: var(--success);
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 6px 10px;
+      border-radius: 6px;
+      width: fit-content;
+    }
+
+    .product-name {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.5;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 42px;
+    }
+
+    .product-seller {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .product-rating {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .product-rating i {
+      color: #fbbf24;
+      font-size: 14px;
+    }
+
+    /* Vendedores em destaque */
+    .sellers-section {
+      max-width: 1400px;
+      margin: 60px auto;
+      padding: 0 24px;
+    }
+
+    .sellers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .seller-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .seller-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: transparent;
+    }
+
+    .seller-logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      transition: all 0.3s ease;
+    }
+
+    .seller-card:hover .seller-logo {
+      background: var(--primary-gradient);
+      transform: scale(1.1);
+    }
+
+    .seller-logo i {
+      font-size: 28px;
+      color: var(--primary);
+      transition: color 0.3s ease;
+    }
+
+    .seller-card:hover .seller-logo i {
+      color: var(--white);
+    }
+
+    .seller-name {
+      font-weight: 700;
+      margin-bottom: 6px;
+      font-size: 15px;
+      color: var(--text);
+    }
+
+    .seller-verified {
+      color: var(--primary);
+      font-size: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-weight: 600;
+    }
+
+    .seller-stats {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Ofertas do dia */
+    .offers-section {
+      max-width: 1400px;
+      margin: 60px auto;
+      padding: 0 24px;
+    }
+
+    .offers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .offer-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .offer-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #ef4444, #f97316);
+    }
+
+    .offer-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .deal-discount {
+      background: linear-gradient(135deg, #ef4444, #f97316);
+      color: var(--white);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-block;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .deal-old-price {
+      text-decoration: line-through;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .deal-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .offer-name {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--white);
+      margin-top: 80px;
+      padding: 60px 0 30px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 48px;
+    }
+
+    .footer-section h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 12px;
+    }
+
+    .footer-section a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .footer-section a:hover {
+      color: var(--primary);
+      transform: translateX(4px);
+    }
+
+    .social-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .social-links a {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: var(--bg-cool);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-light);
+      transition: all 0.3s ease;
+    }
+
+    .social-links a:hover {
+      background: var(--primary-gradient);
+      color: var(--white);
+      transform: translateY(-3px);
+    }
+
+    .footer-bottom {
+      max-width: 1400px;
+      margin: 48px auto 0;
+      padding: 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Cart Modal */
+    .cart-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      justify-content: flex-end;
+    }
+
+    .cart-modal.active {
+      display: flex;
+    }
+
+    .cart-modal-content {
+      background: var(--white);
+      width: 100%;
+      max-width: 450px;
+      height: 100%;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-xl);
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+      }
+      to {
+        transform: translateX(0);
+      }
+    }
+
+    .cart-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--border-light);
+      margin-bottom: 24px;
+    }
+
+    .cart-modal-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-modal-header h2 i {
+      color: var(--primary);
+    }
+
+    .close-cart {
+      background: var(--bg-cool);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .close-cart:hover {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    .order-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 24px 0;
+      border-top: 2px solid var(--border);
+      margin-top: 16px;
+      color: var(--text);
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: var(--white);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-light);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .header-top {
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 14px 16px;
+      }
+
+      .search-box {
+        order: 3;
+        flex-basis: 100%;
+      }
+
+      .banner {
+        padding: 32px 24px;
+        flex-direction: column;
+        text-align: center;
+        min-height: auto;
+      }
+
+      .banner h1 {
+        font-size: 32px;
+      }
+
+      .banner-shapes {
+        display: none;
+      }
+
+      .categories-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+      }
+
+      .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+      }
+
+      .section-title {
+        font-size: 22px;
+      }
+
+      .footer-content {
+        gap: 32px;
+        padding: 0 16px;
+      }
+    }
+
+    /* Animações */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .product-card,
+    .category-card,
+    .seller-card,
+    .offer-card {
+      animation: fadeIn 0.5s ease forwards;
+    }
+  </style>
 </head>
 <body>
   <!-- Header -->
   <header class="header">
-    <div class="container">
-      <div class="logo">
-        <i class="fas fa-vault"></i>
-        <span>TechVault</span>
+    <div class="header-top">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="TechVault" style="height: 40px; width: auto;">
+      </a>
+      
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais...">
+        <button onclick="searchProducts()">
+          <i class="fas fa-search"></i>
+          <span style="display: none;">Buscar</span>
+        </button>
       </div>
       
-      <nav class="nav">
-        <a href="/" class="nav-link active">Início</a>
-        <a href="/categoria/processadores" class="nav-link">Processadores</a>
-        <a href="/categoria/ram" class="nav-link">RAM</a>
-        <a href="/categoria/ssds" class="nav-link">SSDs</a>
-        <a href="/categoria/hds" class="nav-link">HDs</a>
-        <a href="/categoria/monitores" class="nav-link">Monitores</a>
-        <a href="/categoria/gabinetes" class="nav-link">Gabinetes</a>
-        <a href="/categoria/pcs-premontados" class="nav-link">PCs Premontados</a>
-        <a href="/categoria/acessorios" class="nav-link">Acessórios</a>
-        <a href="/categoria/utilitarios" class="nav-link">Utilitários</a>
-      </nav>
-      
-      <div class="user-actions">
+      <div class="header-menu">
+        <a href="#" onclick="showOffers()">Ofertas</a>
         <div class="cart-icon" onclick="viewCart()">
-          <i class="fas fa-shopping-cart"></i>
+          <i class="fas fa-shopping-cart" style="font-size: 22px; color: var(--primary);"></i>
           <span class="cart-count" id="cartCount">0</span>
         </div>
         <div id="authButtons">
-          <button class="btn btn-outline" onclick="window.location.href='/login'">Login</button>
-          <button class="btn btn-primary" onclick="window.location.href='/registro'">Registrar</button>
+          <a href="/login" style="margin-right: 12px;">Login</a>
+          <a href="/registro" style="background: var(--primary-gradient); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; box-shadow: var(--shadow-sm);">Criar conta</a>
         </div>
-        <div id="userMenu" style="display: none;">
-          <span class="user-name" id="userName"></span>
-          <button class="btn btn-outline" onclick="logout()">Sair</button>
+        <div id="userMenu" style="display: none; gap: 10px; align-items: center;">
+          <span class="user-name" id="userName" style="font-size: 14px; font-weight: 500;"></span>
+          <a href="#" onclick="logout()" style="font-size: 14px;">Sair</a>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="container">
-      <h1>Bem-vindo à <span class="highlight">TechVault</span></h1>
-      <p>O seu cofre de tecnologia com os melhores produtos do mercado</p>
-      <div class="hero-buttons">
-        <button class="btn btn-primary btn-large" onclick="scrollToProducts()">Ver Produtos</button>
-        <button class="btn btn-outline btn-large" onclick="showOffers()">Ofertas Especiais</button>
+  <!-- Banner Principal -->
+  <section class="hero-banner">
+    <div class="banner">
+      <div class="banner-content">
+        <h1>Ofertas Imperdíveis!</h1>
+        <p>Até 70% off em milhares de produtos selecionados para você</p>
+        <a href="#ofertas" class="banner-button">Ver Ofertas</a>
       </div>
+      <svg class="banner-shapes" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="200" cy="150" r="100" fill="white"/>
+        <circle cx="250" cy="100" r="80" fill="white"/>
+        <circle cx="150" cy="200" r="60" fill="white"/>
+        <circle cx="300" cy="180" r="50" fill="white"/>
+      </svg>
     </div>
   </section>
 
-  <!-- Categories Grid -->
+  <!-- Categorias -->
   <section class="categories-section">
-    <div class="container">
-      <h2 class="section-title">Navegue por Categorias</h2>
-      <div class="categories-grid">
-        <div class="category-card" onclick="window.location.href='/categoria/processadores'">
-          <i class="fas fa-microchip"></i>
-          <h3>Processadores</h3>
-          <p>Intel e AMD de última geração</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/ram'">
-          <i class="fas fa-memory"></i>
-          <h3>Memória RAM</h3>
-          <p>DDR4, DDR5 para todos os usos</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/ssds'">
-          <i class="fas fa-hdd"></i>
-          <h3>SSDs</h3>
-          <p>Velocidade extrema NVMe e SATA</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/hds'">
-          <i class="fas fa-database"></i>
-          <h3>HDs</h3>
-          <p>Armazenamento de alta capacidade</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/monitores'">
-          <i class="fas fa-desktop"></i>
-          <h3>Monitores</h3>
-          <p>Gaming, profissionais e ultrawide</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/gabinetes'">
-          <i class="fas fa-box"></i>
-          <h3>Gabinetes</h3>
-          <p>Design e refrigeração premium</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/pcs-premontados'">
-          <i class="fas fa-computer"></i>
-          <h3>PCs Premontados</h3>
-          <p>Prontos para usar, do básico ao extremo</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/acessorios'">
-          <i class="fas fa-headset"></i>
-          <h3>Acessórios</h3>
-          <p>Periféricos e complementos</p>
-        </div>
-        <div class="category-card" onclick="window.location.href='/categoria/utilitarios'">
-          <i class="fas fa-tools"></i>
-          <h3>Utilitários</h3>
-          <p>Ferramentas e organização</p>
-        </div>
-      </div>
+    <h2 class="section-title">Categorias</h2>
+    <div class="categories-grid" id="categoriesGrid">
+      <!-- Categorias carregadas via JS -->
     </div>
   </section>
 
-  <!-- Featured Products -->
+  <!-- Produtos em Destaque -->
   <section class="products-section">
-    <div class="container">
-      <h2 class="section-title">Produtos em Destaque</h2>
-      <div class="products-grid" id="featuredProducts">
-        <!-- Produtos serão carregados via JavaScript -->
-      </div>
+    <div class="section-header">
+      <h2 class="section-title">Mais Vendidos</h2>
+      <a href="/busca?ordem=mais-vendidos" class="see-all">Ver todos <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="products-grid" id="featuredProducts">
+      <!-- Produtos carregados via JS -->
     </div>
   </section>
 
-  <!-- Benefits -->
-  <section class="benefits-section">
-    <div class="container">
-      <h2 class="section-title">Por que comprar na TechVault?</h2>
-      <div class="benefits-grid">
-        <div class="benefit-card">
-          <i class="fas fa-truck"></i>
-          <h3>Entrega Rápida</h3>
-          <p>Enviamos para todo o Brasil</p>
-        </div>
-        <div class="benefit-card">
-          <i class="fas fa-shield-alt"></i>
-          <h3>Compra Segura</h3>
-          <p>Seus dados protegidos</p>
-        </div>
-        <div class="benefit-card">
-          <i class="fas fa-headset"></i>
-          <h3>Suporte 24/7</h3>
-          <p>Atendimento especializado</p>
-        </div>
-        <div class="benefit-card">
-          <i class="fas fa-credit-card"></i>
-          <h3>Parcele em até 12x</h3>
-          <p>Sem juros no cartão</p>
-        </div>
-      </div>
+  <!-- Ofertas do Dia -->
+  <section class="offers-section" id="ofertas">
+    <div class="section-header">
+      <h2 class="section-title">Ofertas do Dia</h2>
+      <a href="/busca?priceMax=100" class="see-all">Ver todas <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="offers-grid" id="offersProducts">
+      <!-- Ofertas carregadas via JS -->
     </div>
   </section>
 
   <!-- Footer -->
   <footer class="footer">
-    <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <h3>TechVault</h3>
-          <p>Sua loja de tecnologia de confiança</p>
-          <div class="social-links">
-            <a href="#"><i class="fab fa-instagram"></i></a>
-            <a href="#"><i class="fab fa-facebook"></i></a>
-            <a href="#"><i class="fab fa-twitter"></i></a>
-            <a href="#"><i class="fab fa-youtube"></i></a>
-          </div>
-        </div>
-        <div class="footer-section">
-          <h3>Categorias</h3>
-          <ul>
-            <li><a href="/categoria/processadores">Processadores</a></li>
-            <li><a href="/categoria/ram">Memória RAM</a></li>
-            <li><a href="/categoria/ssds">SSDs</a></li>
-            <li><a href="/categoria/monitores">Monitores</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h3>Atendimento</h3>
-          <ul>
-            <li><a href="/como-usar.html">Como Usar</a></li>
-            <li><a href="#">FAQ</a></li>
-            <li><a href="#">Trocas e Devoluções</a></li>
-            <li><a href="#">Política de Privacidade</a></li>
-            <li><a href="#">Contato</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h3>Contato</h3>
-          <p><i class="fas fa-envelope"></i> akilajonas001@gmail.com</p>
-          <p><i class="fas fa-phone"></i> (11) 99999-9999</p>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Sobre o TechVault</h3>
+        <ul>
+          <li><a href="/quem-somos.html">Quem somos</a></li>
+          <li><a href="#">Políticas de privacidade</a></li>
+          <li><a href="#">Termos de uso</a></li>
+          <li><a href="#">Trabalhe conosco</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Ajuda e Suporte</h3>
+        <ul>
+          <li><a href="#">Central de ajuda</a></li>
+          <li><a href="#">Como comprar</a></li>
+          <li><a href="/como-usar.html">Como usar</a></li>
+          <li><a href="#">Frete e entrega</a></li>
+          <li><a href="#">Devoluções</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Formas de Pagamento</h3>
+        <ul>
+          <li><a href="#"><i class="fab fa-pix" style="margin-right: 8px;"></i>PIX</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Redes Sociais</h3>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-instagram"></i></a>
+          <a href="#"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
         </div>
       </div>
-      <div class="footer-bottom">
-        <p>&copy; 2026 TechVault. Todos os direitos reservados.</p>
-      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 TechVault Marketplace. Todos os direitos reservados.</p>
+      <p style="margin-top: 8px; font-size: 12px;">CNPJ: 00.000.000/0001-00 - Av. Tecnologia, 1000 - São Paulo/SP</p>
     </div>
   </footer>
 
@@ -204,12 +1097,12 @@
         <h2><i class="fas fa-shopping-cart"></i> Seu Carrinho</h2>
         <button class="close-cart" onclick="closeCart()"><i class="fas fa-times"></i></button>
       </div>
-      <div id="cartItems"></div>
-      <div class="order-total" style="margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--primary-color);">
+      <div class="cart-items" id="cartItems"></div>
+      <div class="order-total">
         <span>Total:</span>
-        <span class="total-value" id="cartTotal">R$ 0,00</span>
+        <span id="cartTotal">R$ 0,00</span>
       </div>
-      <button class="btn btn-primary btn-large btn-block" style="margin-top: 20px;" onclick="proceedToCheckout()">
+      <button class="btn btn-primary btn-block" style="margin-top: 20px;" onclick="proceedToCheckout()">
         <i class="fas fa-check-circle"></i> Finalizar Compra
       </button>
     </div>
@@ -217,5 +1110,25 @@
 
   <script src="/js/main.js"></script>
   <script src="/js/home.js"></script>
+  <script>
+    // Search function
+    function searchProducts() {
+      const query = document.getElementById('searchInput').value;
+      if (query.trim()) {
+        window.location.href = `/busca?q=${encodeURIComponent(query)}`;
+      }
+    }
+
+    // Enter key to search
+    document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchProducts();
+      }
+    });
+
+    function showOffers() {
+      document.getElementById('ofertas').scrollIntoView({ behavior: 'smooth' });
+    }
+  </script>
 </body>
 </html>

@@ -28,6 +28,7 @@ app.use(session({
 // Arquivos de dados
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
+const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
 
 // Criar diretório data se não existir
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -40,6 +41,9 @@ if (!fs.existsSync(USERS_FILE)) {
 }
 if (!fs.existsSync(ORDERS_FILE)) {
   fs.writeFileSync(ORDERS_FILE, '[]');
+}
+if (!fs.existsSync(PRODUCTS_FILE)) {
+  fs.writeFileSync(PRODUCTS_FILE, '[]');
 }
 
 // Funções auxiliares
@@ -59,6 +63,10 @@ function saveOrders(orders) {
   fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
 }
 
+function loadProducts() {
+  return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
+}
+
 // Configuração do Nodemailer
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -68,7 +76,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Rotas da API
+// === ROTAS DA API ===
 
 // Registro de usuário
 app.post('/api/register', async (req, res) => {
@@ -77,12 +85,10 @@ app.post('/api/register', async (req, res) => {
     
     const users = loadUsers();
     
-    // Verificar se email já existe
     if (users.find(u => u.email === email)) {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
     
-    // Hash da senha
     const senhaHash = await bcrypt.hash(senha, 10);
     
     const newUser = {
@@ -97,7 +103,6 @@ app.post('/api/register', async (req, res) => {
     users.push(newUser);
     saveUsers(users);
     
-    // Gerar token
     const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, {
       expiresIn: '7d'
     });
@@ -146,41 +151,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Login com Google (simulado - na produção usaria OAuth real)
-app.post('/api/login-google', (req, res) => {
-  try {
-    const { email, nome, googleId } = req.body;
-    
-    let users = loadUsers();
-    let user = users.find(u => u.email === email);
-    
-    if (!user) {
-      user = {
-        id: Date.now(),
-        nome,
-        email,
-        googleId,
-        createdAt: new Date().toISOString()
-      };
-      users.push(user);
-      saveUsers(users);
-    }
-    
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: '7d'
-    });
-    
-    res.json({ 
-      success: true, 
-      token,
-      user: { id: user.id, nome: user.nome, email: user.email }
-    });
-  } catch (error) {
-    console.error('Erro no login Google:', error);
-    res.status(500).json({ error: 'Erro ao fazer login com Google' });
-  }
-});
-
 // Criar pedido
 app.post('/api/orders', async (req, res) => {
   try {
@@ -218,40 +188,17 @@ app.post('/api/orders', async (req, res) => {
       <h2>Dados do Cliente</h2>
       <p><strong>Nome:</strong> ${user.nome}</p>
       <p><strong>Email:</strong> ${user.email}</p>
-      <p><strong>Telefone:</strong> ${user.telefone || 'Não informado'}</p>
       
       <h2>Endereço de Entrega</h2>
       <p>${endereco.logradouro}, ${endereco.numero}</p>
-      <p>${endereco.complemento || ''}</p>
-      <p>${endereco.bairro}</p>
-      <p>${endereco.cidade} - ${endereco.estado}</p>
-      <p>CEP: ${endereco.cep}</p>
+      <p>${endereco.bairro} - ${endereco.cidade}/${endereco.estado}</p>
       
       <h2>Itens do Pedido</h2>
-      <table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%;">
-        <tr>
-          <th>Produto</th>
-          <th>Categoria</th>
-          <th>Quantidade</th>
-          <th>Preço Unitário</th>
-          <th>Subtotal</th>
-        </tr>
-        ${itens.map(item => `
-          <tr>
-            <td>${item.nome}</td>
-            <td>${item.categoria}</td>
-            <td>${item.quantidade}</td>
-            <td>R$ ${item.preco.toFixed(2)}</td>
-            <td>R$ ${(item.preco * item.quantidade).toFixed(2)}</td>
-          </tr>
-        `).join('')}
-      </table>
+      <ul>
+        ${itens.map(item => `<li>${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`).join('')}
+      </ul>
       
-      <h2 style="margin-top: 20px;">Total: R$ ${total.toFixed(2)}</h2>
-      
-      <p style="margin-top: 30px; color: #666;">
-        Pedido realizado em: ${new Date().toLocaleString('pt-BR')}
-      </p>
+      <h2>Total: R$ ${total.toFixed(2)}</h2>
     `;
     
     const mailOptions = {
@@ -266,7 +213,6 @@ app.post('/api/orders', async (req, res) => {
       console.log('Email enviado com sucesso');
     } catch (emailError) {
       console.error('Erro ao enviar email:', emailError);
-      // Não falhar a requisição se o email falhar
     }
     
     res.json({ 
@@ -306,6 +252,117 @@ app.get('/api/auth/check', (req, res) => {
   }
 });
 
+// === ROTAS DO MARKETPLACE ===
+
+// Produtos em destaque (ANTES de /api/products/:id)
+app.get('/api/products/featured', (req, res) => {
+  try {
+    const products = loadProducts();
+    const featured = products.filter(p => p.destaque).slice(0, 12);
+    res.json(featured);
+  } catch (error) {
+    console.error('Erro ao carregar destaques:', error);
+    res.status(500).json({ error: 'Erro ao carregar destaques' });
+  }
+});
+
+// Ofertas do dia (ANTES de /api/products/:id)
+app.get('/api/products/offers', (req, res) => {
+  try {
+    const products = loadProducts();
+    const offers = products
+      .filter(p => p.preco < 200)
+      .slice(0, 10);
+    res.json(offers);
+  } catch (error) {
+    console.error('Erro ao carregar ofertas:', error);
+    res.status(500).json({ error: 'Erro ao carregar ofertas' });
+  }
+});
+
+// Listar todos os produtos
+app.get('/api/products', (req, res) => {
+  try {
+    const products = loadProducts();
+    res.json(products);
+  } catch (error) {
+    console.error('Erro ao carregar produtos:', error);
+    res.status(500).json({ error: 'Erro ao carregar produtos' });
+  }
+});
+
+// Buscar produtos
+app.get('/api/products/search', (req, res) => {
+  try {
+    const { q, categoria, precoMin, precoMax, ordem } = req.query;
+    let products = loadProducts();
+    
+    if (q) {
+      const termo = q.toLowerCase();
+      products = products.filter(p => 
+        p.nome.toLowerCase().includes(termo) ||
+        p.descricao?.toLowerCase().includes(termo) ||
+        p.categoria.toLowerCase().includes(termo)
+      );
+    }
+    
+    if (categoria) {
+      products = products.filter(p => p.categoria === categoria);
+    }
+    
+    if (precoMin) {
+      products = products.filter(p => p.preco >= parseFloat(precoMin));
+    }
+    if (precoMax) {
+      products = products.filter(p => p.preco <= parseFloat(precoMax));
+    }
+    
+    if (ordem === 'menor-preco') {
+      products.sort((a, b) => a.preco - b.preco);
+    } else if (ordem === 'maior-preco') {
+      products.sort((a, b) => b.preco - a.preco);
+    } else if (ordem === 'mais-vendidos') {
+      products.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
+    } else if (ordem === 'melhor-avaliado') {
+      products.sort((a, b) => b.avaliacao - a.avaliacao);
+    }
+    
+    res.json(products);
+  } catch (error) {
+    console.error('Erro na busca:', error);
+    res.status(500).json({ error: 'Erro ao buscar produtos' });
+  }
+});
+
+// Listar categorias
+app.get('/api/categories', (req, res) => {
+  try {
+    const products = loadProducts();
+    const categorias = [...new Set(products.map(p => p.categoria))];
+    res.json(categorias);
+  } catch (error) {
+    console.error('Erro ao carregar categorias:', error);
+    res.status(500).json({ error: 'Erro ao carregar categorias' });
+  }
+});
+
+// Obter produto por ID (DEPOIS das rotas específicas)
+app.get('/api/products/:id', (req, res) => {
+  try {
+    const products = loadProducts();
+    const product = products.find(p => p.id === parseInt(req.params.id));
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    
+    res.json(product);
+  } catch (error) {
+    console.error('Erro ao carregar produto:', error);
+    res.status(500).json({ error: 'Erro ao carregar produto' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -327,8 +384,15 @@ app.get('/categoria/:categoria', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'categoria.html'));
 });
 
+app.get('/produto/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'produto.html'));
+});
+
+app.get('/busca', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'busca.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`\n🚀 TechVault Store rodando em http://localhost:${PORT}`);
-  console.log('\n📧 Emails serão enviados para: akilajonas001@gmail.com');
-  console.log('⚙️  Configuração do email no arquivo .env\n');
+  console.log('📦 Marketplace multi-nicho pronto!\n');
 });

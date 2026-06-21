@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quem Somos - TechVault</title>
+  <link rel="stylesheet" href="/styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-light: #4285f4;
+      --primary-dark: #1557b0;
+      --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      --secondary: #1e293b;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --text-muted: #94a3b8;
+      --bg-light: #f8fafc;
+      --bg-cool: #f1f5f9;
+      --white: #ffffff;
+      --success: #10b981;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* Header */
+    .header {
+      background: var(--white);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-md);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 24px;
+    }
+
+    .logo {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      transition: opacity 0.2s;
+    }
+
+    .logo:hover {
+      opacity: 0.8;
+    }
+
+    .logo img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .search-box {
+      flex: 1;
+      display: flex;
+      background: var(--bg-cool);
+      border-radius: 12px;
+      padding: 4px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .search-box:focus-within {
+      background: var(--white);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      color: var(--text);
+      background: transparent;
+      padding: 10px 16px;
+      font-family: inherit;
+    }
+
+    .search-box button {
+      background: var(--primary-gradient);
+      border: none;
+      color: var(--white);
+      cursor: pointer;
+      padding: 10px 20px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .header-menu {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .header-menu a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .header-menu a:hover {
+      color: var(--primary);
+    }
+
+    .cart-icon {
+      position: relative;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .cart-icon:hover {
+      background: var(--bg-cool);
+    }
+
+    .cart-count {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--primary-gradient);
+      color: var(--white);
+      border-radius: 50%;
+      min-width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: var(--primary-gradient);
+      padding: 100px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--white);
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: rgba(255,255,255,0.95);
+      line-height: 1.6;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .trust-badges {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 48px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--white);
+    }
+
+    .badge i {
+      font-size: 40px;
+      opacity: 0.95;
+    }
+
+    .badge span {
+      font-size: 14px;
+      font-weight: 600;
+      opacity: 0.9;
+    }
+
+    /* Content Sections */
+    .content-section {
+      padding: 80px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .section-subtitle {
+      font-size: 18px;
+      color: var(--text-light);
+      margin-bottom: 48px;
+      max-width: 800px;
+      line-height: 1.7;
+    }
+
+    /* Values Grid */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .value-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px 32px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .value-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+      border-color: transparent;
+    }
+
+    .value-icon {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.1), rgba(66, 133, 244, 0.15));
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .value-icon i {
+      font-size: 32px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .value-card h3 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+      letter-spacing: -0.3px;
+    }
+
+    .value-card p {
+      color: var(--text-light);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* Mission Section */
+    .mission-section {
+      background: var(--white);
+      padding: 100px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mission-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+
+    .mission-content h2 {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+    }
+
+    .mission-content p {
+      font-size: 16px;
+      color: var(--text-light);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .mission-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .stat {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 28px 24px;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat-number {
+      font-size: 42px;
+      font-weight: 900;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .mission-image {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 24px;
+      padding: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mission-image::before {
+      content: '';
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .mission-image i {
+      font-size: 180px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Commitments */
+    .commitments-section {
+      padding: 80px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .commitments-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+
+    .commitment-item {
+      display: flex;
+      gap: 20px;
+      padding: 28px;
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+
+    .commitment-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .commitment-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.15));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .commitment-icon i {
+      font-size: 24px;
+      color: var(--success);
+    }
+
+    .commitment-text h4 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .commitment-text p {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      background: var(--primary-gradient);
+      padding: 80px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .cta-section h2 {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .cta-section p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.95);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-white {
+      background: var(--white);
+      color: var(--primary);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    }
+
+    .btn-white:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+
+    .btn-outline-white {
+      background: transparent;
+      color: var(--white);
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+
+    .btn-outline-white:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--white);
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--white);
+      padding: 60px 0 30px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 48px;
+    }
+
+    .footer-section h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 12px;
+    }
+
+    .footer-section a {
+      color: var(--text-light);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .footer-section a:hover {
+      color: var(--primary);
+    }
+
+    .footer-bottom {
+      max-width: 1400px;
+      margin: 48px auto 0;
+      padding: 24px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 36px;
+      }
+
+      .hero p {
+        font-size: 17px;
+      }
+
+      .mission-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .mission-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .trust-badges {
+        gap: 24px;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+      }
+
+      .header-top {
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 14px 16px;
+      }
+
+      .search-box {
+        order: 3;
+        flex-basis: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="TechVault" style="height: 40px; width: auto;">
+      </a>
+      
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais...">
+        <button onclick="searchProducts()">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+      
+      <div class="header-menu">
+        <a href="/">Início</a>
+        <div class="cart-icon" onclick="viewCart()">
+          <i class="fas fa-shopping-cart" style="font-size: 22px; color: var(--primary);"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Bem-vindo à TechVault</h1>
+      <p>Sua loja de confiança para produtos de tecnologia com os melhores preços do mercado e garantia de qualidade</p>
+      
+      <div class="trust-badges">
+        <div class="badge">
+          <i class="fas fa-shield-alt"></i>
+          <span>Compra Segura</span>
+        </div>
+        <div class="badge">
+          <i class="fas fa-tag"></i>
+          <span>Preço Justo</span>
+        </div>
+        <div class="badge">
+          <i class="fas fa-truck"></i>
+          <span>Entrega Rápida</span>
+        </div>
+        <div class="badge">
+          <i class="fas fa-headset"></i>
+          <span>Suporte 24/7</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Values Section -->
+  <section class="content-section">
+    <h2 class="section-title">Nossos Valores</h2>
+    <p class="section-subtitle">
+      Na TechVault, acreditamos que tecnologia de qualidade deve ser acessível a todos. 
+      Trabajamos com transparência, ética e compromisso total com nossos clientes.
+    </p>
+
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-handshake"></i>
+        </div>
+        <h3>Confiança e Transparência</h3>
+        <p>
+          Nossa relação com os clientes é construída sobre bases sólidas de confiança. 
+          Preços claros, sem taxas escondidas, e informações verdadeiras sobre cada produto.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <h3>Preços Acessíveis</h3>
+        <p>
+          Acreditamos que todos merecem acesso à tecnologia de qualidade. 
+          Por isso, trabalhamos com margens justas para oferecer os melhores preços do mercado.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3>Qualidade Garantida</h3>
+        <p>
+          Cada produto em nosso catálogo passa por rigorosa seleção de qualidade. 
+          Trabalhamos apenas com fornecedores certificados e produtos originais.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-heart"></i>
+        </div>
+        <h3>Atendimento Humanizado</h3>
+        <p>
+          Nosso time está sempre pronto para ajudar. 
+          Tratamos cada cliente de forma única, com respeito, paciência e dedicação total.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-undo"></i>
+        </div>
+        <h3>Satisfação Garantida</h3>
+        <p>
+          Se não estiver satisfeito, devolvemos seu dinheiro em até 7 dias. 
+          Sem burocracia, sem perguntas difíceis. Sua satisfação é nossa prioridade.
+        </p>
+      </div>
+
+      <div class="value-card">
+        <div class="value-icon">
+          <i class="fas fa-lock"></i>
+        </div>
+        <h3>Segurança de Dados</h3>
+        <p>
+          Suas informações estão protegidas com a mais alta tecnologia de criptografia. 
+          Seus dados pessoais e de pagamento estão sempre seguros conosco.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mission Section -->
+  <section class="mission-section">
+    <div class="mission-grid">
+      <div class="mission-content">
+        <h2>Nossa Missão</h2>
+        <p>
+          Democratizar o acesso à tecnologia de qualidade no Brasil, oferecendo produtos 
+          originais, com garantia e preços que cabem no seu bolso.
+        </p>
+        <p>
+          Desde o primeiro dia, nos dedicamos a construir uma plataforma onde cada cliente 
+          se sinta seguro, valorizado e confiante em sua compra. Mais do que vender produtos, 
+          queremos fazer parte da realização dos seus sonhos e projetos.
+        </p>
+        <p>
+          Trabalhamos incansavelmente para manter nossa reputação como uma das lojas 
+          mais confiáveis do mercado, com atendimento excepcional e políticas justas 
+          para todos.
+        </p>
+
+        <div class="mission-stats">
+          <div class="stat">
+            <div class="stat-number">10k+</div>
+            <div class="stat-label">Clientes Satisfeitos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">50k+</div>
+            <div class="stat-label">Produtos Vendidos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">98%</div>
+            <div class="stat-label">Avaliação Positiva</div>
+          </div>
+          <div class="stat">
+            <div class="stat-number">24h</div>
+            <div class="stat-label">Suporte Disponível</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mission-image">
+        <i class="fas fa-rocket"></i>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commitments Section -->
+  <section class="commitments-section">
+    <h2 class="section-title" style="text-align: center;">Nossos Compromissos com Você</h2>
+    <p class="section-subtitle" style="text-align: center; margin-bottom: 32px;">
+      Fazemos todo o possível para garantir a melhor experiência de compra
+    </p>
+
+    <div class="commitments-grid">
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-shipping-fast"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Envio Rápido</h4>
+          <p>Despachamos seu pedido em até 24 horas úteis após a confirmação do pagamento.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-award"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Produtos Originais</h4>
+          <p>Trabalhamos apenas com produtos 100% originais e com garantia de fábrica.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Compra Protegida</h4>
+          <p>Seu dinheiro está seguro até você receber e confirmar seu produto.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-comments"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Suporte Dedicado</h4>
+          <p>Equipe pronta para tirar dúvidas antes, durante e depois da sua compra.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-tags"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Preço Competitivo</h4>
+          <p>Monitoramos o mercado diariamente para garantir os melhores preços.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-undo-alt"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Troca Fácil</h4>
+          <p>Política de devolução simplificada em até 7 dias após o recebimento.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Embalagem Segura</h4>
+          <p>Seu produto chega perfeito, com embalagem reforçada e proteção adequada.</p>
+        </div>
+      </div>
+
+      <div class="commitment-item">
+        <div class="commitment-icon">
+          <i class="fas fa-file-contract"></i>
+        </div>
+        <div class="commitment-text">
+          <h4>Nota Fiscal</h4>
+          <p>Todos os produtos acompanham nota fiscal e documentação completa.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section">
+    <div class="cta-content">
+      <h2>Pronto para Começar?</h2>
+      <p>
+        Junte-se a milhares de clientes satisfeitos e descubra por que a TechVault 
+        é a escolha certa para suas compras de tecnologia.
+      </p>
+      <div class="cta-buttons">
+        <a href="/" class="btn btn-white">
+          <i class="fas fa-shopping-bag"></i>
+          Conhecer Produtos
+        </a>
+        <a href="/registro" class="btn btn-outline-white">
+          <i class="fas fa-user-plus"></i>
+          Criar Conta Grátis
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Sobre o TechVault</h3>
+        <ul>
+          <li><a href="/quem-somos.html">Quem somos</a></li>
+          <li><a href="#">Políticas de privacidade</a></li>
+          <li><a href="#">Termos de uso</a></li>
+          <li><a href="#">Trabalhe conosco</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Ajuda e Suporte</h3>
+        <ul>
+          <li><a href="#">Central de ajuda</a></li>
+          <li><a href="#">Como comprar</a></li>
+          <li><a href="/como-usar.html">Como usar</a></li>
+          <li><a href="#">Frete e entrega</a></li>
+          <li><a href="#">Devoluções</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Formas de Pagamento</h3>
+        <ul>
+          <li><a href="#"><i class="fab fa-pix" style="margin-right: 8px;"></i>PIX</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Redes Sociais</h3>
+        <div class="social-links" style="display: flex; gap: 12px; margin-top: 16px;">
+          <a href="#" style="width: 42px; height: 42px; border-radius: 10px; background: var(--bg-cool); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-light); text-decoration: none; transition: all 0.3s;"><i class="fab fa-instagram"></i></a>
+          <a href="#" style="width: 42px; height: 42px; border-radius: 10px; background: var(--bg-cool); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-light); text-decoration: none; transition: all 0.3s;"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" style="width: 42px; height: 42px; border-radius: 10px; background: var(--bg-cool); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-light); text-decoration: none; transition: all 0.3s;"><i class="fab fa-twitter"></i></a>
+          <a href="#" style="width: 42px; height: 42px; border-radius: 10px; background: var(--bg-cool); display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-light); text-decoration: none; transition: all 0.3s;"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 TechVault Marketplace. Todos os direitos reservados.</p>
+      <p style="margin-top: 8px; font-size: 12px;">CNPJ: 00.000.000/0001-00 - Av. Tecnologia, 1000 - São Paulo/SP</p>
+    </div>
+  </footer>
+
+  <script src="/js/main.js"></script>
+  <script>
+    function searchProducts() {
+      const query = document.getElementById('searchInput').value;
+      if (query.trim()) {
+        window.location.href = `/busca?q=${encodeURIComponent(query)}`;
+      }
+    }
+
+    document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchProducts();
+      }
+    });
+  </script>
+</body>
+</html>
