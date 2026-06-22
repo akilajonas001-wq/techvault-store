@@ -1,18 +1,16 @@
-// Configurações globais
 const API_URL = '';
 
-// Estado global
 let cart = [];
 let currentUser = null;
 
-// Inicialização
 document.addEventListener('DOMContentLoaded', async () => {
   loadCart();
   await checkAuth();
   updateCartCount();
+  initScrollReveal();
+  initBackToTop();
 });
 
-// Carregar carrinho do localStorage
 function loadCart() {
   const savedCart = localStorage.getItem('techvault-cart');
   if (savedCart) {
@@ -20,39 +18,36 @@ function loadCart() {
   }
 }
 
-// Salvar carrinho no localStorage
 function saveCart() {
   localStorage.setItem('techvault-cart', JSON.stringify(cart));
   updateCartCount();
 }
 
-// Atualizar contador do carrinho
 function updateCartCount() {
   const countElement = document.getElementById('cartCount');
   if (countElement) {
     const totalCount = cart.reduce((sum, item) => sum + item.quantidade, 0);
     countElement.textContent = totalCount;
+    countElement.style.transform = 'scale(1.3)';
+    setTimeout(() => { countElement.style.transform = 'scale(1)'; }, 200);
   }
 }
 
-// Verificar autenticação
 async function checkAuth() {
   const token = localStorage.getItem('techvault-token');
-  
+
   if (!token) {
     showAuthButtons();
     return;
   }
-  
+
   try {
     const response = await fetch(`${API_URL}/api/auth/check`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    
+
     const data = await response.json();
-    
+
     if (data.authenticated) {
       currentUser = data.user;
       showUserMenu();
@@ -66,27 +61,24 @@ async function checkAuth() {
   }
 }
 
-// Mostrar botões de auth
 function showAuthButtons() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
-  
+
   if (authButtons) authButtons.style.display = 'flex';
   if (userMenu) userMenu.style.display = 'none';
 }
 
-// Mostrar menu do usuário
 function showUserMenu() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
   const userName = document.getElementById('userName');
-  
+
   if (authButtons) authButtons.style.display = 'none';
   if (userMenu) userMenu.style.display = 'flex';
   if (userName && currentUser) userName.textContent = `Olá, ${currentUser.nome}`;
 }
 
-// Logout
 function logout() {
   localStorage.removeItem('techvault-token');
   currentUser = null;
@@ -94,134 +86,178 @@ function logout() {
   window.location.href = '/';
 }
 
-// Adicionar ao carrinho
 function addToCart(produto) {
   const existingItem = cart.find(item => item.id === produto.id);
-  
+
   if (existingItem) {
     existingItem.quantidade += 1;
   } else {
-    cart.push({
-      ...produto,
-      quantidade: 1
-    });
+    cart.push({ ...produto, quantidade: 1 });
   }
-  
+
   saveCart();
-  showNotification('Produto adicionado ao carrinho!', 'success');
+  showNotification(`${produto.nome} adicionado ao carrinho!`, 'success');
 }
 
-// Remover do carrinho
 function removeFromCart(productId) {
   cart = cart.filter(item => item.id !== productId);
   saveCart();
   renderCartItems();
 }
 
-// Ver carrinho
 function viewCart() {
   const modal = document.getElementById('cartModal');
   if (modal) {
     renderCartItems();
     modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
   }
 }
 
-// Fechar carrinho
 function closeCart() {
   const modal = document.getElementById('cartModal');
   if (modal) {
     modal.classList.remove('active');
+    document.body.style.overflow = '';
   }
 }
 
-// Renderizar itens do carrinho
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('cartModal');
+  if (modal && modal.classList.contains('active') && e.target === modal) {
+    closeCart();
+  }
+});
+
 function renderCartItems() {
   const cartItemsContainer = document.getElementById('cartItems');
   const cartTotalElement = document.getElementById('cartTotal');
-  
+
   if (!cartItemsContainer) return;
-  
+
   if (cart.length === 0) {
-    cartItemsContainer.innerHTML = '<p class="cart-empty">Seu carrinho está vazio</p>';
+    cartItemsContainer.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <i class="fas fa-shopping-cart" style="font-size: 64px; margin-bottom: 20px; opacity: 0.3;"></i>
+        <p style="font-size: 18px; font-weight: 500;">Seu carrinho está vazio</p>
+        <p style="font-size: 14px; margin-top: 8px;">Adicione produtos para começar</p>
+      </div>`;
     if (cartTotalElement) cartTotalElement.textContent = 'R$ 0,00';
     return;
   }
-  
+
   let total = 0;
   cartItemsContainer.innerHTML = cart.map(item => {
     const subtotal = item.preco * item.quantidade;
     total += subtotal;
     return `
-      <div class="cart-item">
-        <div>
-          <strong>${item.nome}</strong><br>
-          <small>${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>
+      <div class="cart-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <div style="flex: 1;">
+          <strong style="font-size: 14px; color: var(--text);">${item.nome}</strong>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+            <button onclick="changeQuantity(${item.id}, -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
+            <span style="font-weight: 600; min-width: 24px; text-align: center;">${item.quantidade}</span>
+            <button onclick="changeQuantity(${item.id}, 1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
+          </div>
         </div>
-        <div>
-          <span>R$ ${subtotal.toFixed(2)}</span>
-          <button onclick="removeFromCart(${item.id})" style="margin-left: 10px; background: var(--error); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
-            <i class="fas fa-trash"></i>
+        <div style="text-align: right;">
+          <div style="font-weight: 700; color: var(--text); font-size: 16px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</div>
+          <button onclick="removeFromCart(${item.id})" style="margin-top: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+            <i class="fas fa-trash-alt"></i> Remover
           </button>
         </div>
       </div>
     `;
   }).join('');
-  
+
   if (cartTotalElement) {
-    cartTotalElement.textContent = `R$ ${total.toFixed(2)}`;
+    cartTotalElement.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
   }
 }
 
-// Mostrar notificação
+function changeQuantity(productId, delta) {
+  const item = cart.find(i => i.id === productId);
+  if (!item) return;
+
+  item.quantidade += delta;
+  if (item.quantidade <= 0) {
+    removeFromCart(productId);
+  } else {
+    saveCart();
+    renderCartItems();
+  }
+}
+
 function showNotification(message, type = 'info') {
+  const icons = {
+    success: 'fa-check-circle',
+    error: 'fa-exclamation-circle',
+    info: 'fa-info-circle'
+  };
+
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--primary-color)'};
-    color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 3000;
-    animation: slideIn 0.3s ease;
-  `;
-  
+  notification.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
+
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
+    notification.style.animation = 'slideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+    setTimeout(() => notification.remove(), 400);
   }, 3000);
 }
 
-// Formatar moeda
 function formatCurrency(value) {
-  return `R$ ${value.toFixed(2)}`;
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
 }
 
-// Scroll suave
 function scrollToProducts() {
-  document.querySelector('.products-section').scrollIntoView({ 
-    behavior: 'smooth' 
-  });
+  document.querySelector('.products-section')?.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Mostrar ofertas
 function showOffers() {
-  document.querySelector('.products-section').scrollIntoView({ 
-    behavior: 'smooth' 
-  });
+  document.querySelector('.products-section')?.scrollIntoView({ behavior: 'smooth' });
 }
 
-// Ir para checkout
 function proceedToCheckout() {
   if (cart.length === 0) {
     showNotification('Seu carrinho está vazio', 'error');
     return;
   }
   window.location.href = '/checkout';
+}
+
+function initScrollReveal() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale, .stagger-children').forEach(el => {
+    observer.observe(el);
+  });
+}
+
+function initBackToTop() {
+  const btn = document.createElement('button');
+  btn.className = 'back-to-top';
+  btn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+  btn.setAttribute('aria-label', 'Voltar ao topo');
+  document.body.appendChild(btn);
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  });
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }

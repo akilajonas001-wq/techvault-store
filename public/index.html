@@ -945,6 +945,140 @@
       }
     }
 
+    /* Quick Add Button on Product Cards */
+    .quick-add-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--white);
+      border: none;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--primary);
+      opacity: 0;
+      transform: translateY(10px) scale(0.8);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2;
+    }
+
+    .product-card:hover .quick-add-btn {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .quick-add-btn:hover {
+      background: var(--primary-gradient);
+      color: var(--white);
+      transform: scale(1.1) !important;
+    }
+
+    /* Hero Banner Carousel */
+    .hero-carousel {
+      position: relative;
+    }
+
+    .banner-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .banner-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+
+    .banner-dot.active {
+      background: var(--primary);
+      width: 28px;
+      border-radius: 5px;
+    }
+
+    .banner-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      border: none;
+      color: var(--white);
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+
+    .banner-nav:hover {
+      background: rgba(255,255,255,0.35);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .banner-nav.prev {
+      left: 8px;
+    }
+
+    .banner-nav.next {
+      right: 8px;
+    }
+
+    @keyframes bannerFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .banner.fade-in {
+      animation: bannerFadeIn 0.5s ease forwards;
+    }
+
+    /* Cart Modal Overlay Animation */
+    .cart-modal {
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .cart-modal.active {
+      opacity: 1;
+    }
+
+    /* Loading shimmer for cards */
+    .card-loading {
+      background: linear-gradient(90deg, var(--bg-cool) 25%, var(--white) 50%, var(--bg-cool) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 16px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
     /* Animações */
     @keyframes fadeIn {
       from {
@@ -957,11 +1091,9 @@
       }
     }
 
-    .product-card,
-    .category-card,
-    .seller-card,
-    .offer-card {
-      animation: fadeIn 0.5s ease forwards;
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
   </style>
 </head>
@@ -999,13 +1131,13 @@
     </div>
   </header>
 
-  <!-- Banner Principal -->
-  <section class="hero-banner">
-    <div class="banner">
-      <div class="banner-content">
-        <h1>Ofertas Imperdíveis!</h1>
-        <p>Até 70% off em milhares de produtos selecionados para você</p>
-        <a href="#ofertas" class="banner-button">Ver Ofertas</a>
+  <!-- Banner Principal - Carrossel -->
+  <section class="hero-banner hero-carousel">
+    <div class="banner fade-in" id="heroBanner">
+      <div class="banner-content" id="bannerContent">
+        <h1 id="bannerTitle">Ofertas Imperdíveis!</h1>
+        <p id="bannerSubtitle">Até 70% off em milhares de produtos selecionados para você</p>
+        <a id="bannerLink" href="#ofertas" class="banner-button">Ver Ofertas</a>
       </div>
       <svg class="banner-shapes" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
         <circle cx="200" cy="150" r="100" fill="white"/>
@@ -1013,41 +1145,41 @@
         <circle cx="150" cy="200" r="60" fill="white"/>
         <circle cx="300" cy="180" r="50" fill="white"/>
       </svg>
+      <button class="banner-nav prev" onclick="prevBanner()" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+      <button class="banner-nav next" onclick="nextBanner()" aria-label="Próximo"><i class="fas fa-chevron-right"></i></button>
     </div>
+    <div class="banner-dots" id="bannerDots"></div>
   </section>
 
   <!-- Categorias -->
-  <section class="categories-section">
+  <section class="categories-section reveal">
     <h2 class="section-title">Categorias</h2>
-    <div class="categories-grid" id="categoriesGrid">
-      <!-- Categorias carregadas via JS -->
+    <div class="categories-grid stagger-children" id="categoriesGrid">
     </div>
   </section>
 
   <!-- Produtos em Destaque -->
-  <section class="products-section">
+  <section class="products-section reveal">
     <div class="section-header">
       <h2 class="section-title">Mais Vendidos</h2>
       <a href="/busca?ordem=mais-vendidos" class="see-all">Ver todos <i class="fas fa-arrow-right"></i></a>
     </div>
-    <div class="products-grid" id="featuredProducts">
-      <!-- Produtos carregados via JS -->
+    <div class="products-grid stagger-children" id="featuredProducts">
     </div>
   </section>
 
   <!-- Ofertas do Dia -->
-  <section class="offers-section" id="ofertas">
+  <section class="offers-section reveal" id="ofertas">
     <div class="section-header">
       <h2 class="section-title">Ofertas do Dia</h2>
       <a href="/busca?priceMax=100" class="see-all">Ver todas <i class="fas fa-arrow-right"></i></a>
     </div>
-    <div class="offers-grid" id="offersProducts">
-      <!-- Ofertas carregadas via JS -->
+    <div class="offers-grid stagger-children" id="offersProducts">
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="footer">
+  <footer class="footer reveal">
     <div class="footer-content">
       <div class="footer-section">
         <h3>Sobre o TechVault</h3>
@@ -1119,7 +1251,6 @@
       }
     }
 
-    // Enter key to search
     document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         searchProducts();
@@ -1129,6 +1260,76 @@
     function showOffers() {
       document.getElementById('ofertas').scrollIntoView({ behavior: 'smooth' });
     }
+
+    // Hero Banner Carousel
+    const banners = [
+      {
+        title: 'Ofertas Imperdíveis!',
+        subtitle: 'Até 70% off em milhares de produtos selecionados para você',
+        link: '#ofertas',
+        text: 'Ver Ofertas'
+      },
+      {
+        title: 'Produtos em Destaque',
+        subtitle: 'Os mais vendidos da semana com os melhores preços',
+        link: '/busca?ordem=mais-vendidos',
+        text: 'Ver Destaques'
+      },
+      {
+        title: 'Frete Grátis',
+        subtitle: 'Em compras acima de R$ 199,90 para todo o Brasil',
+        link: '/busca?ordem=menor-preco',
+        text: 'Comprar Agora'
+      }
+    ];
+
+    let currentBanner = 0;
+
+    function showBanner(index) {
+      const banner = banners[index];
+      if (!banner) return;
+
+      const title = document.getElementById('bannerTitle');
+      const subtitle = document.getElementById('bannerSubtitle');
+      const link = document.getElementById('bannerLink');
+      const heroBanner = document.getElementById('heroBanner');
+
+      heroBanner.classList.remove('fade-in');
+      void heroBanner.offsetWidth;
+      heroBanner.classList.add('fade-in');
+
+      title.textContent = banner.title;
+      subtitle.textContent = banner.subtitle;
+      link.textContent = banner.text;
+      link.href = banner.link;
+
+      document.querySelectorAll('.banner-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+      });
+
+      currentBanner = index;
+    }
+
+    function nextBanner() {
+      showBanner((currentBanner + 1) % banners.length);
+    }
+
+    function prevBanner() {
+      showBanner((currentBanner - 1 + banners.length) % banners.length);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const dotsContainer = document.getElementById('bannerDots');
+      banners.forEach((_, i) => {
+        const dot = document.createElement('button');
+        dot.className = `banner-dot${i === 0 ? ' active' : ''}`;
+        dot.setAttribute('aria-label', `Banner ${i + 1}`);
+        dot.onclick = () => showBanner(i);
+        dotsContainer.appendChild(dot);
+      });
+
+      setInterval(nextBanner, 5000);
+    });
   </script>
 </body>
 </html>
