@@ -392,6 +392,35 @@ app.get('/busca', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'busca.html'));
 });
 
+// Páginas institucionais
+app.get('/privacidade', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'privacidade.html'));
+});
+
+app.get('/termos', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'termos.html'));
+});
+
+app.get('/trabalhe-conosco', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'trabalhe-conosco.html'));
+});
+
+app.get('/central-ajuda', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'central-ajuda.html'));
+});
+
+app.get('/como-comprar', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'como-comprar.html'));
+});
+
+app.get('/frete-entrega', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'frete-entrega.html'));
+});
+
+app.get('/devolucoes', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'devolucoes.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`\n🚀 TechVault Store rodando em http://localhost:${PORT}`);
   console.log('📦 Marketplace multi-nicho pronto!\n');
