@@ -3,6 +3,58 @@ let currentProduct = null;
 let selectedRating = 0;
 let currentUserId = null;
 let selectedVariant = null;
+let baseSpecs = null;
+
+const specLabels = {
+  sistema_operacional: 'Sistema Operacional',
+  processador: 'Processador',
+  tela: 'Tela',
+  armazenamento: 'Armazenamento',
+  memoria_ram: 'Memória RAM',
+  bateria: 'Bateria',
+  camera_principal: 'Câmera Principal',
+  conectividade: 'Conectividade',
+  modelo: 'Modelo',
+  cor: 'Cor',
+  placa_video: 'Placa de Vídeo',
+  resolucao: 'Resolução',
+  taxa_atualizacao: 'Taxa de Atualização',
+  material: 'Material',
+  genero: 'Gênero',
+  tamanhos_disponiveis: 'Tamanhos Disponíveis',
+  cores_disponiveis: 'Cores Disponíveis',
+  cuidados: 'Cuidados',
+  peso_aproximado: 'Peso Aproximado',
+  garantia: 'Garantia',
+  dimensoes: 'Dimensões',
+  capacidade: 'Capacidade',
+  compativel_lava_loucas: 'Compatível com Lava-Louças',
+  autor: 'Autor',
+  editora: 'Editora',
+  paginas: 'Páginas',
+  idioma: 'Idioma',
+  tipo_capa: 'Tipo de Capa',
+  tipo: 'Tipo',
+  plataforma: 'Plataforma',
+  voltagem: 'Voltagem',
+  eficiencia_energetica: 'Eficiência Energética',
+  potencia: 'Potência',
+  montagem: 'Montagem',
+  volume: 'Volume'
+};
+
+function buildSpecsHtml(specs) {
+  if (!specs) return '';
+  let rows = '';
+  for (const [key, value] of Object.entries(specs)) {
+    if (value && value !== 'N/A') {
+      const label = specLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      rows += '<tr><td class="spec-label">' + label + '</td><td class="spec-value">' + value + '</td></tr>';
+    }
+  }
+  if (!rows) return '';
+  return '<div class="specs-section" id="specsSection"><h2><i class="fas fa-microchip"></i> Especificações Técnicas</h2><table class="specs-table">' + rows + '</table></div>';
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const productId = window.location.pathname.split('/').pop();
@@ -241,6 +293,7 @@ async function loadProduct(productId) {
     
     currentProduct = product;
     selectedVariant = null;
+    baseSpecs = product.especificacoes ? { ...product.especificacoes } : null;
     const inWish = isInWishlist(product.id);
     
     const breadcrumbCategory = document.getElementById('breadcrumbCategory');
@@ -248,58 +301,7 @@ async function loadProduct(productId) {
       breadcrumbCategory.textContent = product.categoria;
     }
     
-    // Build specs table
-    let specsHtml = '';
-    if (product.especificacoes) {
-      const specs = product.especificacoes;
-      const specLabels = {
-        sistema_operacional: 'Sistema Operacional',
-        processador: 'Processador',
-        tela: 'Tela',
-        armazenamento: 'Armazenamento',
-        memoria_ram: 'Memória RAM',
-        bateria: 'Bateria',
-        camera_principal: 'Câmera Principal',
-        conectividade: 'Conectividade',
-        modelo: 'Modelo',
-        cor: 'Cor',
-        placa_video: 'Placa de Vídeo',
-        resolucao: 'Resolução',
-        taxa_atualizacao: 'Taxa de Atualização',
-        material: 'Material',
-        genero: 'Gênero',
-        tamanhos_disponiveis: 'Tamanhos Disponíveis',
-        cores_disponiveis: 'Cores Disponíveis',
-        cuidados: 'Cuidados',
-        peso_aproximado: 'Peso Aproximado',
-        garantia: 'Garantia',
-        dimensoes: 'Dimensões',
-        capacidade: 'Capacidade',
-        compativel_lava_loucas: 'Compatível com Lava-Louças',
-        autor: 'Autor',
-        editora: 'Editora',
-        paginas: 'Páginas',
-        idioma: 'Idioma',
-        tipo_capa: 'Tipo de Capa',
-        tipo: 'Tipo',
-        plataforma: 'Plataforma',
-        voltagem: 'Voltagem',
-        eficiencia_energetica: 'Eficiência Energética',
-        potencia: 'Potência',
-        montagem: 'Montagem',
-        volume: 'Volume'
-      };
-      let rows = '';
-      for (const [key, value] of Object.entries(specs)) {
-        if (value && value !== 'N/A') {
-          const label = specLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          rows += '<tr><td class="spec-label">' + label + '</td><td class="spec-value">' + value + '</td></tr>';
-        }
-      }
-      if (rows) {
-        specsHtml = '<div class="specs-section"><h2><i class="fas fa-microchip"></i> Especificações Técnicas</h2><table class="specs-table">' + rows + '</table></div>';
-      }
-    }
+    const specsHtml = buildSpecsHtml(baseSpecs);
     
     // Build variant selector
     let variantHtml = '';
@@ -390,7 +392,7 @@ function selectVariant(idx) {
   if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes[idx]) return;
   selectedVariant = currentProduct.variantes[idx];
   
-  // Update UI
+  // Update price
   const priceEl = document.getElementById('productPrice');
   if (priceEl) {
     priceEl.textContent = 'R$ ' + selectedVariant.preco.toFixed(2).replace('.', ',');
@@ -402,6 +404,16 @@ function selectVariant(idx) {
   });
   const items = document.querySelectorAll('.variant-item');
   if (items[idx]) items[idx].classList.add('selected');
+  
+  // Update specs table with variant-specific values
+  if (baseSpecs && selectedVariant.especificacoes) {
+    const mergedSpecs = Object.assign({}, baseSpecs, selectedVariant.especificacoes);
+    const newSpecsHtml = buildSpecsHtml(mergedSpecs);
+    const specsSection = document.getElementById('specsSection');
+    if (specsSection) {
+      specsSection.outerHTML = newSpecsHtml;
+    }
+  }
 }
 
 function getSelectedVariantData() {
