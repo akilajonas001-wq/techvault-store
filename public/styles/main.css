@@ -413,54 +413,6 @@ body {
   box-shadow: 0 8px 25px rgba(26, 115, 232, 0.5);
 }
 
-/* WhatsApp flutuante */
-.whatsapp-float {
-  position: fixed;
-  bottom: 100px;
-  left: 24px;
-  z-index: 999;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
-  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-  font-size: 28px;
-  text-decoration: none;
-}
-
-.whatsapp-float:hover {
-  transform: scale(1.1) translateY(-4px);
-  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
-}
-
-.whatsapp-float .whatsapp-tooltip {
-  position: absolute;
-  left: 64px;
-  background: var(--white);
-  color: var(--text);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  box-shadow: var(--shadow-lg);
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
-  pointer-events: none;
-}
-
-.whatsapp-float:hover .whatsapp-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Newsletter */
 .newsletter-form {
   display: flex;

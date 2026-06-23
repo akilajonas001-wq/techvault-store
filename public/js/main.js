@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCartCount();
   initScrollReveal();
   initBackToTop();
-  initWhatsApp();
 });
 
 function loadCart() {
@@ -267,18 +266,6 @@ function initBackToTop() {
   btn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
-}
-
-// WhatsApp flutuante
-function initWhatsApp() {
-  const link = document.createElement('a');
-  link.className = 'whatsapp-float';
-  link.href = 'https://wa.me/5581999999999?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20um%20produto';
-  link.target = '_blank';
-  link.rel = 'noopener noreferrer';
-  link.setAttribute('aria-label', 'Fale conosco pelo WhatsApp');
-  link.innerHTML = '<i class="fab fa-whatsapp"></i><span class="whatsapp-tooltip">Fale conosco</span>';
-  document.body.appendChild(link);
 }
 
 // Newsletter
