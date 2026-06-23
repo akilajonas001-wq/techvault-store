@@ -64,9 +64,15 @@ async function checkAuth() {
 function showAuthButtons() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
+  const mobileNavLinks = document.querySelectorAll('.mobile-nav a[href="/login"], .mobile-nav a[href="/registro"]');
 
   if (authButtons) authButtons.style.display = 'flex';
   if (userMenu) userMenu.style.display = 'none';
+  mobileNavLinks.forEach(el => el.style.display = 'flex');
+  const mobileLogout = document.querySelector('.mobile-nav .mobile-logout');
+  if (mobileLogout) mobileLogout.remove();
+  const mobileMyAccount = document.querySelector('.mobile-nav .mobile-myaccount');
+  if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
 }
 
 function showUserMenu() {
@@ -83,12 +89,43 @@ function showUserMenu() {
     `;
   }
   if (userName && currentUser) userName.textContent = `Olá, ${currentUser.nome}`;
+
+  // Update mobile nav
+  const mobileNav = document.getElementById('mobileNav');
+  if (mobileNav) {
+    const loginLink = mobileNav.querySelector('a[href="/login"]');
+    const registerLink = mobileNav.querySelector('a[href="/registro"]');
+    const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
+    const existingLogout = mobileNav.querySelector('.mobile-logout');
+    if (loginLink) loginLink.style.display = 'none';
+    if (registerLink) registerLink.style.display = 'none';
+    if (myAccountLink) myAccountLink.style.display = 'flex';
+    if (!existingLogout) {
+      const logoutLink = document.createElement('a');
+      logoutLink.href = '#';
+      logoutLink.className = 'mobile-logout';
+      logoutLink.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sair';
+      logoutLink.onclick = (e) => { e.preventDefault(); logout(); };
+      myAccountLink?.after(logoutLink);
+    }
+  }
 }
 
 function logout() {
   localStorage.removeItem('techvault-token');
   currentUser = null;
   showAuthButtons();
+  const mobileNav = document.getElementById('mobileNav');
+  if (mobileNav) {
+    const loginLink = mobileNav.querySelector('a[href="/login"]');
+    const registerLink = mobileNav.querySelector('a[href="/registro"]');
+    const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
+    const logoutLink = mobileNav.querySelector('.mobile-logout');
+    if (loginLink) loginLink.style.display = 'flex';
+    if (registerLink) registerLink.style.display = 'flex';
+    if (myAccountLink) myAccountLink.style.display = 'none';
+    if (logoutLink) logoutLink.remove();
+  }
   window.location.href = '/';
 }
 
