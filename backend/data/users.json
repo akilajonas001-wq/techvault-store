@@ -6,5 +6,14 @@
     "senha": "$2a$10$8Kgmo/6LOtIopnpQrhXM0.sBc/iy/gfolDkB8FW2PduB9eMX6zdpO",
     "telefone": "(11) 99999-9999",
     "createdAt": "2026-06-14T15:36:40.860Z"
+  },
+  {
+    "id": 1782180950305,
+    "nome": "Akila Jonas",
+    "email": "akilajonas001@gmail.com",
+    "googleId": "104480679598695332283",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIjTYwuICBAs8RqKhViPfpYnLqFO7sae3LBqWjmoP0ouY6bnA=s96-c",
+    "telefone": "",
+    "createdAt": "2026-06-23T02:15:50.305Z"
   }
 ]

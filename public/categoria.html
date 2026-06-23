@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Categoria - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -259,29 +261,17 @@
       overflow: hidden;
     }
 
-    .product-image::before {
-      content: '';
-      position: absolute;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .product-image i {
-      font-size: 90px;
-      color: var(--text-muted);
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       transition: all 0.3s ease;
       position: relative;
       z-index: 1;
     }
 
-    .product-card:hover .product-image i {
-      transform: scale(1.1);
-      color: var(--primary);
+    .product-card:hover .product-image img {
+      transform: scale(1.08);
     }
 
     .product-info {
@@ -361,6 +351,55 @@
       color: var(--text-light);
     }
 
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin: 40px 0;
+    }
+
+    .page-btn {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: rgba(26,115,232,0.05);
+    }
+
+    .page-btn.active {
+      background: var(--primary-gradient);
+      color: var(--white);
+      border-color: transparent;
+      box-shadow: 0 4px 10px rgba(26,115,232,0.3);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-dots {
+      padding: 0 4px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
     .footer {
       background: var(--white);
       border-top: 1px solid var(--border);
@@ -435,15 +474,16 @@
       
       <nav class="nav">
         <a href="/" class="nav-link">Início</a>
-        <a href="/categoria/processadores" class="nav-link">Processadores</a>
-        <a href="/categoria/ram" class="nav-link">RAM</a>
-        <a href="/categoria/ssds" class="nav-link">SSDs</a>
-        <a href="/categoria/hds" class="nav-link">HDs</a>
-        <a href="/categoria/monitores" class="nav-link">Monitores</a>
-        <a href="/categoria/gabinetes" class="nav-link">Gabinetes</a>
-        <a href="/categoria/pcs-premontados" class="nav-link">PCs Premontados</a>
-        <a href="/categoria/acessorios" class="nav-link">Acessórios</a>
-        <a href="/categoria/utilitarios" class="nav-link">Utilitários</a>
+        <a href="/categoria/celulares-e-smartphones" class="nav-link">Celulares</a>
+        <a href="/categoria/informatica" class="nav-link">Informática</a>
+        <a href="/categoria/moda-e-vestuario" class="nav-link">Moda</a>
+        <a href="/categoria/esportes-e-fitness" class="nav-link">Esportes</a>
+        <a href="/categoria/casa-e-decoracao" class="nav-link">Casa</a>
+        <a href="/categoria/eletronicos" class="nav-link">Eletrônicos</a>
+        <a href="/categoria/games" class="nav-link">Games</a>
+        <a href="/categoria/eletrodomesticos" class="nav-link">Eletrodomésticos</a>
+        <a href="/categoria/beleza-e-perfumaria" class="nav-link">Beleza</a>
+        <a href="/categoria/moveis" class="nav-link">Móveis</a>
       </nav>
       
       <div class="user-actions">
@@ -479,6 +519,8 @@
           <p style="margin-top: 16px; color: var(--text-light);">Carregando produtos...</p>
         </div>
       </div>
+
+      <div id="pagination"></div>
     </div>
   </main>
 

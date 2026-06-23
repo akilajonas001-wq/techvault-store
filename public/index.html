@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TechVault - Marketplace de Tudo</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -437,29 +439,35 @@
       overflow: hidden;
     }
 
-    .product-image::before {
-      content: '';
-      position: absolute;
-      width: 200px;
-      height: 200px;
-      background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
 
-    .product-image i {
-      font-size: 90px;
-      color: var(--text-muted);
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       transition: all 0.3s ease;
       position: relative;
       z-index: 1;
     }
 
-    .product-card:hover .product-image i {
-      transform: scale(1.1);
-      color: var(--primary);
+    .product-card:hover .product-image img {
+      transform: scale(1.08);
+    }
+
+    .offer-image {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .offer-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .product-info {
@@ -1207,6 +1215,14 @@
         </ul>
       </div>
       <div class="footer-section">
+        <h3>Receba Novidades</h3>
+        <p style="font-size: 13px; color: var(--text-light); margin-bottom: 12px; line-height: 1.5;">Cadastre-se e receba ofertas exclusivas</p>
+        <div class="newsletter-form">
+          <input type="email" id="newsletterEmail" placeholder="Seu melhor email" required>
+          <button onclick="handleNewsletter()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+      <div class="footer-section">
         <h3>Redes Sociais</h3>
         <div class="social-links">
           <a href="#"><i class="fab fa-instagram"></i></a>
@@ -1242,6 +1258,22 @@
 
   <script src="/js/main.js"></script>
   <script src="/js/home.js"></script>
+  <script>
+    function handleNewsletter() {
+      const email = document.getElementById('newsletterEmail').value;
+      if (!email || !email.includes('@')) {
+        showNotification('Digite um email válido', 'error');
+        return;
+      }
+      subscribeNewsletter(email).then(success => {
+        if (success) document.getElementById('newsletterEmail').value = '';
+      });
+    }
+
+    document.getElementById('newsletterEmail')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleNewsletter();
+    });
+  </script>
   <script>
     // Search function
     function searchProducts() {

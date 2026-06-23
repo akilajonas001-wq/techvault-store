@@ -1,10 +1,214 @@
 // Carregar produto
 let currentProduct = null;
+let selectedRating = 0;
+let currentUserId = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const productId = window.location.pathname.split('/').pop();
   await loadProduct(productId);
+  initStarRating();
+  document.getElementById('commentText')?.addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length + '/500';
+  });
 });
+
+async function loadRelatedProducts(categoria, currentId) {
+  try {
+    const response = await fetch('/api/products/search?categoria=' + encodeURIComponent(categoria) + '&limit=50');
+    const data = await response.json();
+    let products = (data.products || data).filter(p => p.id != currentId).slice(0, 10);
+
+    if (products.length === 0) return;
+
+    const container = document.getElementById('relatedProducts');
+    const section = document.getElementById('relatedSection');
+    const seeAll = document.getElementById('relatedSeeAll');
+
+    container.innerHTML = products.map(p => {
+      const price = 'R$ ' + p.preco.toFixed(2).replace('.', ',');
+      return '<div class="related-product-card" onclick="window.location.href=\'/produto/' + p.id + '\'">' +
+        '<div class="related-product-image">' +
+          '<img src="' + p.imagem + '" alt="' + p.nome + '" loading="lazy">' +
+        '</div>' +
+        '<div class="related-product-info">' +
+          '<div class="related-product-name">' + p.nome + '</div>' +
+          '<div class="related-product-price">' + price + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    seeAll.href = '/busca?categoria=' + encodeURIComponent(categoria);
+    section.style.display = 'block';
+  } catch (error) {
+    console.error('Erro ao carregar relacionados:', error);
+  }
+}
+
+function initStarRating() {
+  document.addEventListener('click', function(e) {
+    const star = e.target.closest('#starsInput i');
+    if (!star) return;
+    const rating = parseInt(star.dataset.star);
+    selectedRating = rating;
+    const stars = document.querySelectorAll('#starsInput i');
+    stars.forEach((s, i) => {
+      s.className = i < rating ? 'fas fa-star active' : 'far fa-star';
+    });
+  });
+}
+
+async function loadComments(productId) {
+  try {
+    const container = document.getElementById('commentsList');
+    const countEl = document.getElementById('commentsCount');
+    const response = await fetch('/api/products/' + productId + '/comments');
+    const comments = await response.json();
+
+    countEl.textContent = comments.length + ' comentário' + (comments.length !== 1 ? 's' : '');
+
+    if (comments.length === 0) {
+      container.innerHTML =
+        '<div class="comments-empty">' +
+          '<i class="fas fa-comment-dots"></i>' +
+          '<h3>Nenhum comentário ainda</h3>' +
+          '<p>Seja o primeiro a avaliar este produto!</p>' +
+        '</div>';
+      return;
+    }
+
+    container.innerHTML = comments.map(c => {
+      const date = new Date(c.createdAt).toLocaleDateString('pt-BR');
+      const initials = c.userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      let stars = '';
+      for (let i = 1; i <= 5; i++) {
+        stars += i <= c.rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+      }
+      const canDelete = currentUserId && c.userId === currentUserId;
+      return '<div class="comment-card">' +
+        '<div class="comment-card-header">' +
+          '<div class="comment-user">' +
+            '<div class="comment-avatar">' + initials + '</div>' +
+            '<div class="comment-user-info">' +
+              '<span class="comment-user-name">' + c.userName + '</span>' +
+              '<span class="comment-date">' + date + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<div class="comment-stars">' + stars + '</div>' +
+            (canDelete ? '<button class="comment-delete-btn" onclick="deleteComment(' + c.id + ')" title="Remover comentário"><i class="fas fa-trash-alt"></i></button>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="comment-text">' + c.comment + '</div>' +
+      '</div>';
+    }).join('');
+  } catch (error) {
+    console.error('Erro ao carregar comentários:', error);
+  }
+}
+
+async function deleteComment(commentId) {
+  if (!confirm('Tem certeza que deseja remover seu comentário?')) return;
+
+  const token = localStorage.getItem('techvault-token');
+  if (!token) {
+    showNotification('Faça login para remover comentários', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/products/' + currentProduct.id + '/comments/' + commentId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showNotification('Comentário removido com sucesso!', 'success');
+      await loadComments(currentProduct.id);
+    } else {
+      showNotification(data.error || 'Erro ao remover comentário', 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao deletar comentário:', error);
+    showNotification('Erro ao remover comentário', 'error');
+  }
+}
+
+function updateCommentAuth() {
+  const el = document.getElementById('commentAuth');
+  const token = localStorage.getItem('techvault-token');
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      currentUserId = payload.id;
+      el.innerHTML = 'Comentando como <strong>' + (payload.email || 'usuário') + '</strong>';
+    } catch {
+      currentUserId = null;
+      el.innerHTML = '<a href="/login">Faça login</a> para comentar';
+    }
+  } else {
+    currentUserId = null;
+    el.innerHTML = '<a href="/login">Faça login</a> para comentar';
+  }
+}
+
+async function submitComment() {
+  const text = document.getElementById('commentText');
+  const comment = text.value.trim();
+
+  if (!comment) {
+    showNotification('Escreva um comentário antes de enviar', 'error');
+    return;
+  }
+
+  if (selectedRating === 0) {
+    showNotification('Selecione uma avaliação (1 a 5 estrelas)', 'error');
+    return;
+  }
+
+  const token = localStorage.getItem('techvault-token');
+  let userId = null;
+  let userName = 'Anônimo';
+
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.id;
+      const userResponse = await fetch('/api/auth/check', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const userData = await userResponse.json();
+      if (userData.authenticated) {
+        userName = userData.user.nome;
+      }
+    } catch {}
+  }
+
+  try {
+    const response = await fetch('/api/products/' + currentProduct.id + '/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, userName, rating: selectedRating, comment })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      text.value = '';
+      selectedRating = 0;
+      document.querySelectorAll('#starsInput i').forEach(s => s.className = 'far fa-star');
+      document.getElementById('charCount').textContent = '0/500';
+      showNotification('Comentário enviado com sucesso!', 'success');
+      await loadComments(currentProduct.id);
+    } else {
+      showNotification(data.error || 'Erro ao enviar comentário', 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao enviar comentário:', error);
+    showNotification('Erro ao enviar comentário', 'error');
+  }
+}
 
 async function loadProduct(productId) {
   try {
@@ -32,7 +236,7 @@ async function loadProduct(productId) {
       '<div class="product-detail">' +
         '<div class="product-gallery">' +
           '<div class="main-image">' +
-            '<i class="fas ' + product.imagem + '"></i>' +
+            '<img src="' + product.imagem + '" alt="' + product.nome + '">' +
           '</div>' +
         '</div>' +
         '<div class="product-info-section">' +
@@ -60,7 +264,10 @@ async function loadProduct(productId) {
           '</div>' +
         '</div>' +
       '</div>';
-      
+
+    loadRelatedProducts(product.categoria, product.id);
+    loadComments(product.id);
+    updateCommentAuth();
   } catch (error) {
     console.error('Erro ao carregar produto:', error);
     document.getElementById('productContent').innerHTML = 

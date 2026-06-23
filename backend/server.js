@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -12,6 +13,12 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'techvault-secret-key-2026';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+let googleClient = null;
+if (GOOGLE_CLIENT_ID) {
+  googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+}
 
 // Middleware
 app.use(cors());
@@ -29,6 +36,7 @@ app.use(session({
 const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
+const COMMENTS_FILE = path.join(__dirname, 'data', 'comments.json');
 
 // Criar diretório data se não existir
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -44,6 +52,9 @@ if (!fs.existsSync(ORDERS_FILE)) {
 }
 if (!fs.existsSync(PRODUCTS_FILE)) {
   fs.writeFileSync(PRODUCTS_FILE, '[]');
+}
+if (!fs.existsSync(COMMENTS_FILE)) {
+  fs.writeFileSync(COMMENTS_FILE, '[]');
 }
 
 // Funções auxiliares
@@ -65,6 +76,14 @@ function saveOrders(orders) {
 
 function loadProducts() {
   return JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf8'));
+}
+
+function loadComments() {
+  return JSON.parse(fs.readFileSync(COMMENTS_FILE, 'utf8'));
+}
+
+function saveComments(comments) {
+  fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
 }
 
 // Configuração do Nodemailer
@@ -151,6 +170,63 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Login com Google
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ error: 'Credencial do Google não fornecida' });
+    }
+
+    if (!googleClient) {
+      return res.status(500).json({ error: 'Google OAuth não configurado. Defina GOOGLE_CLIENT_ID no .env' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    const users = loadUsers();
+    let user = users.find(u => u.email === email);
+
+    if (!user) {
+      user = {
+        id: Date.now(),
+        nome: name || email.split('@')[0],
+        email,
+        googleId,
+        avatar: picture || null,
+        telefone: '',
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    } else {
+      user.googleId = googleId;
+      user.avatar = picture || user.avatar;
+      saveUsers(users);
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+      expiresIn: '7d'
+    });
+
+    res.json({
+      success: true,
+      token,
+      user: { id: user.id, nome: user.nome, email: user.email, avatar: user.avatar }
+    });
+  } catch (error) {
+    console.error('Erro no login com Google:', error);
+    res.status(500).json({ error: 'Erro ao autenticar com Google' });
+  }
+});
+
 // Criar pedido
 app.post('/api/orders', async (req, res) => {
   try {
@@ -226,7 +302,44 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
+// Dados do usuário
+app.get('/api/users/:id', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const users = loadUsers();
+    const user = users.find(u => u.id == req.params.id);
+    if (!user || user.id != decoded.id) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    res.json({
+      id: user.id,
+      nome: user.nome,
+      email: user.email,
+      telefone: user.telefone || '',
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    console.error('Erro ao carregar usuário:', error);
+    res.status(500).json({ error: 'Erro ao carregar dados' });
+  }
+});
+
 // Verificar autenticação
+// Retorna configurações públicas do frontend
+app.get('/api/config', (req, res) => {
+  res.json({
+    googleClientId: GOOGLE_CLIENT_ID || ''
+  });
+});
+
 app.get('/api/auth/check', (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   
@@ -294,7 +407,7 @@ app.get('/api/products', (req, res) => {
 // Buscar produtos
 app.get('/api/products/search', (req, res) => {
   try {
-    const { q, categoria, precoMin, precoMax, ordem } = req.query;
+    const { q, categoria, precoMin, precoMax, ordem, page, limit } = req.query;
     let products = loadProducts();
     
     if (q) {
@@ -326,11 +439,35 @@ app.get('/api/products/search', (req, res) => {
     } else if (ordem === 'melhor-avaliado') {
       products.sort((a, b) => b.avaliacao - a.avaliacao);
     }
+
+    const total = products.length;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 30;
+    const start = (p - 1) * l;
+    const paginated = products.slice(start, start + l);
     
-    res.json(products);
+    res.json({ products: paginated, total, page: p, totalPages: Math.ceil(total / l) });
   } catch (error) {
     console.error('Erro na busca:', error);
     res.status(500).json({ error: 'Erro ao buscar produtos' });
+  }
+});
+
+// Categoria com paginação
+app.get('/api/products/category/:categoria', (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    const categoria = req.params.categoria;
+    let products = loadProducts().filter(p => p.categoria === categoria);
+    const total = products.length;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 30;
+    const start = (p - 1) * l;
+    const paginated = products.slice(start, start + l);
+    res.json({ products: paginated, total, page: p, totalPages: Math.ceil(total / l) });
+  } catch (error) {
+    console.error('Erro ao carregar categoria:', error);
+    res.status(500).json({ error: 'Erro ao carregar produtos' });
   }
 });
 
@@ -363,6 +500,233 @@ app.get('/api/products/:id', (req, res) => {
   }
 });
 
+// === COMENTÁRIOS ===
+
+// Listar comentários de um produto
+app.get('/api/products/:id/comments', (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    const comments = loadComments();
+    const productComments = comments
+      .filter(c => c.productId === productId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(productComments);
+  } catch (error) {
+    console.error('Erro ao carregar comentários:', error);
+    res.status(500).json({ error: 'Erro ao carregar comentários' });
+  }
+});
+
+// Adicionar comentário
+app.post('/api/products/:id/comments', (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    const { userId, userName, rating, comment } = req.body;
+
+    if (!comment || comment.trim() === '') {
+      return res.status(400).json({ error: 'O comentário não pode estar vazio' });
+    }
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: 'A avaliação deve ser entre 1 e 5' });
+    }
+
+    const newComment = {
+      id: Date.now(),
+      productId,
+      userId: userId || null,
+      userName: userName || 'Anônimo',
+      rating,
+      comment: comment.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    const comments = loadComments();
+    comments.push(newComment);
+    saveComments(comments);
+
+    res.json({ success: true, comment: newComment });
+  } catch (error) {
+    console.error('Erro ao adicionar comentário:', error);
+    res.status(500).json({ error: 'Erro ao adicionar comentário' });
+  }
+});
+
+// Newsletter
+const NEWSLETTER_FILE = path.join(__dirname, 'data', 'newsletter.json');
+if (!fs.existsSync(NEWSLETTER_FILE)) {
+  fs.writeFileSync(NEWSLETTER_FILE, '[]');
+}
+
+app.post('/api/newsletter', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    const subscribers = JSON.parse(fs.readFileSync(NEWSLETTER_FILE, 'utf8'));
+    if (subscribers.find(s => s.email === email)) {
+      return res.json({ success: true, message: 'Email já cadastrado' });
+    }
+    subscribers.push({ email, createdAt: new Date().toISOString() });
+    fs.writeFileSync(NEWSLETTER_FILE, JSON.stringify(subscribers, null, 2));
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro na newsletter:', error);
+    res.status(500).json({ error: 'Erro ao cadastrar email' });
+  }
+});
+
+// Cupons de desconto
+const COUPONS_FILE = path.join(__dirname, 'data', 'coupons.json');
+if (!fs.existsSync(COUPONS_FILE)) {
+  fs.writeFileSync(COUPONS_FILE, JSON.stringify([
+    { code: 'BEMVIDO10', discount: 10, type: 'percent', minValue: 0, valid: true },
+    { code: 'TECH20', discount: 20, type: 'percent', minValue: 100, valid: true },
+    { code: 'FRETEGRATIS', discount: 100, type: 'frete', minValue: 150, valid: true }
+  ], null, 2));
+}
+
+app.post('/api/coupons/validate', (req, res) => {
+  try {
+    const { code, total } = req.body;
+    if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
+
+    const coupons = JSON.parse(fs.readFileSync(COUPONS_FILE, 'utf8'));
+    const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && c.valid);
+
+    if (!coupon) {
+      return res.status(404).json({ error: 'Cupom não encontrado ou expirado' });
+    }
+
+    if (total < coupon.minValue) {
+      return res.status(400).json({ error: 'Valor mínimo de R$ ' + coupon.minValue.toFixed(2).replace('.', ',') + ' para usar este cupom' });
+    }
+
+    let discount = 0;
+    if (coupon.type === 'percent') {
+      discount = total * (coupon.discount / 100);
+    } else if (coupon.type === 'fixed') {
+      discount = coupon.discount;
+    }
+
+    res.json({
+      success: true,
+      coupon: {
+        code: coupon.code,
+        discount: coupon.discount,
+        type: coupon.type,
+        discountValue: Math.min(discount, total)
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao validar cupom:', error);
+    res.status(500).json({ error: 'Erro ao validar cupom' });
+  }
+});
+
+// Pedidos do usuário
+app.get('/api/orders/user/:userId', (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId) || req.params.userId;
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    if (decoded.id != userId) {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const orders = loadOrders();
+    const userOrders = orders
+      .filter(o => o.userId == userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(userOrders);
+  } catch (error) {
+    console.error('Erro ao carregar pedidos:', error);
+    res.status(500).json({ error: 'Erro ao carregar pedidos' });
+  }
+});
+
+// Lista de desejos (persistida no servidor para usuários logados)
+const WISHLIST_FILE = path.join(__dirname, 'data', 'wishlist.json');
+if (!fs.existsSync(WISHLIST_FILE)) {
+  fs.writeFileSync(WISHLIST_FILE, '{}');
+}
+
+app.get('/api/wishlist/:userId', (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId) || req.params.userId;
+    const wishlists = JSON.parse(fs.readFileSync(WISHLIST_FILE, 'utf8'));
+    res.json(wishlists[userId] || []);
+  } catch (error) {
+    console.error('Erro ao carregar wishlist:', error);
+    res.status(500).json({ error: 'Erro ao carregar favoritos' });
+  }
+});
+
+app.post('/api/wishlist/:userId', (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId) || req.params.userId;
+    const { productId } = req.body;
+    const wishlists = JSON.parse(fs.readFileSync(WISHLIST_FILE, 'utf8'));
+    if (!wishlists[userId]) wishlists[userId] = [];
+    const idx = wishlists[userId].indexOf(productId);
+    if (idx > -1) {
+      wishlists[userId].splice(idx, 1);
+    } else {
+      wishlists[userId].push(productId);
+    }
+    fs.writeFileSync(WISHLIST_FILE, JSON.stringify(wishlists, null, 2));
+    res.json({ success: true, items: wishlists[userId] });
+  } catch (error) {
+    console.error('Erro na wishlist:', error);
+    res.status(500).json({ error: 'Erro ao atualizar favoritos' });
+  }
+});
+
+// Deletar comentário
+app.delete('/api/products/:id/comments/:commentId', (req, res) => {
+  try {
+    const commentId = parseInt(req.params.commentId);
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Autenticação necessária' });
+    }
+
+    let userId;
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded.id;
+    } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const comments = loadComments();
+    const index = comments.findIndex(c => c.id === commentId);
+
+    if (index === -1) {
+      return res.status(404).json({ error: 'Comentário não encontrado' });
+    }
+
+    if (comments[index].userId !== userId) {
+      return res.status(403).json({ error: 'Você não tem permissão para deletar este comentário' });
+    }
+
+    comments.splice(index, 1);
+    saveComments(comments);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar comentário:', error);
+    res.status(500).json({ error: 'Erro ao deletar comentário' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -378,6 +742,10 @@ app.get('/registro', (req, res) => {
 
 app.get('/checkout', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html'));
+});
+
+app.get('/conta', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'conta.html'));
 });
 
 app.get('/categoria/:categoria', (req, res) => {

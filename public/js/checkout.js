@@ -150,6 +150,11 @@ async function handleCheckout(event) {
   const { cart, total } = cartData;
   
   // Preparar dados do pedido
+  let finalTotal = total;
+  if (appliedCoupon) {
+    finalTotal = total - appliedCoupon.discountValue;
+  }
+
   const orderData = {
     userId: currentUser.id,
     endereco,
@@ -160,7 +165,9 @@ async function handleCheckout(event) {
       preco: item.preco,
       quantidade: item.quantidade
     })),
-    total,
+    total: finalTotal,
+    totalOriginal: total,
+    cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
     cliente: {
       nome: nomeCompleto,
       telefone
@@ -190,7 +197,8 @@ async function handleCheckout(event) {
       successMessage.innerHTML = `
         <h3><i class="fas fa-check-circle"></i> Pedido Realizado com Sucesso!</h3>
         <p>Número do pedido: #${data.orderId}</p>
-        <p>Enviamos os detalhes para o email <strong>akilajonas001@gmail.com</strong></p>
+        <p>Total: R$ ${finalTotal.toFixed(2).replace('.', ',')}</p>
+        <p>Pagamento via PIX - Escaneie o QR Code ou copie o código</p>
         <p>Em breve você receberá mais informações sobre o seu pedido.</p>
       `;
       successMessage.style.display = 'block';
@@ -213,7 +221,42 @@ async function handleCheckout(event) {
   }
 }
 
-// Mostrar notificação
+// Cupom de desconto
+let appliedCoupon = null;
+
+async function applyCoupon() {
+  const input = document.getElementById('couponInput');
+  const result = document.getElementById('couponResult');
+  const code = input.value.trim();
+  if (!code) { result.innerHTML = '<span style="color:var(--error)">Digite um código</span>'; return; }
+
+  const cartData = loadCartItems();
+  if (!cartData) return;
+  const total = cartData.total;
+
+  try {
+    const res = await fetch('/api/coupons/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, total })
+    });
+    const data = await res.json();
+    if (data.success) {
+      appliedCoupon = data.coupon;
+      const desconto = appliedCoupon.discountValue;
+      const novoTotal = total - desconto;
+      result.innerHTML = '<span style="color:var(--success)">✓ Cupom aplicado! Desconto de R$ ' + desconto.toFixed(2).replace('.', ',') + '</span>';
+      document.getElementById('orderTotal').textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
+    } else {
+      appliedCoupon = null;
+      result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Cupom inválido') + '</span>';
+    }
+  } catch (err) {
+    result.innerHTML = '<span style="color:var(--error)">Erro ao validar cupom</span>';
+  }
+}
+
+function loadCartItems() {
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.textContent = message;

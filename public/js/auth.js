@@ -1,28 +1,77 @@
-// Handle Login
+let googleButtonRendered = false;
+
+function handleCredentialResponse(response) {
+  const credential = response.credential;
+  if (!credential) {
+    showNotification('Erro ao obter credencial do Google', 'error');
+    return;
+  }
+  sendGoogleCredentialToBackend(credential);
+}
+
+async function sendGoogleCredentialToBackend(credential) {
+  try {
+    const res = await fetch('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      localStorage.setItem('techvault-token', data.token);
+      showNotification('Login com Google realizado com sucesso!', 'success');
+      setTimeout(() => { window.location.href = '/'; }, 1000);
+    } else {
+      showNotification(data.error || 'Erro ao autenticar com Google', 'error');
+    }
+  } catch (error) {
+    console.error('Erro no login com Google:', error);
+    showNotification('Erro de conexão. Tente novamente.', 'error');
+  }
+}
+
+function renderGoogleButton(clientId) {
+  if (googleButtonRendered || typeof google === 'undefined' || !google.accounts) return;
+  const googleButton = document.getElementById('googleButton');
+  if (!googleButton || !clientId) return;
+  googleButtonRendered = true;
+
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: handleCredentialResponse
+  });
+
+  google.accounts.id.renderButton(googleButton, {
+    type: 'standard',
+    shape: 'rectangular',
+    theme: 'outline',
+    text: document.title.includes('Registro') ? 'signup_with' : 'signin_with',
+    size: 'large',
+    width: '100%',
+    logo_alignment: 'center'
+  });
+}
+
 async function handleLogin(event) {
   event.preventDefault();
-  
+
   const email = document.getElementById('email').value;
   const senha = document.getElementById('senha').value;
   const errorMessage = document.getElementById('errorMessage');
-  
+
   try {
     const response = await fetch('/api/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, senha })
     });
-    
+
     const data = await response.json();
-    
+
     if (response.ok && data.success) {
       localStorage.setItem('techvault-token', data.token);
       showNotification('Login realizado com sucesso!', 'success');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+      setTimeout(() => { window.location.href = '/'; }, 1000);
     } else {
       errorMessage.textContent = data.error || 'Erro ao fazer login';
       errorMessage.style.display = 'block';
@@ -34,48 +83,41 @@ async function handleLogin(event) {
   }
 }
 
-// Handle Registro
 async function handleRegistro(event) {
   event.preventDefault();
-  
+
   const nome = document.getElementById('nome').value;
   const email = document.getElementById('email').value;
   const senha = document.getElementById('senha').value;
   const confirmarSenha = document.getElementById('confirmarSenha').value;
   const telefone = document.getElementById('telefone').value;
   const errorMessage = document.getElementById('errorMessage');
-  
-  // Validar senhas
+
   if (senha !== confirmarSenha) {
     errorMessage.textContent = 'As senhas não coincidem';
     errorMessage.style.display = 'block';
     return;
   }
-  
-  // Validar senha mínima
+
   if (senha.length < 6) {
     errorMessage.textContent = 'A senha deve ter pelo menos 6 caracteres';
     errorMessage.style.display = 'block';
     return;
   }
-  
+
   try {
     const response = await fetch('/api/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome, email, senha, telefone })
     });
-    
+
     const data = await response.json();
-    
+
     if (response.ok && data.success) {
       localStorage.setItem('techvault-token', data.token);
       showNotification('Conta criada com sucesso!', 'success');
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
+      setTimeout(() => { window.location.href = '/'; }, 1000);
     } else {
       errorMessage.textContent = data.error || 'Erro ao criar conta';
       errorMessage.style.display = 'block';
@@ -87,31 +129,6 @@ async function handleRegistro(event) {
   }
 }
 
-// Login com Google (simulado)
-async function loginWithGoogle() {
-  // Em produção, isso usaria o OAuth real do Google
-  showNotification('Login com Google será implementado em breve!', 'info');
-  
-  // Simulação para teste
-  setTimeout(() => {
-    const mockUser = {
-      id: Date.now(),
-      nome: 'Usuário Google',
-      email: 'usuario@gmail.com'
-    };
-    
-    // Criar token mock (em produção viria do backend)
-    const mockToken = 'mock-google-token-' + Date.now();
-    localStorage.setItem('techvault-token', mockToken);
-    
-    showNotification('Login com Google realizado!', 'success');
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 1000);
-  }, 1500);
-}
-
-// Mostrar notificação
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.className = `notification`;
@@ -128,16 +145,15 @@ function showNotification(message, type = 'info') {
     font-weight: 600;
     animation: slideIn 0.3s ease;
   `;
-  
+
   document.body.appendChild(notification);
-  
+
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease';
     setTimeout(() => notification.remove(), 300);
   }, 3000);
 }
 
-// Adicionar animações CSS
 const style = document.createElement('style');
 style.textContent = `
   @keyframes slideIn {
@@ -150,7 +166,7 @@ style.textContent = `
       opacity: 1;
     }
   }
-  
+
   @keyframes slideOut {
     from {
       transform: translateX(0);
@@ -160,6 +176,10 @@ style.textContent = `
       transform: translateX(100%);
       opacity: 0;
     }
+  }
+
+  #googleButton > div > div {
+    width: 100% !important;
   }
 `;
 document.head.appendChild(style);

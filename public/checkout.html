@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -502,10 +504,14 @@
               <strong>Devolução:</strong> 7 dias para devolução grátis
             </p>
             <div style="padding: 16px; background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05)); border-radius: 12px; margin-top: 20px;">
-              <p style="color: var(--primary); font-weight: 600; font-size: 13px;">
-                <i class="fas fa-gift"></i> cupom: BEMVIDO10
+              <p style="color: var(--primary); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
+                <i class="fas fa-gift"></i> Cupom de desconto
               </p>
-              <p style="font-size: 12px; margin-top: 4px;">10% de desconto na primeira compra</p>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="couponInput" placeholder="Digite o cupom" style="flex:1;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;outline:none;">
+                <button onclick="applyCoupon()" style="padding:10px 16px;border:none;border-radius:8px;background:var(--primary-gradient);color:white;font-weight:600;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;">Aplicar</button>
+              </div>
+              <div id="couponResult" style="font-size:12px;margin-top:8px;"></div>
             </div>
           </div>
         </div>

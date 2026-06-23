@@ -1,5 +1,16 @@
-// Página de Categoria
-const categoryNames = {
+const slugToCategory = {
+  'celulares-e-smartphones': 'Celulares e Smartphones',
+  'informatica': 'Informática',
+  'moda-e-vestuario': 'Moda e Vestuário',
+  'esportes-e-fitness': 'Esportes e Fitness',
+  'casa-e-decoracao': 'Casa e Decoração',
+  'cozinha-e-utensilios': 'Cozinha e Utensílios',
+  'livros-e-papelaria': 'Livros e Papelaria',
+  'eletronicos': 'Eletrônicos',
+  'moveis': 'Móveis',
+  'beleza-e-perfumaria': 'Beleza e Perfumaria',
+  'games': 'Games',
+  'eletrodomesticos': 'Eletrodomésticos',
   'processadores': 'Processadores',
   'ram': 'Memória RAM',
   'ssds': 'SSDs',
@@ -11,100 +22,122 @@ const categoryNames = {
   'utilitarios': 'Utilitários'
 };
 
-// Produtos de exemplo por categoria
-const categoryProducts = {
-  'processadores': [
-    { id: 101, nome: 'AMD Ryzen 7 7800X3D', categoria: 'Processadores', preco: 2899.90, imagem: 'fa-microchip' },
-    { id: 102, nome: 'Intel Core i9-14900K', categoria: 'Processadores', preco: 3299.90, imagem: 'fa-microchip' },
-    { id: 103, nome: 'AMD Ryzen 5 7600X', categoria: 'Processadores', preco: 1599.90, imagem: 'fa-microchip' },
-    { id: 104, nome: 'Intel Core i5-14600K', categoria: 'Processadores', preco: 1899.90, imagem: 'fa-microchip' }
-  ],
-  'ram': [
-    { id: 201, nome: 'Memória RAM DDR5 32GB (2x16GB) 6000MHz', categoria: 'RAM', preco: 899.90, imagem: 'fa-memory' },
-    { id: 202, nome: 'Memória RAM DDR4 16GB (2x8GB) 3200MHz', categoria: 'RAM', preco: 349.90, imagem: 'fa-memory' },
-    { id: 203, nome: 'Memória RAM DDR5 16GB 5200MHz', categoria: 'RAM', preco: 449.90, imagem: 'fa-memory' }
-  ],
-  'ssds': [
-    { id: 301, nome: 'SSD NVMe 1TB Kingston KC3000', categoria: 'SSDs', preco: 549.90, imagem: 'fa-hdd' },
-    { id: 302, nome: 'SSD NVMe 2TB Samsung 980 Pro', categoria: 'SSDs', preco: 899.90, imagem: 'fa-hdd' },
-    { id: 303, nome: 'SSD SATA 480GB Kingston A400', categoria: 'SSDs', preco: 199.90, imagem: 'fa-hdd' }
-  ],
-  'hds': [
-    { id: 401, nome: 'HD 1TB Seagate Barracuda', categoria: 'HDs', preco: 249.90, imagem: 'fa-database' },
-    { id: 402, nome: 'HD 2TB WD Blue', categoria: 'HDs', preco: 349.90, imagem: 'fa-database' },
-    { id: 403, nome: 'HD 4TB Seagate IronWolf', categoria: 'HDs', preco: 599.90, imagem: 'fa-database' }
-  ],
-  'monitores': [
-    { id: 501, nome: 'Monitor Gamer 27" 144Hz IPS', categoria: 'Monitores', preco: 1599.90, imagem: 'fa-desktop' },
-    { id: 502, nome: 'Monitor Ultrawide 34" 100Hz', categoria: 'Monitores', preco: 2299.90, imagem: 'fa-desktop' },
-    { id: 503, nome: 'Monitor 24" Full HD 75Hz', categoria: 'Monitores', preco: 799.90, imagem: 'fa-desktop' }
-  ],
-  'gabinetes': [
-    { id: 601, nome: 'Gabinete Gamer NZXT H510', categoria: 'Gabinetes', preco: 549.90, imagem: 'fa-box' },
-    { id: 602, nome: 'Gabinete Corsair 4000D RGB', categoria: 'Gabinetes', preco: 649.90, imagem: 'fa-box' },
-    { id: 603, nome: 'Gabinete Minimalista Monte Branco', categoria: 'Gabinetes', preco: 299.90, imagem: 'fa-box' }
-  ],
-  'pcs-premontados': [
-    { id: 701, nome: 'PC Gamer RTX 4060 Ti 16GB', categoria: 'PCs Premontados', preco: 5499.90, imagem: 'fa-computer' },
-    { id: 702, nome: 'PC Gamer RTX 4070 Super', categoria: 'PCs Premontados', preco: 7499.90, imagem: 'fa-computer' },
-    { id: 703, nome: 'PC Office Intel i5 16GB', categoria: 'PCs Premontados', preco: 2499.90, imagem: 'fa-computer' }
-  ],
-  'acessorios': [
-    { id: 801, nome: 'Headset Gamer 7.1 RGB', categoria: 'Acessórios', preco: 299.90, imagem: 'fa-headset' },
-    { id: 802, nome: 'Teclado Mecânico Red Switch', categoria: 'Acessórios', preco: 399.90, imagem: 'fa-keyboard' },
-    { id: 803, nome: 'Mouse Gamer 16000 DPI', categoria: 'Acessórios', preco: 199.90, imagem: 'fa-mouse' }
-  ],
-  'utilitarios': [
-    { id: 901, nome: 'Fonte 750W 80 Plus Gold', categoria: 'Utilitários', preco: 599.90, imagem: 'fa-plug' },
-    { id: 902, nome: 'Cooler CPU Air Cooler', categoria: 'Utilitários', preco: 249.90, imagem: 'fa-fan' },
-    { id: 903, nome: 'Pasta Térmica MX-4', categoria: 'Utilitários', preco: 49.90, imagem: 'fa-syringe' }
-  ]
+const iconMap = {
+  'Celulares e Smartphones': 'fa-mobile-alt',
+  'Informática': 'fa-laptop',
+  'Moda e Vestuário': 'fa-tshirt',
+  'Esportes e Fitness': 'fa-football-ball',
+  'Casa e Decoração': 'fa-couch',
+  'Cozinha e Utensílios': 'fa-utensils',
+  'Livros e Papelaria': 'fa-book',
+  'Eletrônicos': 'fa-tv',
+  'Móveis': 'fa-chair',
+  'Beleza e Perfumaria': 'fa-pump-soap',
+  'Games': 'fa-gamepad',
+  'Eletrodomésticos': 'fa-blender'
 };
+
+let currentPage = 1;
+let totalPages = 1;
+const ITEMS_PER_PAGE = 24;
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCategory();
 });
 
-function loadCategory() {
+function formatPrice(preco) {
+  return 'R$ ' + preco.toFixed(2).replace('.', ',');
+}
+
+function getCategoryFromSlug(slug) {
+  if (slugToCategory[slug]) return slugToCategory[slug];
+  const decoded = decodeURIComponent(slug);
+  return decoded.charAt(0).toUpperCase() + decoded.slice(1);
+}
+
+async function loadCategory(page) {
+  currentPage = page || 1;
   const pathParts = window.location.pathname.split('/');
-  const categorySlug = pathParts[pathParts.length - 1];
-  
-  const categoryTitle = document.getElementById('categoryTitle');
-  const productsContainer = document.getElementById('categoryProducts');
-  
-  if (!categoryTitle || !productsContainer) return;
-  
-  const categoryName = categoryNames[categorySlug] || 'Categoria';
-  const products = categoryProducts[categorySlug] || [];
-  
-  categoryTitle.textContent = categoryName;
-  
-  if (products.length === 0) {
-    productsContainer.innerHTML = `
-      <div style="text-align: center; padding: 60px 0; color: var(--text-secondary);">
-        <i class="fas fa-box-open" style="font-size: 64px; margin-bottom: 20px; opacity: 0.5;"></i>
-        <h2>Nenhum produto nesta categoria ainda</h2>
-        <p>Em breve teremos novidades!</p>
-      </div>
-    `;
-    return;
-  }
-  
-  productsContainer.innerHTML = products.map(product => `
-    <div class="product-card">
-      <div class="product-image">
-        <i class="fas ${product.imagem}"></i>
-      </div>
-      <div class="product-info">
-        <div class="product-category">${product.categoria}</div>
-        <h3 class="product-name">${product.nome}</h3>
-        <div class="product-price">R$ ${product.preco.toFixed(2)}</div>
-        <div class="product-actions">
-          <button class="btn btn-primary" onclick='addToCart(${JSON.stringify(product)})'>
-            <i class="fas fa-cart-plus"></i> Adicionar
+  const slug = pathParts[pathParts.length - 1];
+
+  const titleEl = document.getElementById('categoryTitle');
+  const container = document.getElementById('categoryProducts');
+
+  if (!titleEl || !container) return;
+
+  const categoryName = getCategoryFromSlug(slug);
+
+  const icon = iconMap[categoryName] || 'fa-tag';
+  titleEl.innerHTML = `<i class="fas ${icon}"></i> ${categoryName}`;
+
+  try {
+    const response = await fetch(`/api/products/category/${encodeURIComponent(categoryName)}?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
+    const data = await response.json();
+    const products = data.products || [];
+    totalPages = data.totalPages || 1;
+
+    if (products.length === 0) {
+      container.innerHTML = `
+        <div class="no-products">
+          <i class="fas fa-box-open"></i>
+          <h3>Nenhum produto encontrado</h3>
+          <p>Não encontramos produtos nesta categoria.</p>
+        </div>
+      `;
+      renderPaginationCat();
+      return;
+    }
+
+    container.innerHTML = products.map(product => {
+      const inWish = isInWishlist(product.id);
+      return `
+      <div class="product-card" onclick="window.location.href='/produto/${product.id}'">
+        <div class="product-image">
+          <img src="${product.imagem}" alt="${product.nome}" loading="lazy">
+          <button class="wishlist-btn${inWish ? ' active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${product.id}, this)" title="${inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">
+            <i class="${inWish ? 'fas' : 'far'} fa-heart"></i>
           </button>
         </div>
+        <div class="product-info">
+          <div class="product-price">${formatPrice(product.preco)}</div>
+          ${product.frete === 'Grátis' ? '<div class="product-shipping"><i class="fas fa-truck"></i> Frete grátis</div>' : ''}
+          <div class="product-name">${product.nome}</div>
+          <div class="product-rating">
+            <i class="fas fa-star"></i>
+            ${product.avaliacao.toFixed(1)} (${product.reviews})
+          </div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `}).join('');
+
+    renderPaginationCat();
+  } catch (error) {
+    console.error('Erro ao carregar categoria:', error);
+    container.innerHTML = `
+      <div class="no-products">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h3>Erro ao carregar</h3>
+        <p>Não foi possível carregar os produtos. Tente novamente.</p>
+      </div>
+    `;
+  }
+}
+
+function renderPaginationCat() {
+  const container = document.getElementById('pagination');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  let html = '<div class="pagination">';
+  html += '<button class="page-btn" onclick="loadCategory(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>';
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+      html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="loadCategory(' + i + ')">' + i + '</button>';
+    } else if (Math.abs(i - currentPage) === 3) {
+      html += '<span class="page-dots">...</span>';
+    }
+  }
+  html += '<button class="page-btn" onclick="loadCategory(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>';
+  html += '</div>';
+  container.innerHTML = html;
 }

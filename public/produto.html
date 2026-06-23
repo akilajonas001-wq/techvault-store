@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Produto - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -224,29 +226,17 @@
       overflow: hidden;
     }
 
-    .main-image::before {
-      content: '';
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .main-image i {
-      font-size: 180px;
-      color: var(--text-muted);
+    .main-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       transition: all 0.3s ease;
       position: relative;
       z-index: 1;
     }
 
-    .product-gallery:hover .main-image i {
+    .product-gallery:hover .main-image img {
       transform: scale(1.05);
-      color: var(--primary);
     }
 
     .thumbnails {
@@ -509,6 +499,372 @@
       to { transform: rotate(360deg); }
     }
 
+    .comments-section {
+      max-width: 1400px;
+      margin: 48px auto 0;
+      padding: 0 24px;
+    }
+
+    .comments-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .comments-header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .comments-header h2 i {
+      color: var(--primary);
+      margin-right: 8px;
+    }
+
+    .comments-count {
+      background: var(--bg-cool);
+      color: var(--text-light);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .comment-form {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .comment-form-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .rating-input {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .rating-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .stars-input {
+      display: flex;
+      gap: 4px;
+    }
+
+    .stars-input i {
+      font-size: 22px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .stars-input i:hover,
+    .stars-input i.active {
+      color: #fbbf24;
+    }
+
+    .stars-input i.active ~ i {
+      color: var(--text-muted);
+    }
+
+    .comment-form-auth {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .comment-form-auth a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .comment-form-body textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      resize: vertical;
+      transition: border-color 0.2s;
+      outline: none;
+      background: var(--bg-light);
+    }
+
+    .comment-form-body textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+    }
+
+    .comment-form-body textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .comment-form-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .comment-char-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .comment-submit-btn {
+      padding: 10px 24px;
+      font-size: 14px;
+      flex: none;
+    }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .comments-loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .comments-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .comments-empty i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+    }
+
+    .comments-empty h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+
+    .comments-empty p {
+      font-size: 14px;
+    }
+
+    .comment-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+
+    .comment-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .comment-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .comment-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .comment-user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .comment-user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .comment-date {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .comment-stars {
+      color: #fbbf24;
+      font-size: 14px;
+      display: flex;
+      gap: 2px;
+    }
+
+    .comment-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-light);
+    }
+
+    .comment-delete-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .comment-delete-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .comment-rating-display {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .comment-rating-display .stars {
+      font-size: 13px;
+    }
+
+    .comment-rating-display span {
+      font-size: 13px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .related-section {
+      max-width: 1400px;
+      margin: 48px auto;
+      padding: 0 24px;
+    }
+
+    .related-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .related-header h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .related-see-all {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: gap 0.2s;
+    }
+
+    .related-see-all:hover {
+      gap: 12px;
+    }
+
+    .related-products {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .related-product-card {
+      background: var(--white);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .related-product-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+      border-color: transparent;
+    }
+
+    .related-product-image {
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      overflow: hidden;
+    }
+
+    .related-product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .related-product-card:hover .related-product-image img {
+      transform: scale(1.08);
+    }
+
+    .related-product-info {
+      padding: 12px 14px;
+    }
+
+    .related-product-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .related-product-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
     @media (max-width: 900px) {
       .product-detail {
         grid-template-columns: 1fr;
@@ -521,6 +877,10 @@
 
       .product-gallery {
         position: static;
+      }
+
+      .related-products {
+        grid-template-columns: repeat(3, 1fr);
       }
     }
 
@@ -542,6 +902,16 @@
 
       .action-buttons {
         flex-direction: column;
+      }
+
+      .related-products {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .related-products {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -586,6 +956,52 @@
       </div>
     </div>
   </main>
+
+  <section class="comments-section" id="commentsSection">
+    <div class="comments-header">
+      <h2><i class="fas fa-comments"></i> Comentários</h2>
+      <span class="comments-count" id="commentsCount">0</span>
+    </div>
+
+    <div class="comment-form" id="commentForm">
+      <div class="comment-form-header">
+        <div class="rating-input">
+          <span class="rating-label">Sua avaliação:</span>
+          <div class="stars-input" id="starsInput">
+            <i class="far fa-star" data-star="1"></i>
+            <i class="far fa-star" data-star="2"></i>
+            <i class="far fa-star" data-star="3"></i>
+            <i class="far fa-star" data-star="4"></i>
+            <i class="far fa-star" data-star="5"></i>
+          </div>
+        </div>
+        <span class="comment-form-auth" id="commentAuth"></span>
+      </div>
+      <div class="comment-form-body">
+        <textarea id="commentText" placeholder="Escreva seu comentário sobre este produto..." maxlength="500"></textarea>
+        <div class="comment-form-footer">
+          <span class="comment-char-count" id="charCount">0/500</span>
+          <button class="btn btn-primary comment-submit-btn" onclick="submitComment()">
+            <i class="fas fa-paper-plane"></i> Enviar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="comments-list" id="commentsList">
+      <div class="comments-loading">
+        <i class="fas fa-spinner fa-spin"></i> Carregando comentários...
+      </div>
+    </div>
+  </section>
+
+  <section class="related-section" id="relatedSection" style="display: none;">
+    <div class="related-header">
+      <h2>Você também pode gostar</h2>
+      <a href="#" id="relatedSeeAll" class="related-see-all">Ver todos <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="related-products" id="relatedProducts"></div>
+  </section>
 
   <script src="/js/main.js"></script>
   <script src="/js/produto.js"></script>

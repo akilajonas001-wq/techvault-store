@@ -6,6 +6,9 @@ let currentFilters = {
   precoMax: '',
   ordem: 'relevancia'
 };
+let currentPage = 1;
+const ITEMS_PER_PAGE = 24;
+let totalPages = 1;
 
 // Carregar página
 document.addEventListener('DOMContentLoaded', async () => {
@@ -63,8 +66,9 @@ function selectCategory(categoria) {
 }
 
 // Carregar produtos
-async function loadProducts() {
+async function loadProducts(page) {
   try {
+    currentPage = page || 1;
     var params = new URLSearchParams();
     if (currentFilters.q) params.set('q', currentFilters.q);
     if (currentFilters.categoria) params.set('categoria', currentFilters.categoria);
@@ -73,29 +77,14 @@ async function loadProducts() {
     if (currentFilters.ordem && currentFilters.ordem !== 'relevancia') {
       params.set('ordem', currentFilters.ordem);
     }
+    params.set('page', currentPage);
+    params.set('limit', ITEMS_PER_PAGE);
 
     const response = await fetch('/api/products/search?' + params);
-    let products = await response.json();
-    
-    // Aplicar filtro de preço por referência se existir
-    if (currentFilters.referencePrice && currentFilters.referencePrice > 0) {
-      const order = currentFilters.priceOrder || 'mais-proximo';
-      
-      if (order === 'mais-proximo') {
-        // Ordenar por proximidade do valor de referência (do mais próximo ao mais distante)
-        products = products.map(p => ({
-          ...p,
-          diff: Math.abs(p.preco - currentFilters.referencePrice)
-        })).sort((a, b) => a.diff - b.diff);
-      } else if (order === 'mais-barato') {
-        // Ordenar do mais barato ao mais caro
-        products = products.sort((a, b) => a.preco - b.preco);
-      } else if (order === 'mais-caro') {
-        // Ordenar do mais caro ao mais barato
-        products = products.sort((a, b) => b.preco - a.preco);
-      }
-    }
-    
+    const data = await response.json();
+    let products = data.products || [];
+    totalPages = data.totalPages || 1;
+
     const container = document.getElementById('productsGrid');
     const countElement = document.getElementById('resultsCount');
     
@@ -108,16 +97,21 @@ async function loadProducts() {
         '<p>Tente ajustar os filtros ou buscar por outros termos</p>' +
       '</div>';
       countElement.textContent = '0 produtos encontrados';
+      renderPagination();
       return;
     }
     
-    var plural = products.length !== 1 ? 's' : '';
-    countElement.textContent = products.length + ' produto' + plural + ' encontrado' + plural;
+    var plural = data.total !== 1 ? 's' : '';
+    countElement.textContent = data.total + ' produto' + plural + ' encontrado' + plural;
     
     container.innerHTML = products.map(function(product) {
+      const inWish = isInWishlist(product.id);
       return '<div class="product-card" onclick="window.location.href=\'/produto/' + product.id + '\'">' +
         '<div class="product-image">' +
-          '<i class="fas ' + product.imagem + '"></i>' +
+          '<img src="' + product.imagem + '" alt="' + product.nome + '" loading="lazy">' +
+          '<button class="wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)" title="' + (inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '">' +
+            '<i class="' + (inWish ? 'fas' : 'far') + ' fa-heart"></i>' +
+          '</button>' +
         '</div>' +
         '<div class="product-info">' +
           '<div class="product-price">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
@@ -130,6 +124,8 @@ async function loadProducts() {
         '</div>' +
       '</div>';
     }).join('');
+    
+    renderPagination();
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
     document.getElementById('productsGrid').innerHTML = '<div class="no-results" style="grid-column: 1 / -1;">' +
@@ -138,6 +134,25 @@ async function loadProducts() {
       '<p>Tente recarregar a página</p>' +
     '</div>';
   }
+}
+
+function renderPagination() {
+  const container = document.getElementById('pagination');
+  if (!container) return;
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+  
+  let html = '<div class="pagination">';
+  html += '<button class="page-btn" onclick="loadProducts(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '><i class="fas fa-chevron-left"></i></button>';
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 2) {
+      html += '<button class="page-btn' + (i === currentPage ? ' active' : '') + '" onclick="loadProducts(' + i + ')">' + i + '</button>';
+    } else if (Math.abs(i - currentPage) === 3) {
+      html += '<span class="page-dots">...</span>';
+    }
+  }
+  html += '<button class="page-btn" onclick="loadProducts(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + '><i class="fas fa-chevron-right"></i></button>';
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 // Mudar ordenação

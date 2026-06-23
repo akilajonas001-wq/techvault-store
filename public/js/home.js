@@ -49,10 +49,15 @@ async function loadFeaturedProducts() {
     const container = document.getElementById('featuredProducts');
     if (!container) return;
 
-    container.innerHTML = products.map(product => `
+    container.innerHTML = products.map(product => {
+      const inWish = isInWishlist(product.id);
+      return `
       <div class="product-card" onclick="window.location.href='/produto/${product.id}'">
         <div class="product-image">
-          <i class="fas ${product.imagem}"></i>
+          <img src="${product.imagem}" alt="${product.nome}" loading="lazy">
+          <button class="wishlist-btn${inWish ? ' active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${product.id}, this)" title="${inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">
+            <i class="${inWish ? 'fas' : 'far'} fa-heart"></i>
+          </button>
           <button class="quick-add-btn" onclick="event.stopPropagation(); quickAdd(${product.id}, '${product.nome.replace(/'/g, "\\'")}', ${product.preco}, '${product.imagem}')">
             <i class="fas fa-plus"></i>
           </button>
@@ -67,7 +72,7 @@ async function loadFeaturedProducts() {
           </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   } catch (error) {
     console.error('Erro ao carregar destaques:', error);
   }
@@ -84,12 +89,16 @@ async function loadOffers() {
     container.innerHTML = products.map(product => {
       const oldPrice = product.preco * 1.25;
       const discount = Math.round((1 - product.preco / oldPrice) * 100);
+      const inWish = isInWishlist(product.id);
 
       return `
         <div class="offer-card" onclick="window.location.href='/produto/${product.id}'">
           <div class="deal-discount">${discount}% OFF</div>
-          <div style="font-size: 40px; color: var(--text-muted); text-align: center; margin: 10px 0;">
-            <i class="fas ${product.imagem || 'fa-tag'}"></i>
+          <button class="wishlist-btn${inWish ? ' active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${product.id}, this)" title="${inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">
+            <i class="${inWish ? 'fas' : 'far'} fa-heart"></i>
+          </button>
+          <div class="offer-image">
+            <img src="${product.imagem}" alt="${product.nome}" loading="lazy">
           </div>
           <div class="deal-old-price">R$ ${oldPrice.toFixed(2).replace('.', ',')}</div>
           <div class="deal-price">R$ ${product.preco.toFixed(2).replace('.', ',')}</div>

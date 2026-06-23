@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCartCount();
   initScrollReveal();
   initBackToTop();
+  initWhatsApp();
 });
 
 function loadCart() {
@@ -75,7 +76,13 @@ function showUserMenu() {
   const userName = document.getElementById('userName');
 
   if (authButtons) authButtons.style.display = 'none';
-  if (userMenu) userMenu.style.display = 'flex';
+  if (userMenu) {
+    userMenu.style.display = 'flex';
+    userMenu.innerHTML = `
+      <a href="/conta" style="font-size: 14px; font-weight: 500; color: var(--text-light); text-decoration: none; transition: color 0.2s;">Minha Conta</a>
+      <a href="#" onclick="logout()" style="font-size: 14px; color: var(--text-light); text-decoration: none;">Sair</a>
+    `;
+  }
   if (userName && currentUser) userName.textContent = `Olá, ${currentUser.nome}`;
 }
 
@@ -260,4 +267,70 @@ function initBackToTop() {
   btn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
+}
+
+// WhatsApp flutuante
+function initWhatsApp() {
+  const link = document.createElement('a');
+  link.className = 'whatsapp-float';
+  link.href = 'https://wa.me/5581999999999?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20um%20produto';
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.setAttribute('aria-label', 'Fale conosco pelo WhatsApp');
+  link.innerHTML = '<i class="fab fa-whatsapp"></i><span class="whatsapp-tooltip">Fale conosco</span>';
+  document.body.appendChild(link);
+}
+
+// Newsletter
+async function subscribeNewsletter(email) {
+  try {
+    const response = await fetch('/api/newsletter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await response.json();
+    if (data.success) {
+      showNotification('Inscrição realizada com sucesso!', 'success');
+      return true;
+    } else {
+      showNotification(data.error || 'Erro ao inscrever', 'error');
+      return false;
+    }
+  } catch {
+    showNotification('Erro de conexão', 'error');
+    return false;
+  }
+}
+
+// Wishlist
+function getWishlist() {
+  try {
+    return JSON.parse(localStorage.getItem('techvault-wishlist') || '[]');
+  } catch { return []; }
+}
+
+function saveWishlist(list) {
+  localStorage.setItem('techvault-wishlist', JSON.stringify(list));
+}
+
+function toggleWishlist(productId, btn) {
+  let list = getWishlist();
+  const idx = list.indexOf(productId);
+  if (idx > -1) {
+    list.splice(idx, 1);
+    btn.classList.remove('active');
+    btn.querySelector('i').className = 'far fa-heart';
+    showNotification('Removido dos favoritos', 'info');
+  } else {
+    list.push(productId);
+    btn.classList.add('active');
+    btn.querySelector('i').className = 'fas fa-heart';
+    showNotification('Adicionado aos favoritos!', 'success');
+  }
+  saveWishlist(list);
+}
+
+function isInWishlist(productId) {
+  return getWishlist().includes(productId);
 }

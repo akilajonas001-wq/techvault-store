@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Conta - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-light: #4285f4;
+      --primary-dark: #1557b0;
+      --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      --secondary: #1e293b;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --text-muted: #94a3b8;
+      --bg-light: #f8fafc;
+      --bg-cool: #f1f5f9;
+      --white: #ffffff;
+      --success: #10b981;
+      --error: #ef4444;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text);
+    }
+    .header {
+      background: var(--white);
+      position: sticky; top: 0; z-index: 1000;
+      box-shadow: var(--shadow-md);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-top {
+      display: flex; align-items: center; gap: 24px;
+      max-width: 1400px; margin: 0 auto; padding: 16px 24px;
+    }
+    .logo { text-decoration: none; display: flex; align-items: center; }
+    .logo img { height: 40px; width: auto; object-fit: contain; }
+    .search-box {
+      flex: 1; display: flex; background: var(--bg-cool);
+      border-radius: 12px; padding: 4px;
+      border: 2px solid transparent; transition: all 0.3s;
+    }
+    .search-box:focus-within {
+      background: var(--white); border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(26,115,232,0.1);
+    }
+    .search-box input {
+      flex: 1; border: none; outline: none; font-size: 15px;
+      color: var(--text); background: transparent;
+      padding: 10px 16px; font-family: inherit;
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box button {
+      background: var(--primary-gradient); border: none; color: var(--white);
+      cursor: pointer; padding: 10px 20px; border-radius: 8px;
+      transition: all 0.3s; display: flex; align-items: center; gap: 8px;
+      font-weight: 600;
+    }
+    .search-box button:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .header-menu { display: flex; gap: 20px; align-items: center; }
+    .header-menu a { color: var(--text-light); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .header-menu a:hover { color: var(--primary); }
+    .cart-icon { position: relative; cursor: pointer; padding: 8px; border-radius: 8px; transition: all 0.2s; }
+    .cart-icon:hover { background: var(--bg-cool); }
+    .cart-count {
+      position: absolute; top: 0; right: 0;
+      background: var(--primary-gradient); color: var(--white);
+      border-radius: 50%; min-width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    .breadcrumb {
+      margin: 24px 0; font-size: 14px; color: var(--text-light);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .breadcrumb a { color: var(--primary); text-decoration: none; font-weight: 500; }
+    .breadcrumb span { color: var(--text-muted); }
+
+    .account-layout { display: grid; grid-template-columns: 220px 1fr; gap: 32px; margin-bottom: 48px; }
+    .account-sidebar {
+      position: sticky; top: 100px; height: fit-content;
+    }
+    .account-nav {
+      background: var(--white); border-radius: 16px;
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .account-nav-item {
+      padding: 16px 20px; cursor: pointer;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; font-weight: 500; color: var(--text-light);
+      transition: all 0.2s; border-bottom: 1px solid var(--border);
+      text-decoration: none;
+    }
+    .account-nav-item:last-child { border-bottom: none; }
+    .account-nav-item:hover { background: var(--bg-cool); color: var(--primary); }
+    .account-nav-item.active { background: linear-gradient(135deg, rgba(26,115,232,0.05), rgba(66,133,244,0.05)); color: var(--primary); font-weight: 600; }
+    .account-nav-item i { width: 20px; text-align: center; font-size: 16px; }
+
+    .account-content {
+      background: var(--white); border-radius: 16px;
+      border: 1px solid var(--border); padding: 32px;
+    }
+    .account-content h2 {
+      font-size: 22px; font-weight: 700; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .account-content h2 i { color: var(--primary); }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-field { margin-bottom: 16px; }
+    .info-field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .info-field p { font-size: 15px; color: var(--text); font-weight: 500; }
+
+    .order-card {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; margin-bottom: 16px; transition: all 0.2s;
+    }
+    .order-card:hover { box-shadow: var(--shadow-md); }
+    .order-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+    }
+    .order-id { font-weight: 700; font-size: 15px; color: var(--text); }
+    .order-date { font-size: 13px; color: var(--text-muted); }
+    .order-status {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .order-status.pendente { background: rgba(245,158,11,0.1); color: #d97706; }
+    .order-status.aprovado { background: rgba(16,185,129,0.1); color: var(--success); }
+    .order-status.enviado { background: rgba(26,115,232,0.1); color: var(--primary); }
+    .order-status.entregue { background: rgba(16,185,129,0.1); color: var(--success); }
+    .order-status.cancelado { background: rgba(239,68,68,0.1); color: var(--error); }
+    .order-items { font-size: 13px; color: var(--text-light); margin-bottom: 8px; line-height: 1.6; }
+    .order-total-price { font-size: 18px; font-weight: 800; color: var(--text); }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+    .empty-state i { font-size: 64px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state h3 { font-size: 18px; font-weight: 600; color: var(--text-light); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; }
+    .empty-state a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    @media (max-width: 768px) {
+      .account-layout { grid-template-columns: 1fr; }
+      .account-sidebar { position: static; }
+      .account-nav { display: flex; overflow-x: auto; border-radius: 12px; }
+      .account-nav-item { white-space: nowrap; border-bottom: none; border-right: 1px solid var(--border); }
+      .info-grid { grid-template-columns: 1fr; }
+      .header-top { flex-wrap: wrap; gap: 16px; padding: 14px 16px; }
+      .search-box { order: 3; flex-basis: 100%; }
+    }
+
+    .favorites-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .fav-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .fav-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+    .fav-card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      display: block;
+    }
+    .fav-card-body {
+      padding: 12px 14px;
+    }
+    .fav-card-body h4 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .fav-card-body .fav-price {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-top">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="TechVault">
+      </a>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar produtos...">
+        <button onclick="doSearch()"><i class="fas fa-search"></i></button>
+      </div>
+      <div class="header-menu">
+        <a href="/">Início</a>
+        <div class="cart-icon" onclick="viewCart()">
+          <i class="fas fa-shopping-cart" style="font-size: 22px; color: var(--primary);"></i>
+          <span class="cart-count" id="cartCount">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="breadcrumb">
+      <a href="/"><i class="fas fa-home"></i> Início</a>
+      <i class="fas fa-chevron-right" style="font-size: 10px;"></i>
+      <span>Minha Conta</span>
+    </div>
+
+    <div id="accountLoading" style="text-align:center;padding:80px 20px;">
+      <i class="fas fa-spinner fa-spin" style="font-size:48px;color:var(--primary);"></i>
+      <p style="margin-top:16px;color:var(--text-light);">Carregando...</p>
+    </div>
+
+    <div id="accountContent" style="display:none;">
+      <div class="account-layout">
+        <aside class="account-sidebar">
+          <nav class="account-nav">
+            <a class="account-nav-item active" data-tab="dados" onclick="switchTab('dados')">
+              <i class="fas fa-user"></i> Meus Dados
+            </a>
+            <a class="account-nav-item" data-tab="pedidos" onclick="switchTab('pedidos')">
+              <i class="fas fa-box"></i> Meus Pedidos
+            </a>
+            <a class="account-nav-item" data-tab="favoritos" onclick="switchTab('favoritos')">
+              <i class="fas fa-heart"></i> Favoritos
+            </a>
+            <a class="account-nav-item" onclick="logout()">
+              <i class="fas fa-sign-out-alt"></i> Sair
+            </a>
+          </nav>
+        </aside>
+
+        <section class="account-content">
+          <div id="tab-dados" class="tab-content active">
+            <h2><i class="fas fa-user"></i> Meus Dados</h2>
+            <div class="info-grid" id="userInfo">
+              <div class="info-field">
+                <label>Nome</label>
+                <p id="infoNome">---</p>
+              </div>
+              <div class="info-field">
+                <label>Email</label>
+                <p id="infoEmail">---</p>
+              </div>
+              <div class="info-field">
+                <label>Telefone</label>
+                <p id="infoTelefone">---</p>
+              </div>
+              <div class="info-field">
+                <label>Membro desde</label>
+                <p id="infoCriadoEm">---</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-pedidos" class="tab-content">
+            <h2><i class="fas fa-box"></i> Meus Pedidos</h2>
+            <div id="ordersList">
+              <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <h3>Nenhum pedido ainda</h3>
+                <p>Você ainda não realizou nenhuma compra. <a href="/">Comece agora!</a></p>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-favoritos" class="tab-content">
+            <h2><i class="fas fa-heart"></i> Meus Favoritos</h2>
+            <div id="favoritesList">
+              <div class="empty-state">
+                <i class="fas fa-heart-broken"></i>
+                <h3>Nenhum favorito</h3>
+                <p>Adicione produtos aos favoritos clicando no <i class="fas fa-heart"></i> nos produtos.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/main.js"></script>
+  <script>
+    let userData = null;
+    let currentTab = 'dados';
+
+    function doSearch() {
+      const q = document.getElementById('searchInput').value;
+      if (q.trim()) window.location.href = '/busca?q=' + encodeURIComponent(q);
+    }
+    document.getElementById('searchInput')?.addEventListener('keypress', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const token = localStorage.getItem('techvault-token');
+      if (!token) {
+        window.location.href = '/login?redirect=conta';
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/check', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.authenticated) {
+          localStorage.removeItem('techvault-token');
+          window.location.href = '/login?redirect=conta';
+          return;
+        }
+        userData = data.user;
+
+        // Carregar dados completos
+        const userRes = await fetch('/api/users/' + data.user.id, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (userRes.ok) {
+          const fullUser = await userRes.json();
+          document.getElementById('infoNome').textContent = fullUser.nome || '---';
+          document.getElementById('infoEmail').textContent = fullUser.email || '---';
+          document.getElementById('infoTelefone').textContent = fullUser.telefone || '---';
+          document.getElementById('infoCriadoEm').textContent = fullUser.createdAt ? new Date(fullUser.createdAt).toLocaleDateString('pt-BR') : '---';
+        }
+
+        // Carregar pedidos
+        loadOrders(token, data.user.id);
+        loadFavorites(token, data.user.id);
+
+        document.getElementById('accountLoading').style.display = 'none';
+        document.getElementById('accountContent').style.display = 'block';
+      } catch (err) {
+        console.error(err);
+        document.getElementById('accountLoading').innerHTML = '<p style="color:var(--error)">Erro ao carregar. <a href="/login">Faça login</a></p>';
+      }
+    });
+
+    async function loadOrders(token, userId) {
+      try {
+        const res = await fetch('/api/orders/user/' + userId, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const orders = await res.json();
+        const container = document.getElementById('ordersList');
+        if (!orders.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-box-open"></i>
+              <h3>Nenhum pedido ainda</h3>
+              <p>Você ainda não realizou nenhuma compra. <a href="/">Comece agora!</a></p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = orders.map(o => {
+          const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
+          const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
+          const statusClass = (o.status || 'pendente').toLowerCase();
+          return '<div class="order-card">' +
+            '<div class="order-header">' +
+              '<div><span class="order-id">Pedido #' + o.id + '</span><span class="order-date"> - ' + date + '</span></div>' +
+              '<span class="order-status ' + statusClass + '">' + (o.status || 'Pendente') + '</span>' +
+            '</div>' +
+            '<div class="order-items">' + items + '</div>' +
+            '<div class="order-total-price">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</div>' +
+          '</div>';
+        }).join('');
+      } catch (err) {
+        console.error('Erro ao carregar pedidos:', err);
+      }
+    }
+
+    async function loadFavorites(token, userId) {
+      try {
+        const res = await fetch('/api/products');
+        const allProducts = await res.json();
+        const wishlist = getWishlist();
+        const container = document.getElementById('favoritesList');
+        const favProducts = allProducts.filter(p => wishlist.includes(p.id));
+        if (!favProducts.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-heart-broken"></i>
+              <h3>Nenhum favorito</h3>
+              <p>Adicione produtos aos favoritos clicando no <i class="fas fa-heart"></i> nos produtos.</p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = '<div class="favorites-grid">' +
+          favProducts.map(p => '<div class="fav-card" onclick="window.location.href=\'/produto/' + p.id + '\'">' +
+            '<img src="' + p.imagem + '" alt="' + p.nome + '" loading="lazy">' +
+            '<div class="fav-card-body">' +
+              '<h4>' + p.nome + '</h4>' +
+              '<div class="fav-price">R$ ' + p.preco.toFixed(2).replace('.', ',') + '</div>' +
+            '</div>' +
+          '</div>').join('') +
+        '</div>';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.querySelectorAll('.account-nav-item').forEach(el => el.classList.remove('active'));
+      document.querySelector('.account-nav-item[data-tab="' + tab + '"]')?.classList.add('active');
+    }
+
+    function logout() {
+      localStorage.removeItem('techvault-token');
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
