@@ -70,11 +70,16 @@ function loadCartItems() {
   cartItemsContainer.innerHTML = cart.map(item => {
     const subtotal = item.preco * item.quantidade;
     total += subtotal;
+    let specsInfo = '';
+    if (item.variantSpecs) {
+      const specs = Object.values(item.variantSpecs).filter(Boolean).join(' | ');
+      if (specs) specsInfo = '<br><small style="color: var(--text-muted); font-size: 11px;">' + specs + '</small>';
+    }
     return `
       <div class="cart-item">
         <div>
           <strong>${item.nome}</strong><br>
-          <small>Categoria: ${item.categoria} | ${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>
+          <small>Categoria: ${item.categoria || 'N/A'} | ${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>${specsInfo}
         </div>
         <div>
           <span>R$ ${subtotal.toFixed(2)}</span>
@@ -184,7 +189,8 @@ async function handleCheckout(event) {
       nome: item.nome,
       categoria: item.categoria,
       preco: item.preco,
-      quantidade: item.quantidade
+      quantidade: item.quantidade,
+      variantSpecs: item.variantSpecs || null
     })),
     total: finalTotal,
     totalOriginal: total,
@@ -297,7 +303,6 @@ async function applyCoupon() {
   }
 }
 
-function loadCartItems() {
 function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.textContent = message;

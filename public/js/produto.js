@@ -2,6 +2,7 @@
 let currentProduct = null;
 let selectedRating = 0;
 let currentUserId = null;
+let selectedVariant = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   const productId = window.location.pathname.split('/').pop();
@@ -239,11 +240,80 @@ async function loadProduct(productId) {
     }
     
     currentProduct = product;
+    selectedVariant = null;
     const inWish = isInWishlist(product.id);
     
     const breadcrumbCategory = document.getElementById('breadcrumbCategory');
     if (breadcrumbCategory) {
       breadcrumbCategory.textContent = product.categoria;
+    }
+    
+    // Build specs table
+    let specsHtml = '';
+    if (product.especificacoes) {
+      const specs = product.especificacoes;
+      const specLabels = {
+        sistema_operacional: 'Sistema Operacional',
+        processador: 'Processador',
+        tela: 'Tela',
+        armazenamento: 'Armazenamento',
+        memoria_ram: 'Memória RAM',
+        bateria: 'Bateria',
+        camera_principal: 'Câmera Principal',
+        conectividade: 'Conectividade',
+        modelo: 'Modelo',
+        cor: 'Cor',
+        placa_video: 'Placa de Vídeo',
+        resolucao: 'Resolução',
+        taxa_atualizacao: 'Taxa de Atualização',
+        material: 'Material',
+        genero: 'Gênero',
+        tamanhos_disponiveis: 'Tamanhos Disponíveis',
+        cores_disponiveis: 'Cores Disponíveis',
+        cuidados: 'Cuidados',
+        peso_aproximado: 'Peso Aproximado',
+        garantia: 'Garantia',
+        dimensoes: 'Dimensões',
+        capacidade: 'Capacidade',
+        compativel_lava_loucas: 'Compatível com Lava-Louças',
+        autor: 'Autor',
+        editora: 'Editora',
+        paginas: 'Páginas',
+        idioma: 'Idioma',
+        tipo_capa: 'Tipo de Capa',
+        tipo: 'Tipo',
+        plataforma: 'Plataforma',
+        voltagem: 'Voltagem',
+        eficiencia_energetica: 'Eficiência Energética',
+        potencia: 'Potência',
+        montagem: 'Montagem',
+        volume: 'Volume'
+      };
+      let rows = '';
+      for (const [key, value] of Object.entries(specs)) {
+        if (value && value !== 'N/A') {
+          const label = specLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          rows += '<tr><td class="spec-label">' + label + '</td><td class="spec-value">' + value + '</td></tr>';
+        }
+      }
+      if (rows) {
+        specsHtml = '<div class="specs-section"><h2><i class="fas fa-microchip"></i> Especificações Técnicas</h2><table class="specs-table">' + rows + '</table></div>';
+      }
+    }
+    
+    // Build variant selector
+    let variantHtml = '';
+    if (product.variantes && product.variantes.length > 1) {
+      variantHtml = '<div class="variant-section"><h3><i class="fas fa-layer-group"></i> Variantes do Produto</h3><div class="variant-list">';
+      product.variantes.forEach(function(v, idx) {
+        const selected = idx === 0 ? ' selected' : '';
+        variantHtml += '<div class="variant-item' + selected + '" data-variant="' + idx + '" onclick="selectVariant(' + idx + ')">' +
+          '<div class="variant-name">' + v.nome + '</div>' +
+          '<div class="variant-price">R$ ' + v.preco.toFixed(2).replace('.', ',') + '</div>' +
+          (v.especificacoes ? '<div class="variant-specs">' + Object.values(v.especificacoes).filter(Boolean).join(' | ') + '</div>' : '') +
+        '</div>';
+      });
+      variantHtml += '</div></div>';
     }
     
     document.getElementById('productContent').innerHTML = 
@@ -263,10 +333,11 @@ async function loadProduct(productId) {
             '<span class="rating-text">' + product.avaliacao.toFixed(1) + ' (' + product.reviews + ' avaliações)</span>' +
           '</div>' +
           '<div class="price-section">' +
-            '<div class="price">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
+            '<div class="price" id="productPrice">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
             (product.frete === 'Grátis' ? '<div class="shipping-info"><i class="fas fa-truck"></i> Frete grátis</div>' : '<div class="shipping-info">' + product.frete + '</div>') +
             '<div class="stock-info"><i class="fas fa-check-circle" style="color: #00a650;"></i> ' + (product.estoque > 0 ? 'Em estoque (' + product.estoque + ' disponíveis)' : 'Produto esgotado') + '</div>' +
           '</div>' +
+          variantHtml +
           '<div class="action-buttons">' +
             '<button class="btn btn-primary" onclick="addToCartFromProduct()">' +
               '<i class="fas fa-cart-plus"></i> Adicionar ao carrinho' +
@@ -275,12 +346,18 @@ async function loadProduct(productId) {
               '<i class="fas fa-bolt"></i> Comprar agora' +
             '</button>' +
           '</div>' +
+          specsHtml +
           '<div class="description-section">' +
             '<h2>Descrição do Produto</h2>' +
             '<p>' + (product.descricao || 'Descrição não disponível') + '</p>' +
           '</div>' +
         '</div>' +
       '</div>';
+    
+    // Auto-select first variant
+    if (product.variantes && product.variantes.length > 0) {
+      selectVariant(0);
+    }
 
     loadRelatedProducts(product.categoria, product.id);
     loadComments(product.id);
@@ -309,17 +386,48 @@ function generateStars(rating) {
   return stars;
 }
 
-function addToCartFromProduct() {
-  if (!currentProduct) return;
+function selectVariant(idx) {
+  if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes[idx]) return;
+  selectedVariant = currentProduct.variantes[idx];
   
-  const cartItem = {
+  // Update UI
+  const priceEl = document.getElementById('productPrice');
+  if (priceEl) {
+    priceEl.textContent = 'R$ ' + selectedVariant.preco.toFixed(2).replace('.', ',');
+  }
+  
+  // Highlight selected
+  document.querySelectorAll('.variant-item').forEach(function(el) {
+    el.classList.remove('selected');
+  });
+  const items = document.querySelectorAll('.variant-item');
+  if (items[idx]) items[idx].classList.add('selected');
+}
+
+function getSelectedVariantData() {
+  if (!currentProduct) return null;
+  if (selectedVariant) {
+    return {
+      id: selectedVariant.id || currentProduct.id,
+      nome: selectedVariant.nome || currentProduct.nome,
+      preco: selectedVariant.preco || currentProduct.preco,
+      imagem: currentProduct.imagem,
+      quantidade: 1,
+      variantSpecs: selectedVariant.especificacoes || null
+    };
+  }
+  return {
     id: currentProduct.id,
     nome: currentProduct.nome,
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,
     quantidade: 1
   };
-  
+}
+
+function addToCartFromProduct() {
+  if (!currentProduct) return;
+  const cartItem = getSelectedVariantData();
   addToCart(cartItem);
 }
 
