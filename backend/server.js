@@ -227,10 +227,14 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
+const PICPAY_FEE = 0.0099;
+const TAX_RATE = 0.06;
+const PIX_KEY = process.env.PIX_KEY || 'techvault@picpay.com';
+
 // Criar pedido
 app.post('/api/orders', async (req, res) => {
   try {
-    const { userId, endereco, itens, total } = req.body;
+    const { userId, endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
     
     const users = loadUsers();
     const user = users.find(u => u.id === userId);
@@ -238,6 +242,10 @@ app.post('/api/orders', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
+    
+    const picpayFee = total * PICPAY_FEE;
+    const tax = total * TAX_RATE;
+    const netAmount = total - picpayFee - tax;
     
     const newOrder = {
       id: Date.now(),
@@ -250,7 +258,16 @@ app.post('/api/orders', async (req, res) => {
       endereco,
       itens,
       total,
-      status: 'pendente',
+      totalOriginal: totalOriginal || total,
+      cupom: cupom || null,
+      cliente: cliente || {},
+      taxas: {
+        picpayFee: parseFloat(picpayFee.toFixed(2)),
+        impostos: parseFloat(tax.toFixed(2)),
+        netAmount: parseFloat(netAmount.toFixed(2))
+      },
+      pagamento: 'PicPay PIX',
+      status: 'aprovado',
       createdAt: new Date().toISOString()
     };
     
@@ -264,17 +281,24 @@ app.post('/api/orders', async (req, res) => {
       <h2>Dados do Cliente</h2>
       <p><strong>Nome:</strong> ${user.nome}</p>
       <p><strong>Email:</strong> ${user.email}</p>
+      <p><strong>Telefone:</strong> ${cliente?.telefone || user.telefone || 'N/A'}</p>
       
       <h2>Endereço de Entrega</h2>
-      <p>${endereco.logradouro}, ${endereco.numero}</p>
+      <p>${endereco.logradouro}, ${endereco.numero}${endereco.complemento ? ' - ' + endereco.complemento : ''}</p>
       <p>${endereco.bairro} - ${endereco.cidade}/${endereco.estado}</p>
+      <p>CEP: ${endereco.cep}</p>
       
       <h2>Itens do Pedido</h2>
       <ul>
         ${itens.map(item => `<li>${item.quantidade}x ${item.nome} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`).join('')}
       </ul>
       
-      <h2>Total: R$ ${total.toFixed(2)}</h2>
+      <h2>Resumo Financeiro</h2>
+      <p><strong>Total da venda:</strong> R$ ${total.toFixed(2)}</p>
+      <p><strong>Taxa PicPay PIX (0,99%):</strong> -R$ ${picpayFee.toFixed(2)}</p>
+      <p><strong>Imposto Simples Nacional (6%):</strong> -R$ ${tax.toFixed(2)}</p>
+      <p><strong>Valor líquido recebido:</strong> R$ ${netAmount.toFixed(2)}</p>
+      <p><strong>Pagamento:</strong> PicPay PIX - ${cupom?.code ? 'Cupom aplicado: ' + cupom.code : 'Pagamento à vista'}</p>
     `;
     
     const mailOptions = {
@@ -294,7 +318,9 @@ app.post('/api/orders', async (req, res) => {
     res.json({ 
       success: true, 
       orderId: newOrder.id,
-      message: 'Pedido realizado com sucesso!'
+      message: 'Pedido realizado com sucesso!',
+      pixKey: PIX_KEY,
+      taxas: newOrder.taxas
     });
   } catch (error) {
     console.error('Erro ao criar pedido:', error);
@@ -336,7 +362,13 @@ app.get('/api/users/:id', (req, res) => {
 // Retorna configurações públicas do frontend
 app.get('/api/config', (req, res) => {
   res.json({
-    googleClientId: GOOGLE_CLIENT_ID || ''
+    googleClientId: GOOGLE_CLIENT_ID || '',
+    picpay: {
+      fee: PICPAY_FEE,
+      taxRate: TAX_RATE,
+      pixKey: PIX_KEY,
+      paymentMethod: 'PicPay PIX'
+    }
   });
 });
 

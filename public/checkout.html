@@ -584,13 +584,37 @@
             </p>
             <p style="margin-bottom: 16px;">
               <i class="fas fa-qrcode" style="color: var(--primary); margin-right: 8px;"></i>
-              <strong>Pagamento:</strong> Apenas PIX (aprovação imediata)
+              <strong>Pagamento:</strong> PicPay PIX (aprovação imediata)
             </p>
             <p style="margin-bottom: 16px;">
               <i class="fas fa-undo" style="color: var(--primary); margin-right: 8px;"></i>
               <strong>Devolução:</strong> 7 dias para devolução grátis
             </p>
-            <div style="padding: 16px; background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05)); border-radius: 12px; margin-top: 20px;">
+            <div style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(52, 211, 153, 0.05)); border-radius: 12px; margin-top: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
+              <p style="color: var(--success); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
+                <i class="fas fa-percentage"></i> Detalhamento de Custos
+              </p>
+              <div id="priceBreakdown" style="font-size: 12px; color: var(--text-light); line-height: 2;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Subtotal dos produtos:</span>
+                  <span id="bdSubtotal">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Taxa PicPay PIX (0,99%):</span>
+                  <span id="bdPicpayFee" style="color: var(--error);">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>Imposto Simples Nacional (6%):</span>
+                  <span id="bdTax" style="color: var(--error);">R$ 0,00</span>
+                </div>
+                <hr style="border: none; border-top: 1px dashed var(--border); margin: 4px 0;">
+                <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--text); font-size: 14px;">
+                  <span>Você recebe limpo:</span>
+                  <span id="bdNet" style="color: var(--success);">R$ 0,00</span>
+                </div>
+              </div>
+            </div>
+            <div style="padding: 16px; background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05)); border-radius: 12px; margin-top: 12px;">
               <p style="color: var(--primary); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
                 <i class="fas fa-gift"></i> Cupom de desconto
               </p>

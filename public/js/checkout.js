@@ -1,4 +1,6 @@
 // Checkout JavaScript
+const PICPAY_FEE = 0.0099;
+const TAX_RATE = 0.06;
 let currentUser = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -85,7 +87,26 @@ function loadCartItems() {
     orderTotalElement.textContent = `R$ ${total.toFixed(2)}`;
   }
   
+  updatePriceBreakdown(total);
+  
   return { cart, total };
+}
+
+function updatePriceBreakdown(total) {
+  const subtotalEl = document.getElementById('bdSubtotal');
+  const picpayFeeEl = document.getElementById('bdPicpayFee');
+  const taxEl = document.getElementById('bdTax');
+  const netEl = document.getElementById('bdNet');
+  if (!subtotalEl) return;
+  
+  const picpayFee = total * PICPAY_FEE;
+  const tax = total * TAX_RATE;
+  const netAmount = total - picpayFee - tax;
+  
+  subtotalEl.textContent = `R$ ${total.toFixed(2)}`;
+  picpayFeeEl.textContent = `- R$ ${picpayFee.toFixed(2)}`;
+  taxEl.textContent = `- R$ ${tax.toFixed(2)}`;
+  netEl.textContent = `R$ ${netAmount.toFixed(2)}`;
 }
 
 // Buscar CEP via API ViaCEP
@@ -194,11 +215,31 @@ async function handleCheckout(event) {
       localStorage.removeItem('techvault-cart');
       
       // Mostrar mensagem de sucesso
+      const picpayFee = finalTotal * PICPAY_FEE;
+      const tax = finalTotal * TAX_RATE;
+      const netAmount = finalTotal - picpayFee - tax;
+      
       successMessage.innerHTML = `
         <h3><i class="fas fa-check-circle"></i> Pedido Realizado com Sucesso!</h3>
         <p>Número do pedido: #${data.orderId}</p>
         <p>Total: R$ ${finalTotal.toFixed(2).replace('.', ',')}</p>
-        <p>Pagamento via PIX - Escaneie o QR Code ou copie o código</p>
+        <div style="margin: 12px 0; padding: 12px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; font-size: 13px;">
+          <p><strong>Pagamento via PicPay PIX</strong></p>
+          <p>Escaneie o QR Code ou copie o código PIX abaixo:</p>
+          <div style="background: white; padding: 16px; border-radius: 8px; margin: 12px 0; text-align: center; border: 2px dashed var(--border);">
+            <div style="font-size: 48px; margin-bottom: 8px; letter-spacing: 4px; font-family: monospace;">
+              <i class="fas fa-qrcode" style="font-size: 80px; color: var(--text);"></i>
+            </div>
+            <p style="font-size: 11px; word-break: break-all; color: var(--text-light); font-family: monospace;">
+              00020126580014br.gov.bcb.pix0136${data.pixKey || 'techvault@picpay.com'}5204000053039865406${finalTotal.toFixed(2)}5802BR5913TechVault6008Sao Paulo62070503***6304ABCD
+            </p>
+          </div>
+          <p style="font-size: 12px; color: var(--text-light);">
+            <i class="fas fa-info-circle"></i> Taxa PicPay: R$ ${picpayFee.toFixed(2).replace('.', ',')} (0,99%)<br>
+            <i class="fas fa-receipt"></i> Imposto: R$ ${tax.toFixed(2).replace('.', ',')} (6% Simples Nacional)<br>
+            <i class="fas fa-arrow-down"></i> Você recebe limpo: <strong style="color: var(--success);">R$ ${netAmount.toFixed(2).replace('.', ',')}</strong>
+          </p>
+        </div>
         <p>Em breve você receberá mais informações sobre o seu pedido.</p>
       `;
       successMessage.style.display = 'block';
