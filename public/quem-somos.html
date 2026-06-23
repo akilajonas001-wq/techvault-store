@@ -649,31 +649,108 @@
         flex-basis: 100%;
       }
     }
-  </style>
+  
+    .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;border-radius:8px}
+    .hamburger:hover{background:var(--bg-cool)}
+    .hamburger span{width:24px;height:2.5px;background:var(--text);border-radius:2px;transition:all .3s ease;display:block}
+    .hamburger.active span:nth-child(1){transform:rotate(45deg)translate(5px,5px)}
+    .hamburger.active span:nth-child(2){opacity:0}
+    .hamburger.active span:nth-child(3){transform:rotate(-45deg)translate(5px,-5px)}
+    .mobile-nav{position:fixed;top:0;left:-300px;width:280px;height:100%;background:var(--white);z-index:5000;padding:24px 20px;display:flex;flex-direction:column;gap:8px;transition:left .3s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-xl);overflow-y:auto}
+    .mobile-nav.active{left:0}
+    .mobile-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(30,41,59,.6);backdrop-filter:blur(4px);z-index:4999;opacity:0;visibility:hidden;transition:all .3s}
+    .mobile-overlay.active{opacity:1;visibility:visible}
+    .mobile-close{align-self:flex-end;background:var(--bg-cool);border:none;width:36px;height:36px;border-radius:8px;font-size:18px;cursor:pointer;color:var(--text-light);margin-bottom:12px;display:flex;align-items:center;justify-content:center}
+    .mobile-nav .mobile-logo{font-size:20px;font-weight:800;background:var(--primary-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;display:flex;align-items:center;gap:8px;padding:8px 0 16px;margin-bottom:8px;border-bottom:1px solid var(--border)}
+    .mobile-search{display:flex;gap:8px;margin-bottom:16px}
+    .mobile-search input{flex:1;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;outline:none}
+    .mobile-search input:focus{border-color:var(--primary)}
+    .mobile-search button{background:var(--primary-gradient);color:white;border:none;border-radius:10px;padding:0 16px;cursor:pointer;font-size:16px}
+    .mobile-nav a{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;color:var(--text);text-decoration:none;font-size:15px;font-weight:500;transition:all .2s}
+    .mobile-nav a i{width:20px;color:var(--text-light);font-size:16px}
+    .mobile-nav a:hover{background:var(--bg-cool)}
+    .mobile-nav hr{border:none;border-top:1px solid var(--border);margin:8px 0}
+    .mobile-nav .mobile-register{background:var(--primary-gradient);color:white}
+    .mobile-nav .mobile-register i{color:white}
+    .auth-buttons-desktop{display:flex;gap:10px;align-items:center}
+    .login-link{color:var(--text-light);text-decoration:none;font-size:14px;font-weight:500}
+    .register-link{background:var(--primary-gradient);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:600;box-shadow:var(--shadow-sm)}
+
+
+    .cart-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(30,41,59,.6);backdrop-filter:blur(4px);z-index:2000;justify-content:flex-end;opacity:0;transition:opacity .3s}
+    .cart-modal.active{display:flex;opacity:1}
+    .cart-modal-content{background:var(--white);width:100%;max-width:450px;height:100%;padding:32px;display:flex;flex-direction:column;animation:cartSlideIn .4s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-xl)}
+    @keyframes cartSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+    .cart-modal-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;border-bottom:2px solid var(--border);margin-bottom:24px}
+    .cart-modal-header h2{font-size:22px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:12px}
+    .cart-modal-header h2 i{color:var(--primary)}
+    .close-cart{background:var(--bg-cool);border:none;width:36px;height:36px;border-radius:8px;font-size:18px;cursor:pointer;color:var(--text-light);transition:all .2s;display:flex;align-items:center;justify-content:center}
+    .close-cart:hover{background:#fee2e2;color:#ef4444}
+    .cart-items{flex:1;overflow-y:auto;padding:8px 0}
+    .order-total{display:flex;justify-content:space-between;font-size:22px;font-weight:700;padding:24px 0;border-top:2px solid var(--border);margin-top:16px;color:var(--text)}
+
+
+    @media(max-width:768px){
+      .header-top{flex-wrap:wrap;gap:0;padding:10px 12px;justify-content:space-between}
+      .logo img{height:30px}
+      .header-menu{gap:6px}
+      .search-box{order:3;flex-basis:100%;margin-top:10px}
+      .search-box input{font-size:14px;padding:10px 14px}
+      .search-box button{padding:10px 14px;min-width:44px;justify-content:center}
+      .auth-buttons-desktop{display:none}
+      .hamburger{display:flex}
+      .cart-modal-content{max-width:100%;padding:24px 16px}
+      .cart-modal-header h2{font-size:18px}
+      .order-total{font-size:18px}
+    }
+
+</style>
 </head>
 <body>
   <!-- Header -->
-  <header class="header">
+    <header class="header">
     <div class="header-top">
       <a href="/" class="logo">
-        <img src="/images/logo.png" alt="TechVault" style="height: 40px; width: auto;">
+        <img src="/images/logo.png" alt="TechVault" style="height:40px;width:auto">
       </a>
-      
       <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais...">
-        <button onclick="searchProducts()">
-          <i class="fas fa-search"></i>
-        </button>
+        <input type="text" id="searchInput" placeholder="Buscar produtos...">
+        <button onclick="searchProducts()"><i class="fas fa-search"></i></button>
       </div>
-      
       <div class="header-menu">
-        <a href="/">Início</a>
         <div class="cart-icon" onclick="viewCart()">
-          <i class="fas fa-shopping-cart" style="font-size: 22px; color: var(--primary);"></i>
+          <i class="fas fa-shopping-cart" style="font-size:22px;color:var(--primary)"></i>
           <span class="cart-count" id="cartCount">0</span>
         </div>
+        <div id="authButtons" class="auth-buttons-desktop">
+          <a href="/login" class="login-link">Login</a>
+          <a href="/registro" class="register-link">Criar conta</a>
+        </div>
+        <div id="userMenu" style="display:none;gap:10px;align-items:center">
+          <span class="user-name" id="userName" style="font-size:14px;font-weight:500"></span>
+          <a href="#" onclick="logout()" style="font-size:14px">Sair</a>
+        </div>
+        <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </div>
+    <nav class="mobile-nav" id="mobileNav">
+      <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar">
+        <i class="fas fa-times"></i>
+      </button>
+      <a href="/" class="mobile-logo"><i class="fas fa-cube"></i> TechVault</a>
+      <div class="mobile-search">
+        <input type="text" id="mobileSearchInput" placeholder="Buscar produtos...">
+        <button onclick="mobileSearch()"><i class="fas fa-search"></i></button>
+      </div>
+      <a href="/login" onclick="toggleMobileMenu()" class="mobile-login-link"><i class="fas fa-sign-in-alt"></i> Login</a>
+      <a href="/registro" class="mobile-register" onclick="toggleMobileMenu()"><i class="fas fa-user-plus"></i> Criar Conta</a>
+      <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount"><i class="fas fa-user"></i> Minha Conta</a>
+      <hr>
+      <a href="/central-ajuda" onclick="toggleMobileMenu()"><i class="fas fa-question-circle"></i> Ajuda</a>
+    </nav>
+    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
   </header>
 
   <!-- Hero Section -->
@@ -996,5 +1073,18 @@
       }
     });
   </script>
+  <div id="cartModal" class="cart-modal">
+    <div class="cart-modal-content">
+      <div class="cart-modal-header">
+        <h2><i class="fas fa-shopping-cart"></i> Seu Carrinho</h2>
+        <button class="close-cart" onclick="closeCart()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="order-total"><span>Total:</span><span id="cartTotal">R$ 0,00</span></div>
+      <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="proceedToCheckout()">
+        <i class="fas fa-check-circle"></i> Finalizar Compra
+      </button>
+    </div>
+  </div>
 </body>
 </html>
