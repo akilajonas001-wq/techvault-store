@@ -156,6 +156,13 @@ function updateCommentAuth() {
 async function submitComment() {
   const text = document.getElementById('commentText');
   const comment = text.value.trim();
+  const token = localStorage.getItem('techvault-token');
+
+  if (!token) {
+    showNotification('Faça login para comentar', 'error');
+    setTimeout(() => { window.location.href = '/login'; }, 1200);
+    return;
+  }
 
   if (!comment) {
     showNotification('Escreva um comentário antes de enviar', 'error');
@@ -167,22 +174,28 @@ async function submitComment() {
     return;
   }
 
-  const token = localStorage.getItem('techvault-token');
   let userId = null;
-  let userName = 'Anônimo';
+  let userName = '';
 
-  if (token) {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      userId = payload.id;
-      const userResponse = await fetch('/api/auth/check', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const userData = await userResponse.json();
-      if (userData.authenticated) {
-        userName = userData.user.nome;
-      }
-    } catch {}
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    userId = payload.id;
+    const userResponse = await fetch('/api/auth/check', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const userData = await userResponse.json();
+    if (userData.authenticated) {
+      userName = userData.user.nome;
+    } else {
+      showNotification('Sessão expirada. Faça login novamente.', 'error');
+      localStorage.removeItem('techvault-token');
+      setTimeout(() => { window.location.href = '/login'; }, 1200);
+      return;
+    }
+  } catch {
+    showNotification('Erro de autenticação. Faça login novamente.', 'error');
+    setTimeout(() => { window.location.href = '/login'; }, 1200);
+    return;
   }
 
   try {
@@ -226,6 +239,7 @@ async function loadProduct(productId) {
     }
     
     currentProduct = product;
+    const inWish = isInWishlist(product.id);
     
     const breadcrumbCategory = document.getElementById('breadcrumbCategory');
     if (breadcrumbCategory) {
@@ -237,6 +251,9 @@ async function loadProduct(productId) {
         '<div class="product-gallery">' +
           '<div class="main-image">' +
             '<img src="' + product.imagem + '" alt="' + product.nome + '">' +
+            '<button class="wishlist-btn product-wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)" title="' + (inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '">' +
+              '<i class="' + (inWish ? 'fas' : 'far') + ' fa-heart"></i>' +
+            '</button>' +
           '</div>' +
         '</div>' +
         '<div class="product-info-section">' +
