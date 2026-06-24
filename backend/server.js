@@ -1424,10 +1424,6 @@ app.get('/termos', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'termos.html'));
 });
 
-app.get('/trabalhe-conosco', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'trabalhe-conosco.html'));
-});
-
 app.get('/central-ajuda', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'central-ajuda.html'));
 });
