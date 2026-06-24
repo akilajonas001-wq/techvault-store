@@ -711,6 +711,98 @@
       .filters-sidebar {
         display: none;
       }
+
+      .filter-fab {
+        display: flex;
+      }
+    }
+
+    /* Mobile filter drawer */
+    .filter-fab {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 1000;
+      background: var(--primary-gradient);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 102, 255, 0.4);
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .filter-fab:active {
+      transform: scale(0.95);
+    }
+
+    .filter-drawer {
+      position: fixed;
+      top: 0;
+      left: -320px;
+      width: 300px;
+      height: 100%;
+      background: var(--white);
+      z-index: 5000;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: left 0.3s cubic-bezier(.4,0,.2,1);
+      box-shadow: var(--shadow-xl);
+      overflow-y: auto;
+    }
+    .filter-drawer.active {
+      left: 0;
+    }
+    .filter-drawer .filter-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .filter-drawer .filter-drawer-header h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .filter-drawer .filter-drawer-header button {
+      background: var(--bg-cool);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .filter-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(30,41,59,.6);
+      backdrop-filter: blur(4px);
+      z-index: 4999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+    .filter-overlay.active {
+      opacity: 1;
+      visibility: visible;
     }
 
     @media (max-width: 768px) {
@@ -925,6 +1017,30 @@
     </main>
   </div>
 
+  <!-- Mobile Filter FAB -->
+  <button class="filter-fab" id="filterFab" onclick="toggleMobileFilters()">
+    <i class="fas fa-sliders-h"></i> Filtrar
+  </button>
+
+  <!-- Mobile Filter Drawer -->
+  <div class="filter-drawer" id="filterDrawer">
+    <div class="filter-drawer-header">
+      <h3><i class="fas fa-sliders-h"></i> Filtros</h3>
+      <button onclick="toggleMobileFilters()"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="mobileCategoriesFilter"></div>
+    <div class="filter-section" style="padding:0;">
+      <div class="filter-title" style="padding:16px 0;border-top:1px solid var(--border);">
+        <i class="fas fa-truck"></i> Condição
+      </div>
+      <label class="filter-option">
+        <input type="checkbox" id="mobileFreteGratis" onchange="mobileFreteChange()">
+        <label for="mobileFreteGratis">Frete Grátis</label>
+      </label>
+    </div>
+  </div>
+  <div class="filter-overlay" id="filterOverlay" onclick="toggleMobileFilters()"></div>
+
   <!-- Price Filter Modal -->
   <div id="priceFilterModal" class="cart-modal" style="display: none;">
     <div class="cart-modal-content" style="max-width: 500px;">
@@ -1004,6 +1120,30 @@
       const searchQuery = document.getElementById('searchInput');
       if (urlParams.get('q')) {
         searchQuery.value = urlParams.get('q');
+      }
+    });
+
+    // Mobile filter drawer toggle
+    function toggleMobileFilters() {
+      document.getElementById('filterDrawer').classList.toggle('active');
+      document.getElementById('filterOverlay').classList.toggle('active');
+      document.body.style.overflow = document.getElementById('filterDrawer').classList.contains('active') ? 'hidden' : '';
+    }
+
+    function mobileFreteChange() {
+      const mobileCheck = document.getElementById('mobileFreteGratis');
+      const desktopCheck = document.getElementById('freteGratis');
+      if (mobileCheck && desktopCheck) {
+        desktopCheck.checked = mobileCheck.checked;
+      }
+      selectCategory(currentFilters.categoria);
+    }
+
+    // Sync mobile frete gratis when desktop changes
+    document.addEventListener('change', function(e) {
+      if (e.target.id === 'freteGratis') {
+        const mobileCheck = document.getElementById('mobileFreteGratis');
+        if (mobileCheck) mobileCheck.checked = e.target.checked;
       }
     });
   </script>

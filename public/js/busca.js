@@ -50,21 +50,33 @@ function syncFiltersToURL(page) {
   history.replaceState(null, '', url);
 }
 
-// Carregar categorias no filtro
+// Carregar categorias no filtro (desktop e mobile)
 async function loadCategoriesFilter() {
   try {
     const response = await fetch('/api/categories');
     const categorias = await response.json();
     
     const container = document.getElementById('categoriesFilter');
-    if (!container) return;
+    const mobileContainer = document.getElementById('mobileCategoriesFilter');
     
-    container.innerHTML = categorias.map(function(cat) {
-      return '<div class="filter-option">' +
-        '<input type="checkbox" id="cat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
-        '<label for="cat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
-      '</div>';
-    }).join('');
+    if (container) {
+      container.innerHTML = categorias.map(function(cat) {
+        return '<div class="filter-option">' +
+          '<input type="checkbox" id="cat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
+          '<label for="cat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
+        '</div>';
+      }).join('');
+    }
+    
+    if (mobileContainer) {
+      mobileContainer.innerHTML = '<div class="filter-section" style="padding:0;"><div class="filter-title" style="padding:0 0 12px 0;"><i class="fas fa-tags"></i> Categorias</div></div>' +
+        categorias.map(function(cat) {
+          return '<div class="filter-option">' +
+            '<input type="checkbox" id="mcat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
+            '<label for="mcat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
+          '</div>';
+        }).join('');
+    }
   } catch (error) {
     console.error('Erro ao carregar categorias:', error);
   }
