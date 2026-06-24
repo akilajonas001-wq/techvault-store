@@ -165,12 +165,13 @@ async function syncCartToServer() {
 }
 
 function addToCart(produto) {
-  const existingItem = cart.find(item => item.id === produto.id);
+  const productId = Number(produto.id);
+  const existingItem = cart.find(item => Number(item.id) === productId);
 
   if (existingItem) {
     existingItem.quantidade += 1;
   } else {
-    cart.push({ ...produto, quantidade: 1 });
+    cart.push({ ...produto, id: productId, quantidade: 1 });
   }
 
   saveCart();
@@ -180,7 +181,7 @@ function addToCart(produto) {
 
 function removeFromCart(productId) {
   const id = Number(productId);
-  cart = cart.filter(item => item.id !== id);
+  cart = cart.filter(item => Number(item.id) !== id);
   saveCart();
   syncCartToServer();
   renderCartItems();
@@ -242,14 +243,14 @@ function renderCartItems() {
           <strong style="font-size: 14px; color: var(--text);">${item.nome}</strong>
           ${specsInfo}
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-            <button onclick="changeQuantity('${item.id}', -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
+            <button onclick="changeQuantity(${item.id}, -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
             <span style="font-weight: 600; min-width: 24px; text-align: center;">${item.quantidade}</span>
-            <button onclick="changeQuantity('${item.id}', 1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
+            <button onclick="changeQuantity(${item.id}, 1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
           </div>
         </div>
         <div style="text-align: right;">
           <div style="font-weight: 700; color: var(--text); font-size: 16px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</div>
-          <button onclick="removeFromCart('${item.id}')" style="margin-top: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+          <button onclick="removeFromCart(${item.id})" style="margin-top: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; transition: all 0.2s;">
             <i class="fas fa-trash-alt"></i> Remover
           </button>
         </div>
