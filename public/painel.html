@@ -338,7 +338,7 @@
         <div class="stat-value" id="statOrders">0</div>
         <div class="stat-label">Total de Pedidos</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="revenueCard">
         <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
         <div class="stat-value" id="statRevenue">R$ 0</div>
         <div class="stat-label">Receita Total</div>
@@ -500,6 +500,7 @@
         currentUserRole = data.user.role;
         if (currentUserRole === 'funcionario') {
           document.getElementById('addStaffForm').style.display = 'none';
+          document.getElementById('revenueCard').style.display = 'none';
         }
         document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
         loadAllData(token);
