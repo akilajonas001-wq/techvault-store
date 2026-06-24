@@ -16,6 +16,7 @@
     "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIjTYwuICBAs8RqKhViPfpYnLqFO7sae3LBqWjmoP0ouY6bnA=s96-c",
     "telefone": "",
     "admin": true,
+    "role": "admin",
     "createdAt": "2026-06-23T02:15:50.305Z"
   },
   {
@@ -25,6 +26,7 @@
     "senha": "$2a$10$2wMgvFy.ZpqPW/dOTTWOT.8XfpXNMQc1whv6UguGpUdhrZ2P1r7tq",
     "telefone": "81999188978",
     "admin": true,
+    "role": "admin",
     "createdAt": "2026-06-24T15:30:00.000Z"
   }
 ]

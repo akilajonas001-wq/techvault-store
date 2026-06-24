@@ -129,20 +129,21 @@ app.post('/api/register', async (req, res) => {
       senha: senhaHash,
       telefone,
       admin: false,
+      role: null,
       createdAt: new Date().toISOString()
     };
     
     users.push(newUser);
     saveUsers(users);
     
-    const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false }, JWT_SECRET, {
+    const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false, role: null }, JWT_SECRET, {
       expiresIn: '7d'
     });
     
     res.json({ 
       success: true, 
       token,
-      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false }
+      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false, role: null }
     });
   } catch (error) {
     console.error('Erro no registro:', error);
@@ -169,14 +170,15 @@ app.post('/api/login', async (req, res) => {
     }
     
     const isAdmin = user.admin === true;
-    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin }, JWT_SECRET, {
+    const role = user.role || null;
+    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin, role }, JWT_SECRET, {
       expiresIn: '7d'
     });
     
     res.json({ 
       success: true, 
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role }
     });
   } catch (error) {
     console.error('Erro no login:', error);
@@ -217,6 +219,7 @@ app.post('/api/auth/google', async (req, res) => {
         avatar: picture || null,
         telefone: '',
         admin: false,
+        role: null,
         createdAt: new Date().toISOString()
       };
       users.push(user);
@@ -228,14 +231,15 @@ app.post('/api/auth/google', async (req, res) => {
     }
 
     const isAdmin = user.admin === true;
-    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin }, JWT_SECRET, {
+    const role = user.role || null;
+    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin, role }, JWT_SECRET, {
       expiresIn: '7d'
     });
 
     res.json({
       success: true,
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, avatar: user.avatar }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role, avatar: user.avatar }
     });
   } catch (error) {
     console.error('Erro no login com Google:', error);
@@ -366,6 +370,7 @@ app.get('/api/users/:id', (req, res) => {
       nome: user.nome,
       email: user.email,
       telefone: user.telefone || '',
+      role: user.role || null,
       createdAt: user.createdAt
     });
   } catch (error) {
@@ -405,9 +410,10 @@ app.get('/api/auth/check', (req, res) => {
     }
     
     const isAdmin = user.admin === true;
+    const role = user.role || null;
     res.json({ 
       authenticated: true, 
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role }
     });
   } catch (error) {
     res.json({ authenticated: false });
@@ -416,10 +422,14 @@ app.get('/api/auth/check', (req, res) => {
 
 // === ROTAS DO MARKETPLACE ===
 
+function filterActive(products) {
+  return products.filter(p => p.paused !== true);
+}
+
 // Produtos em destaque (ANTES de /api/products/:id)
 app.get('/api/products/featured', (req, res) => {
   try {
-    const products = loadProducts();
+    const products = filterActive(loadProducts());
     const featured = products.filter(p => p.destaque).slice(0, 12);
     res.json(featured);
   } catch (error) {
@@ -431,7 +441,7 @@ app.get('/api/products/featured', (req, res) => {
 // Ofertas do dia (ANTES de /api/products/:id)
 app.get('/api/products/offers', (req, res) => {
   try {
-    const products = loadProducts();
+    const products = filterActive(loadProducts());
     const offers = products
       .filter(p => p.preco < 200)
       .slice(0, 10);
@@ -445,7 +455,7 @@ app.get('/api/products/offers', (req, res) => {
 // Listar todos os produtos
 app.get('/api/products', (req, res) => {
   try {
-    const products = loadProducts();
+    const products = filterActive(loadProducts());
     res.json(products);
   } catch (error) {
     console.error('Erro ao carregar produtos:', error);
@@ -457,7 +467,7 @@ app.get('/api/products', (req, res) => {
 app.get('/api/products/search', (req, res) => {
   try {
     const { q, categoria, precoMin, precoMax, ordem, page, limit } = req.query;
-    let products = loadProducts();
+    let products = filterActive(loadProducts());
     
     if (q) {
       const termo = q.toLowerCase();
@@ -507,7 +517,7 @@ app.get('/api/products/category/:categoria', (req, res) => {
   try {
     const { page, limit } = req.query;
     const categoria = req.params.categoria;
-    let products = loadProducts().filter(p => p.categoria === categoria);
+    let products = filterActive(loadProducts()).filter(p => p.categoria === categoria);
     const total = products.length;
     const p = parseInt(page) || 1;
     const l = parseInt(limit) || 30;
@@ -542,7 +552,7 @@ app.get('/api/products/:id', (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
     
-    res.json(product);
+    res.json({ ...product, paused: product.paused === true });
   } catch (error) {
     console.error('Erro ao carregar produto:', error);
     res.status(500).json({ error: 'Erro ao carregar produto' });
@@ -860,6 +870,7 @@ app.get('/api/admin/users', adminAuth, (req, res) => {
       email: u.email,
       telefone: u.telefone || '',
       admin: u.admin === true,
+      role: u.role || null,
       createdAt: u.createdAt,
       googleId: u.googleId ? true : false
     }));
@@ -894,6 +905,97 @@ app.get('/api/admin/carts', adminAuth, (req, res) => {
   } catch (error) {
     console.error('Erro ao carregar carrinhos (admin):', error);
     res.status(500).json({ error: 'Erro ao carregar carrinhos' });
+  }
+});
+
+// Listar funcionários (admins + staff)
+app.get('/api/admin/staff', adminAuth, (req, res) => {
+  try {
+    const users = loadUsers();
+    const staff = users.filter(u => u.admin === true || (u.role && u.role !== 'cliente'));
+    const safe = staff.map(u => ({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      telefone: u.telefone || '',
+      role: u.role || 'admin',
+      admin: u.admin === true,
+      createdAt: u.createdAt
+    }));
+    res.json(safe);
+  } catch (error) {
+    console.error('Erro ao carregar staff:', error);
+    res.status(500).json({ error: 'Erro ao carregar staff' });
+  }
+});
+
+// Definir cargo de usuário (só admin pode)
+app.post('/api/admin/set-role', adminAuth, (req, res) => {
+  try {
+    if (req.adminUser.role && req.adminUser.role !== 'admin') {
+      return res.status(403).json({ error: 'Apenas administradores podem definir cargos' });
+    }
+    const { email, role } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email é obrigatório' });
+    if (role && !['admin', 'funcionario'].includes(role)) {
+      return res.status(400).json({ error: 'Cargo inválido. Use: admin ou funcionario' });
+    }
+    const users = loadUsers();
+    const user = users.find(u => u.email === email);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    if (role === 'admin') {
+      user.admin = true;
+      user.role = 'admin';
+    } else if (role === 'funcionario') {
+      user.admin = true;
+      user.role = 'funcionario';
+    } else {
+      user.admin = false;
+      user.role = null;
+    }
+    saveUsers(users);
+    res.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, role: user.role, admin: user.admin } });
+  } catch (error) {
+    console.error('Erro ao definir cargo:', error);
+    res.status(500).json({ error: 'Erro ao definir cargo' });
+  }
+});
+
+// Listar todos os produtos (admin) com status paused
+app.get('/api/admin/products', adminAuth, (req, res) => {
+  try {
+    const products = loadProducts();
+    const { search, paused } = req.query;
+    let filtered = products;
+    if (search) {
+      const term = search.toLowerCase();
+      filtered = filtered.filter(p => p.nome.toLowerCase().includes(term) || p.categoria.toLowerCase().includes(term));
+    }
+    if (paused === 'true') filtered = filtered.filter(p => p.paused === true);
+    if (paused === 'false') filtered = filtered.filter(p => !p.paused);
+    res.json(filtered.map(p => ({ id: p.id, nome: p.nome, categoria: p.categoria, preco: p.preco, paused: p.paused === true, imagem: p.imagem, estoque: p.estoque || 'N/A' })));
+  } catch (error) {
+    console.error('Erro ao carregar produtos (admin):', error);
+    res.status(500).json({ error: 'Erro ao carregar produtos' });
+  }
+});
+
+// Pausar/reativar produto
+app.post('/api/admin/products/:id/toggle-pause', adminAuth, (req, res) => {
+  try {
+    const products = loadProducts();
+    const product = products.find(p => p.id === parseInt(req.params.id));
+    if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
+
+    product.paused = product.paused === true ? false : true;
+    const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
+
+    res.json({ success: true, id: product.id, nome: product.nome, paused: product.paused });
+  } catch (error) {
+    console.error('Erro ao pausar/reativar produto:', error);
+    res.status(500).json({ error: 'Erro ao atualizar produto' });
   }
 });
 

@@ -278,6 +278,8 @@
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
       <button class="tab-btn" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
+      <button class="tab-btn" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
+      <button class="tab-btn" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
     </div>
 
@@ -298,6 +300,45 @@
           <span id="cartsCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="cartsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando carrinhos...</div>
+      </div>
+    </div>
+
+    <div id="tab-funcionarios" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-user-tie"></i> ADM's e Funcionários</h2>
+          <span id="staffCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div id="addStaffForm" style="margin-bottom:20px;padding:16px;background:var(--bg-cool);border-radius:12px;">
+          <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;"><i class="fas fa-user-plus"></i> Adicionar Pessoa</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input type="email" id="staffEmail" placeholder="Email da pessoa..." style="flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            <select id="staffRole" style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:var(--white);">
+              <option value="admin">Administrador</option>
+              <option value="funcionario">Funcionário</option>
+            </select>
+            <button onclick="addStaff()" class="btn btn-primary"><i class="fas fa-check"></i> Adicionar</button>
+          </div>
+          <div id="staffResult" style="margin-top:8px;font-size:13px;"></div>
+        </div>
+        <div id="staffContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando equipe...</div>
+      </div>
+    </div>
+
+    <div id="tab-produtos" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-boxes"></i> Gerenciar Produtos</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <input type="text" id="productSearch" placeholder="Buscar produto..." oninput="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;width:200px;">
+            <select id="productFilter" onchange="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:var(--white);">
+              <option value="all">Todos</option>
+              <option value="active">Ativos</option>
+              <option value="paused">Pausados</option>
+            </select>
+          </div>
+        </div>
+        <div id="productsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando produtos...</div>
       </div>
     </div>
 
@@ -327,6 +368,9 @@
     let allOrders = [];
     let allUsers = [];
     let allCarts = [];
+    let allProducts = [];
+    let allStaff = [];
+    let currentUserRole = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('techvault-token');
@@ -342,6 +386,10 @@
           setTimeout(() => { window.location.href = '/'; }, 2000);
           return;
         }
+        currentUserRole = data.user.role;
+        if (currentUserRole === 'funcionario') {
+          document.getElementById('addStaffForm').style.display = 'none';
+        }
         document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
         loadAllData(token);
       } catch (err) {
@@ -350,21 +398,31 @@
       }
     });
 
+    function getToken() {
+      return localStorage.getItem('techvault-token');
+    }
+
     async function loadAllData(token) {
       try {
-        const [ordersRes, usersRes, cartsRes] = await Promise.all([
+        const [ordersRes, usersRes, cartsRes, staffRes, productsRes] = await Promise.all([
           fetch('/api/admin/orders', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('/api/admin/carts', { headers: { 'Authorization': 'Bearer ' + token } })
+          fetch('/api/admin/carts', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('/api/admin/staff', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('/api/admin/products', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
 
         allOrders = await ordersRes.json();
         allUsers = await usersRes.json();
         allCarts = await cartsRes.json();
+        allStaff = await staffRes.json();
+        allProducts = await productsRes.json();
 
         updateStats();
         renderOrders();
         renderCarts();
+        renderStaff();
+        renderProducts();
         renderUsers();
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
@@ -513,6 +571,126 @@
       }).join('');
     }
 
+    function renderStaff() {
+      const container = document.getElementById('staffContainer');
+      document.getElementById('staffCount').textContent = allStaff.length + ' membro' + (allStaff.length !== 1 ? 's' : '');
+
+      if (!allStaff.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-user-tie"></i><p>Nenhum administrador ou funcionário cadastrado</p></div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr>' +
+          '<th>Nome</th>' +
+          '<th>Email</th>' +
+          '<th>Cargo</th>' +
+          '<th>Membro desde</th>' +
+        '</tr></thead><tbody>' +
+        allStaff.map(u => {
+          const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : 'N/A';
+          const roleBadge = u.role === 'admin'
+            ? '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>'
+            : '<span class="badge badge-orange"><i class="fas fa-user-tie"></i> Funcionário</span>';
+          return '<tr>' +
+            '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
+            '<td>' + (u.email || '') + '</td>' +
+            '<td>' + roleBadge + '</td>' +
+            '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
+    async function addStaff() {
+      const email = document.getElementById('staffEmail').value.trim();
+      const role = document.getElementById('staffRole').value;
+      const result = document.getElementById('staffResult');
+
+      if (!email) { result.innerHTML = '<span style="color:var(--error)">Digite um email</span>'; return; }
+
+      try {
+        const res = await fetch('/api/admin/set-role', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role })
+        });
+        const data = await res.json();
+        if (data.success) {
+          result.innerHTML = '<span style="color:var(--success)">✓ ' + data.user.nome + ' agora é ' + (role === 'admin' ? 'Administrador' : 'Funcionário') + '</span>';
+          document.getElementById('staffEmail').value = '';
+          loadAllData(getToken());
+        } else {
+          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro ao adicionar') + '</span>';
+        }
+      } catch (err) {
+        result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
+      }
+    }
+
+    function renderProducts() {
+      const container = document.getElementById('productsContainer');
+      const filter = document.getElementById('productFilter')?.value || 'all';
+      const search = (document.getElementById('productSearch')?.value || '').toLowerCase();
+
+      let filtered = allProducts;
+      if (filter === 'active') filtered = filtered.filter(p => !p.paused);
+      else if (filter === 'paused') filtered = filtered.filter(p => p.paused);
+      if (search) filtered = filtered.filter(p => p.nome.toLowerCase().includes(search) || p.categoria.toLowerCase().includes(search));
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-boxes"></i><p>Nenhum produto encontrado</p></div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr>' +
+          '<th>Produto</th>' +
+          '<th>Categoria</th>' +
+          '<th>Preço</th>' +
+          '<th>Status</th>' +
+          '<th>Ação</th>' +
+        '</tr></thead><tbody>' +
+        filtered.map(p => {
+          const statusBadge = p.paused
+            ? '<span class="badge badge-red"><i class="fas fa-pause-circle"></i> Pausado</span>'
+            : '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Ativo</span>';
+          const btnText = p.paused ? 'Reativar' : 'Pausar';
+          const btnClass = p.paused ? 'order-detail-btn' : 'order-detail-btn';
+          const btnColor = p.paused ? 'var(--success)' : 'var(--error)';
+          return '<tr>' +
+            '<td><strong>' + (p.nome || 'N/A') + '</strong></td>' +
+            '<td style="font-size:13px;color:var(--text-muted)">' + (p.categoria || '') + '</td>' +
+            '<td>R$ ' + (p.preco || 0).toFixed(2).replace('.', ',') + '</td>' +
+            '<td>' + statusBadge + '</td>' +
+            '<td><button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + '"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button></td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>' +
+        '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">Mostrando ' + filtered.length + ' de ' + allProducts.length + ' produtos</div>';
+    }
+
+    function filterProducts() {
+      renderProducts();
+    }
+
+    async function togglePause(productId) {
+      try {
+        const res = await fetch('/api/admin/products/' + productId + '/toggle-pause', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          const product = allProducts.find(p => p.id === productId);
+          if (product) product.paused = data.paused;
+          renderProducts();
+        }
+      } catch (err) {
+        console.error('Erro ao pausar/reativar:', err);
+      }
+    }
+
     function renderUsers() {
       const container = document.getElementById('usersContainer');
       document.getElementById('usersCount').textContent = allUsers.length + ' usuário' + (allUsers.length !== 1 ? 's' : '');
@@ -532,12 +710,15 @@
         '</tr></thead><tbody>' +
         allUsers.map(u => {
           const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : 'N/A';
-          const isAdmin = u.admin ? '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>' : '<span class="badge badge-gray">Cliente</span>';
+          let roleHtml;
+          if (u.role === 'admin') roleHtml = '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>';
+          else if (u.role === 'funcionario') roleHtml = '<span class="badge badge-orange"><i class="fas fa-user-tie"></i> Funcionário</span>';
+          else roleHtml = '<span class="badge badge-gray">Cliente</span>';
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td>' + (u.email || '') + '</td>' +
             '<td>' + (u.telefone || '—') + '</td>' +
-            '<td>' + isAdmin + '</td>' +
+            '<td>' + roleHtml + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
           '</tr>';
         }).join('') +
