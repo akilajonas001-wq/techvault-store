@@ -897,6 +897,23 @@ app.get('/api/admin/carts', adminAuth, (req, res) => {
   }
 });
 
+// Tornar usuário admin (temporário - remover depois)
+app.post('/api/admin/set-admin', adminAuth, (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email é obrigatório' });
+    const users = loadUsers();
+    const user = users.find(u => u.email === email);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    user.admin = true;
+    saveUsers(users);
+    res.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email, admin: true } });
+  } catch (error) {
+    console.error('Erro ao definir admin:', error);
+    res.status(500).json({ error: 'Erro ao definir admin' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
