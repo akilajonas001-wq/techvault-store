@@ -1002,6 +1002,17 @@ app.get('/api/admin/products', adminAuth, (req, res) => {
   }
 });
 
+// Listar inscritos da newsletter
+app.get('/api/admin/newsletter', adminAuth, (req, res) => {
+  try {
+    const subscribers = JSON.parse(fs.readFileSync(NEWSLETTER_FILE, 'utf8'));
+    res.json(subscribers);
+  } catch (error) {
+    console.error('Erro ao carregar newsletter:', error);
+    res.status(500).json({ error: 'Erro ao carregar newsletter' });
+  }
+});
+
 // Alterar preço de produto
 app.post('/api/admin/products/:id/update-price', adminAuth, (req, res) => {
   try {

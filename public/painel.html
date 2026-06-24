@@ -362,6 +362,7 @@
       <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
+      <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-envelope"></i> Newsletter</button>
     </div>
 
     <div id="tab-pedidos" class="tab-content active">
@@ -442,6 +443,16 @@
         <div id="usersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando usuários...</div>
       </div>
     </div>
+
+    <div id="tab-newsletter" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-envelope"></i> Inscritos na Newsletter</h2>
+          <span id="newsletterCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div id="newsletterContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando inscritos...</div>
+      </div>
+    </div>
   </div>
 
     <div class="modal-overlay" id="orderModal">
@@ -481,6 +492,7 @@
     let allCarts = [];
     let allProducts = [];
     let allStaff = [];
+    let allNewsletter = [];
     let currentUserRole = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -525,12 +537,13 @@
 
     async function loadAllData(token) {
       try {
-        const [ordersRes, usersRes, cartsRes, staffRes, productsRes] = await Promise.all([
+        const [ordersRes, usersRes, cartsRes, staffRes, productsRes, newsletterRes] = await Promise.all([
           fetch('/api/admin/orders', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/carts', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/staff', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('/api/admin/products', { headers: { 'Authorization': 'Bearer ' + token } })
+          fetch('/api/admin/products', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('/api/admin/newsletter', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
 
         allOrders = await ordersRes.json();
@@ -538,6 +551,7 @@
         allCarts = await cartsRes.json();
         allStaff = await staffRes.json();
         allProducts = await productsRes.json();
+        allNewsletter = await newsletterRes.json();
 
         updateStats();
         renderOrders();
@@ -545,6 +559,7 @@
         renderStaff();
         renderProducts();
         renderUsers();
+        renderNewsletter();
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
       }
@@ -896,6 +911,30 @@
           '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
           '<td><button onclick="openChat(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button></td>' +
         '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
+    function renderNewsletter() {
+      const container = document.getElementById('newsletterContainer');
+      document.getElementById('newsletterCount').textContent = allNewsletter.length + ' inscrito' + (allNewsletter.length !== 1 ? 's' : '');
+
+      if (!allNewsletter.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-envelope-open"></i><p>Nenhum inscrito na newsletter</p></div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="table-wrap"><table>' +
+        '<thead><tr>' +
+          '<th>Email</th>' +
+          '<th>Data de Inscrição</th>' +
+        '</tr></thead><tbody>' +
+        allNewsletter.map(s => {
+          const date = s.createdAt ? new Date(s.createdAt).toLocaleString('pt-BR') : 'N/A';
+          return '<tr>' +
+            '<td>' + s.email + '</td>' +
+            '<td style="font-size:13px;color:var(--text-muted)">' + date + '</td>' +
+          '</tr>';
         }).join('') +
         '</tbody></table></div>';
     }
