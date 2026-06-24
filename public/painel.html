@@ -356,12 +356,12 @@
     </div>
 
     <div class="tab-nav">
-      <button class="tab-btn active" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
-      <button class="tab-btn" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
-      <button class="tab-btn" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-comments"></i> Chats <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
-      <button class="tab-btn" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
-      <button class="tab-btn" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
-      <button class="tab-btn" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
+      <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
+      <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
+      <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-comments"></i> Chats <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
+      <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
+      <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
+      <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
     </div>
 
     <div id="tab-pedidos" class="tab-content active">
@@ -504,6 +504,11 @@
         }
         document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
         loadAllData(token);
+        const savedTab = localStorage.getItem('painel-tab');
+        if (savedTab && savedTab !== 'pedidos') {
+          const btn = document.querySelector(`.tab-btn[data-tab="${savedTab}"]`);
+          if (btn) switchTab(savedTab, btn);
+        }
       } catch (err) {
         showError('Erro de autenticação');
         setTimeout(() => { window.location.href = '/'; }, 2000);
@@ -899,6 +904,7 @@
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       if (btn) btn.classList.add('active');
       document.getElementById('tab-' + tab).classList.add('active');
+      localStorage.setItem('painel-tab', tab);
     }
 
     function logout() {
@@ -1133,6 +1139,7 @@
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       if (btn) btn.classList.add('active');
       document.getElementById('tab-' + tab).classList.add('active');
+      localStorage.setItem('painel-tab', tab);
       if (tab === 'chats') {
         checkUnreadChats();
       }
