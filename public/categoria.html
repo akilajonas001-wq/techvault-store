@@ -458,9 +458,22 @@
       }
 
       .products-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
+      .product-image { height: 150px; padding: 16px; }
+      .product-info { padding: 14px; }
+      .product-price { font-size: 18px; }
+      .product-name { font-size: 12px; min-height: 32px; }
+      .product-installments { font-size: 11px; }
+    }
+    @media (max-width: 480px) {
+      .products-grid {
+        gap: 8px;
+      }
+      .product-image { height: 130px; padding: 12px; }
+      .product-info { padding: 10px; }
+      .product-price { font-size: 16px; }
     }
   
     .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;border-radius:8px}
