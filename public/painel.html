@@ -278,6 +278,7 @@
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
       <button class="tab-btn" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
+      <button class="tab-btn" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-comments"></i> Chats <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
       <button class="tab-btn" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
@@ -300,6 +301,16 @@
           <span id="cartsCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="cartsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando carrinhos...</div>
+      </div>
+    </div>
+
+    <div id="tab-chats" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-comments"></i> Conversas com Clientes</h2>
+          <span id="chatsCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div id="allChatsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
       </div>
     </div>
 
@@ -774,6 +785,7 @@
           '<th>Telefone</th>' +
           '<th>Tipo</th>' +
           '<th>Membro desde</th>' +
+          '<th style="width:50px"></th>' +
         '</tr></thead><tbody>' +
         allUsers.map(u => {
           const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : 'N/A';
@@ -785,9 +797,10 @@
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td>' + (u.email || '') + '</td>' +
             '<td>' + (u.telefone || '—') + '</td>' +
-            '<td>' + roleHtml + '</td>' +
-            '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-          '</tr>';
+          '<td>' + roleHtml + '</td>' +
+          '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
+          '<td><button onclick="openChat(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button></td>' +
+        '</tr>';
         }).join('') +
         '</tbody></table></div>';
     }
@@ -885,6 +898,81 @@
         console.error('Erro ao enviar:', err);
       }
     }
+
+    // === CHAT TAB + UNREAD POLLING ===
+    let chatUnreadInterval = null;
+
+    function initChatUnreadPolling() {
+      checkUnreadChats();
+      if (chatUnreadInterval) clearInterval(chatUnreadInterval);
+      chatUnreadInterval = setInterval(checkUnreadChats, 10000);
+    }
+
+    async function checkUnreadChats() {
+      try {
+        const res = await fetch('/api/admin/chat-unread', {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const list = await res.json();
+        const totalUnread = list.reduce((sum, c) => sum + c.unreadCount, 0);
+        const badge = document.getElementById('chatUnreadBadge');
+        if (badge) {
+          if (totalUnread > 0) {
+            badge.textContent = totalUnread;
+            badge.style.display = 'inline';
+          } else {
+            badge.style.display = 'none';
+          }
+        }
+        // If chats tab is active, update the list
+        const chatsTab = document.getElementById('tab-chats');
+        if (chatsTab && chatsTab.classList.contains('active')) {
+          renderAllChats(list);
+        }
+        return list;
+      } catch { return []; }
+    }
+
+    async function renderAllChats(list) {
+      const container = document.getElementById('allChatsContainer');
+      if (!list || !list.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa ainda</p></div>';
+        document.getElementById('chatsCount').textContent = '';
+        return;
+      }
+      document.getElementById('chatsCount').textContent = list.length + ' conversa' + (list.length !== 1 ? 's' : '');
+      container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+        '<th>Cliente</th><th>Email</th><th>Última mensagem</th><th>Não lidas</th><th></th>' +
+        '</tr></thead><tbody>' +
+        list.map(c => {
+          const time = new Date(c.lastMessage.createdAt).toLocaleString('pt-BR');
+          const preview = c.lastMessage.message.length > 50 ? c.lastMessage.message.slice(0, 50) + '...' : c.lastMessage.message;
+          const fromLabel = c.lastMessage.from === 'admin' ? 'Admin' : 'Cliente';
+          return '<tr>' +
+            '<td><strong>' + c.userName + '</strong></td>' +
+            '<td style="font-size:13px;color:var(--text-muted)">' + c.userEmail + '</td>' +
+            '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
+            '<td><span style="background:#ef4444;color:white;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700;">' + c.unreadCount + '</span></td>' +
+            '<td><button onclick="openChat(' + c.userId + ', \'' + (c.userName || '').replace(/'/g, "\\'") + '\')" class="btn btn-primary" style="padding:6px 14px;font-size:12px;"><i class="fas fa-reply"></i> Responder</button></td>' +
+          '</tr>';
+        }).join('') +
+        '</tbody></table></div>';
+    }
+
+    // Override switchTab to load chats when the tab is selected
+    const origSwitchTab = switchTab;
+    switchTab = function(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+      if (tab === 'chats') {
+        checkUnreadChats();
+      }
+    };
+
+    // Start polling
+    initChatUnreadPolling();
   </script>
 </body>
 </html>
