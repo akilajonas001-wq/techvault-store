@@ -406,6 +406,8 @@ function isInWishlist(productId) {
 // === CHAT DO USUÁRIO ===
 let userChatInterval = null;
 let userChatModalActive = false;
+let userConversations = [];
+let activeAdminUserId = null;
 
 function initUserChat() {
   if (!currentUser) return;
@@ -430,6 +432,7 @@ function initUserChat() {
         <span><i class="fas fa-headset"></i> Atendimento</span>
         <button onclick="toggleUserChat()"><i class="fas fa-times"></i></button>
       </div>
+      <div class="user-chat-tabs" id="userChatTabs"></div>
       <div class="user-chat-messages" id="userChatMessages">
         <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
       </div>
@@ -467,7 +470,7 @@ function initUserChat() {
         background:white;border-radius:16px;
         box-shadow:0 8px 40px rgba(0,0,0,0.2);
         display:none;flex-direction:column;
-        max-height:480px;overflow:hidden;
+        max-height:500px;overflow:hidden;
         font-family:var(--font-family, 'Segoe UI', sans-serif);
         animation:chatFadeIn .2s ease;
       }
@@ -475,33 +478,49 @@ function initUserChat() {
       .user-chat-modal.active { display:flex; }
       .user-chat-header {
         display:flex;justify-content:space-between;align-items:center;
-        padding:14px 18px;background:var(--primary, #1a73e8);color:white;
-        font-weight:600;font-size:15px;border-radius:16px 16px 0 0;
+        padding:12px 16px;background:var(--primary, #1a73e8);color:white;
+        font-weight:600;font-size:14px;border-radius:16px 16px 0 0;
       }
       .user-chat-header button {
-        background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:4px;
+        background:none;border:none;color:white;font-size:16px;cursor:pointer;padding:4px;
         display:flex;align-items:center;justify-content:center;
       }
+      .user-chat-tabs {
+        display:flex;gap:2px;background:#f1f5f9;padding:4px 6px 0;
+        overflow-x:auto;scrollbar-width:none;flex-shrink:0;
+      }
+      .user-chat-tabs::-webkit-scrollbar { display:none; }
+      .user-chat-tab {
+        padding:6px 12px;border-radius:8px 8px 0 0;border:none;
+        font-size:11px;font-weight:600;cursor:pointer;
+        background:transparent;color:var(--text-muted);
+        white-space:nowrap;display:flex;align-items:center;gap:4px;
+        font-family:inherit;flex-shrink:0;
+      }
+      .user-chat-tab:hover { color:var(--text); }
+      .user-chat-tab.active { background:white;color:var(--primary);box-shadow:0 -1px 3px rgba(0,0,0,0.05); }
+      .user-chat-tab .tab-close { font-size:10px;color:var(--text-muted);margin-left:2px;padding:2px;border-radius:4px; }
+      .user-chat-tab .tab-close:hover { background:rgba(239,68,68,0.1);color:var(--error); }
       .user-chat-messages {
-        flex:1;padding:14px;overflow-y:auto;
-        display:flex;flex-direction:column;gap:8px;
-        background:#f8f9fa;min-height:250px;
+        flex:1;padding:12px;overflow-y:auto;
+        display:flex;flex-direction:column;gap:6px;
+        background:#f8f9fa;min-height:200px;
       }
       .user-chat-input {
-        display:flex;gap:8px;padding:12px 14px;
+        display:flex;gap:6px;padding:10px 12px;
         border-top:1px solid #e2e8f0;
         background:white;border-radius:0 0 16px 16px;
       }
       .user-chat-input input {
-        flex:1;padding:10px 14px;border:2px solid #e2e8f0;
-        border-radius:12px;font-size:14px;outline:none;
+        flex:1;padding:8px 12px;border:2px solid #e2e8f0;
+        border-radius:10px;font-size:13px;outline:none;
         font-family:inherit;
       }
       .user-chat-input input:focus { border-color:var(--primary, #1a73e8); }
       .user-chat-input button {
-        width:42px;height:42px;border-radius:12px;
+        width:38px;height:38px;border-radius:10px;
         background:var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1));
-        color:white;border:none;cursor:pointer;font-size:16px;
+        color:white;border:none;cursor:pointer;font-size:15px;
         display:flex;align-items:center;justify-content:center;
         flex-shrink:0;
       }
@@ -513,10 +532,11 @@ function initUserChat() {
       @media (max-width:480px) {
         #userChatBubble { bottom:70px; right:12px; width:46px; height:46px; font-size:17px; }
         .user-chat-modal { bottom:130px; right:12px; width:calc(100vw - 24px); max-height:55vh; }
-        .user-chat-messages { min-height:180px; padding:10px; }
-        .user-chat-input { padding:10px; }
-        .user-chat-input input { padding:8px 12px; font-size:13px; }
-        .user-chat-input button { width:38px; height:38px; }
+        .user-chat-messages { min-height:150px; padding:8px; }
+        .user-chat-input { padding:8px 10px; }
+        .user-chat-input input { padding:6px 10px; font-size:12px; }
+        .user-chat-input button { width:34px; height:34px; }
+        .user-chat-tab { font-size:10px;padding:4px 8px; }
       }
     `;
     document.head.appendChild(style);
@@ -524,8 +544,10 @@ function initUserChat() {
 
   if (userChatInterval) clearInterval(userChatInterval);
   userChatInterval = setInterval(() => {
-    loadUnreadCount();
-    if (userChatModalActive) loadUserMessages();
+    if (currentUser) {
+      loadUnreadCount();
+      if (userChatModalActive) loadConversations();
+    }
   }, 5000);
 }
 
@@ -533,15 +555,15 @@ async function loadUnreadCount() {
   if (!currentUser) return;
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/messages', {
+    const res = await fetch('/api/chat/conversations', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    const messages = await res.json();
-    const unread = messages.filter(m => m.from === 'admin' && !m.read).length;
+    const convs = await res.json();
+    const totalUnread = convs.reduce((sum, c) => sum + c.unreadCount, 0);
     const badge = document.getElementById('chatBadge');
     if (badge) {
-      if (unread > 0) {
-        badge.textContent = unread;
+      if (totalUnread > 0) {
+        badge.textContent = totalUnread;
         badge.style.display = 'flex';
       } else {
         badge.style.display = 'none';
@@ -556,24 +578,68 @@ function toggleUserChat() {
   userChatModalActive = !modal.classList.contains('active');
   modal.classList.toggle('active');
   if (userChatModalActive) {
-    loadUserMessages();
+    loadConversations();
     markMessagesRead();
   }
 }
 
-async function loadUserMessages() {
+async function loadConversations() {
   if (!currentUser) return;
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/messages', {
+    const res = await fetch('/api/chat/conversations', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    const messages = await res.json();
-    renderUserMessages(messages);
+    userConversations = await res.json();
+    renderConversationTabs();
+    // Load active tab messages
+    if (activeAdminUserId) {
+      loadUserMessages(activeAdminUserId);
+    } else if (userConversations.length > 0) {
+      selectTab(userConversations[0].adminUserId || 'general');
+    } else {
+      renderEmptyChat();
+    }
   } catch {}
 }
 
-function renderUserMessages(messages) {
+function renderConversationTabs() {
+  const tabsContainer = document.getElementById('userChatTabs');
+  if (!tabsContainer) return;
+  if (!userConversations.length) {
+    tabsContainer.innerHTML = '';
+    return;
+  }
+  tabsContainer.innerHTML = userConversations.map(c => {
+    const isActive = (c.adminUserId === activeAdminUserId) || (!activeAdminUserId && c.isGeneral);
+    const adminId = c.adminUserId || 'general';
+    const label = c.adminName.length > 12 ? c.adminName.slice(0, 12) + '...' : c.adminName;
+    return '<button class="user-chat-tab' + (isActive ? ' active' : '') + '" onclick="selectTab(\'' + adminId + '\')">' +
+      '<i class="fas fa-user"></i> ' + label +
+      '<span class="tab-close" onclick="event.stopPropagation();deleteConversation(\'' + adminId + '\')" title="Fechar conversa"><i class="fas fa-times"></i></span>' +
+    '</button>';
+  }).join('');
+}
+
+function selectTab(adminUserId) {
+  activeAdminUserId = adminUserId;
+  renderConversationTabs();
+  loadUserMessages(adminUserId);
+}
+
+async function loadUserMessages(adminUserId) {
+  if (!currentUser || !adminUserId) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/messages/' + adminUserId, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const messages = await res.json();
+    renderUserMessages(messages, adminUserId);
+  } catch {}
+}
+
+function renderUserMessages(messages, adminUserId) {
   const container = document.getElementById('userChatMessages');
   if (!container) return;
   if (!messages.length) {
@@ -589,11 +655,18 @@ function renderUserMessages(messages) {
     const name = isAdmin ? (m.adminName || 'Admin') : 'Você';
     return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:85%;align-self:' + align + ';">' +
       '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
-      '<div style="background:' + bg + ';color:' + color + ';padding:10px 14px;border-radius:16px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
+      '<div style="background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:14px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);font-size:13px;">' +
       m.message +
       '</div></div>';
   }).join('');
   container.scrollTop = container.scrollHeight;
+}
+
+function renderEmptyChat() {
+  const container = document.getElementById('userChatMessages');
+  if (container) {
+    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma conversa ainda.<br>Envie uma mensagem para iniciar!</p></div>';
+  }
 }
 
 async function markMessagesRead() {
@@ -611,18 +684,39 @@ async function sendUserMessage() {
   const input = document.getElementById('userChatInput');
   const message = input.value.trim();
   if (!message) return;
+  const targetAdminId = activeAdminUserId || 'general';
   input.value = '';
 
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/send', {
+    const res = await fetch('/api/chat/send/' + targetAdminId, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message })
     });
     const data = await res.json();
     if (data.success) {
-      loadUserMessages();
+      activeAdminUserId = targetAdminId;
+      loadConversations();
+      loadUserMessages(targetAdminId);
+    }
+  } catch {}
+}
+
+async function deleteConversation(adminUserId) {
+  if (!confirm('Deletar esta conversa?')) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/conversation/' + adminUserId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (activeAdminUserId === adminUserId) {
+        activeAdminUserId = null;
+      }
+      loadConversations();
     }
   } catch {}
 }

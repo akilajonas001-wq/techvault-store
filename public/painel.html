@@ -457,13 +457,14 @@
     <div class="modal-overlay" id="chatModal">
       <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
-          <h3><i class="fas fa-comments"></i> Chat com <span id="chatUserName">---</span></h3>
+          <h3><i class="fas fa-comments"></i> Chat</h3>
           <div style="display:flex;gap:6px;">
             <button class="modal-close" onclick="if(confirm('Deletar esta conversa?'))deleteCurrentChat()" id="deleteChatBtn" style="color:var(--error);" title="Deletar conversa"><i class="fas fa-trash-alt"></i></button>
             <button class="modal-close" onclick="closeChatModal()"><i class="fas fa-times"></i></button>
           </div>
         </div>
-        <div id="chatMessages" style="max-height:400px;overflow-y:auto;margin-bottom:16px;padding:12px;background:var(--bg-cool);border-radius:12px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;">
+        <div id="adminChatTabs" style="display:flex;gap:2px;background:var(--bg-cool);padding:4px 6px 0;border-radius:8px 8px 0 0;overflow-x:auto;scrollbar-width:none;margin-bottom:0;"></div>
+        <div id="chatMessages" style="max-height:350px;overflow-y:auto;margin-bottom:12px;padding:12px;background:var(--bg-cool);border-radius:0 0 12px 12px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;">
           <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
         </div>
         <div style="display:flex;gap:10px;">
@@ -912,19 +913,62 @@
     // === CHAT ===
     let chatUserId = null;
     let chatInterval = null;
+    let openChatTabs = [];
 
     function openChat(userId, userName) {
+      // Add user to open tabs if not already
+      if (!openChatTabs.find(t => t.userId === userId)) {
+        openChatTabs.push({ userId, userName: userName || 'Usuário #' + userId });
+      }
       chatUserId = userId;
-      document.getElementById('chatUserName').textContent = userName || 'Usuário #' + userId;
+      renderAdminChatTabs();
       document.getElementById('chatModal').classList.add('active');
       loadChatMessages(userId);
       if (chatInterval) clearInterval(chatInterval);
-      chatInterval = setInterval(() => loadChatMessages(userId), 5000);
+      chatInterval = setInterval(() => loadChatMessages(chatUserId), 5000);
+    }
+
+    function renderAdminChatTabs() {
+      const container = document.getElementById('adminChatTabs');
+      if (!container) return;
+      if (!openChatTabs.length) {
+        container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:6px;">Nenhuma conversa aberta</span>';
+        return;
+      }
+      container.innerHTML = openChatTabs.map(t => {
+        const isActive = t.userId === chatUserId;
+        const label = t.userName.length > 14 ? t.userName.slice(0, 14) + '...' : t.userName;
+        return '<button class="user-chat-tab' + (isActive ? ' active' : '') + '" onclick="switchChatTab(' + t.userId + ')" style="padding:6px 10px;border:none;border-radius:8px 8px 0 0;font-size:11px;font-weight:600;cursor:pointer;background:' + (isActive ? 'white' : 'transparent') + ';color:' + (isActive ? 'var(--primary)' : 'var(--text-muted)') + ';white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:inherit;">' +
+          '<i class="fas fa-user"></i> ' + label +
+          '<span onclick="event.stopPropagation();closeChatTab(' + t.userId + ')" style="font-size:10px;color:var(--text-muted);margin-left:2px;padding:2px;border-radius:4px;cursor:pointer;">×</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    function switchChatTab(userId) {
+      if (chatInterval) clearInterval(chatInterval);
+      chatUserId = userId;
+      const tab = openChatTabs.find(t => t.userId === userId);
+      renderAdminChatTabs();
+      loadChatMessages(userId);
+      chatInterval = setInterval(() => loadChatMessages(chatUserId), 5000);
+    }
+
+    function closeChatTab(userId) {
+      openChatTabs = openChatTabs.filter(t => t.userId !== userId);
+      if (openChatTabs.length > 0) {
+        switchChatTab(openChatTabs[0].userId);
+      } else {
+        chatUserId = null;
+        if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+        document.getElementById('chatMessages').innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Selecione um chat para começar</p></div>';
+        renderAdminChatTabs();
+      }
     }
 
     function closeChatModal() {
       document.getElementById('chatModal').classList.remove('active');
-      if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+      // Keep tabs, don't clear them - so user can reopen and continue
     }
 
     document.getElementById('chatModal')?.addEventListener('click', function(e) {
@@ -998,19 +1042,13 @@
 
     async function checkUnreadChats() {
       try {
-        const [unreadRes, allRes] = await Promise.all([
-          fetch('/api/admin/chat-unread', {
-            headers: { 'Authorization': 'Bearer ' + getToken() }
-          }),
-          fetch('/api/admin/all-chats', {
-            headers: { 'Authorization': 'Bearer ' + getToken() }
-          })
-        ]);
-        const unreadList = await unreadRes.json();
-        const allList = await allRes.json();
-        allConversations = allList;
+        const res = await fetch('/api/admin/my-chats', {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const list = await res.json();
+        allConversations = list;
 
-        const totalUnread = unreadList.reduce((sum, c) => sum + c.unreadCount, 0);
+        const totalUnread = list.reduce((sum, c) => sum + c.unreadCount, 0);
         const badge = document.getElementById('chatUnreadBadge');
         if (badge) {
           if (totalUnread > 0) {
@@ -1023,7 +1061,7 @@
         // If chats tab is active, update the list
         const chatsTab = document.getElementById('tab-chats');
         if (chatsTab && chatsTab.classList.contains('active')) {
-          renderAllChats(allList);
+          renderAllChats(list);
         }
       } catch { return []; }
     }

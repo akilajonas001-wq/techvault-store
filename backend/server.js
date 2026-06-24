@@ -1048,7 +1048,19 @@ app.post('/api/admin/products/:id/toggle-pause', adminAuth, (req, res) => {
 
 // === ROTAS DE CHAT ===
 
-// Admin envia mensagem para um usuário
+// Helper: extrair mensagens de um chat (ignorando chave)
+function getChatMessages(chats, adminUserId, userId) {
+  const key = adminUserId + ':' + userId;
+  const altKey = 'general:' + userId;
+  // Try specific key first, then general
+  if (chats[key]) return chats[key];
+  if (chats[altKey]) return chats[altKey];
+  // Also check legacy format (just userId as key)
+  if (chats[String(userId)]) return chats[String(userId)];
+  return [];
+}
+
+// Admin envia mensagem (cria conversa admin-específica)
 app.post('/api/admin/chat/send', adminAuth, (req, res) => {
   try {
     const { userId, message } = req.body;
@@ -1056,10 +1068,35 @@ app.post('/api/admin/chat/send', adminAuth, (req, res) => {
       return res.status(400).json({ error: 'userId e mensagem são obrigatórios' });
     }
 
+    const adminUserId = req.adminUser.id;
     const chats = loadChats();
-    if (!chats[userId]) chats[userId] = [];
-    chats[userId].push({
+    const key = adminUserId + ':' + userId;
+
+    // Se existia conversa "general", migrar mensagens para este admin
+    const generalKey = 'general:' + userId;
+    if (chats[generalKey]) {
+      if (!chats[key]) chats[key] = [];
+      // Só migra se ainda não existe conversa com este admin
+      if (chats[key].length === 0) {
+        chats[key] = chats[generalKey];
+      }
+      delete chats[generalKey];
+    }
+
+    // Se existia conversa legacy (userId puro), migrar
+    const legacyKey = String(userId);
+    if (chats[legacyKey] && typeof chats[legacyKey] === 'object' && !legacyKey.includes(':')) {
+      if (!chats[key]) chats[key] = [];
+      if (chats[key].length === 0) {
+        chats[key] = chats[legacyKey];
+      }
+      delete chats[legacyKey];
+    }
+
+    if (!chats[key]) chats[key] = [];
+    chats[key].push({
       from: 'admin',
+      adminUserId: adminUserId,
       adminName: req.adminUser.nome,
       message: message.trim(),
       createdAt: new Date().toISOString(),
@@ -1073,11 +1110,12 @@ app.post('/api/admin/chat/send', adminAuth, (req, res) => {
   }
 });
 
-// Admin busca histórico de chat com um usuário
+// Admin busca histórico com um usuário (só da conversa deste admin)
 app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
   try {
     const chats = loadChats();
-    const messages = chats[req.params.userId] || [];
+    const adminUserId = req.adminUser.id;
+    const messages = getChatMessages(chats, adminUserId, req.params.userId);
     res.json(messages);
   } catch (error) {
     console.error('Erro ao carregar chat:', error);
@@ -1085,34 +1123,75 @@ app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
   }
 });
 
-// Listar chats com não lidos (admin)
-app.get('/api/admin/chat-unread', adminAuth, (req, res) => {
+// Admin lista TODAS as conversas dele
+app.get('/api/admin/my-chats', adminAuth, (req, res) => {
   try {
     const chats = loadChats();
     const users = loadUsers();
+    const adminUserId = req.adminUser.id;
     const result = [];
-    for (const [userId, messages] of Object.entries(chats)) {
-      const unread = messages.filter(m => m.from === 'user' && !m.read);
-      if (unread.length > 0) {
-        const user = users.find(u => u.id == userId);
-        result.push({
-          userId: parseInt(userId),
-          userName: user ? user.nome : 'Usuário #' + userId,
-          userEmail: user ? user.email : '',
-          unreadCount: unread.length,
-          lastMessage: messages[messages.length - 1]
-        });
-      }
+
+    for (const [convKey, messages] of Object.entries(chats)) {
+      if (!messages || !messages.length) continue;
+
+      // Verificar se esta conversa pertence a este admin
+      const [keyAdminId, keyUserId] = convKey.split(':');
+      if (!keyUserId) continue; // formato inválido
+
+      if (keyAdminId !== String(adminUserId) && keyAdminId !== 'general') continue;
+
+      const uid = parseInt(keyUserId);
+      const unread = messages.filter(m => m.from === 'user' && !m.read).length;
+      const user = users.find(u => u.id === uid);
+      result.push({
+        conversationKey: convKey,
+        userId: uid,
+        userName: user ? user.nome : 'Usuário #' + uid,
+        userEmail: user ? user.email : '',
+        unreadCount: unread,
+        totalMessages: messages.length,
+        lastMessage: messages[messages.length - 1],
+        updatedAt: messages[messages.length - 1].createdAt,
+        isGeneral: keyAdminId === 'general'
+      });
     }
+
+    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
     res.json(result);
   } catch (error) {
-    console.error('Erro ao carregar não lidos:', error);
-    res.status(500).json({ error: 'Erro ao carregar não lidos' });
+    console.error('Erro ao carregar conversas:', error);
+    res.status(500).json([]);
   }
 });
 
-// Usuário busca suas mensagens
-app.get('/api/chat/messages', (req, res) => {
+// Admin deleta conversa dele com um usuário
+app.delete('/api/admin/chat/:userId', adminAuth, (req, res) => {
+  try {
+    const chats = loadChats();
+    const adminUserId = req.adminUser.id;
+    const key = adminUserId + ':' + req.params.userId;
+    const generalKey = 'general:' + req.params.userId;
+
+    if (chats[key]) {
+      delete chats[key];
+    } else if (chats[generalKey]) {
+      delete chats[generalKey];
+    } else {
+      const legacyKey = String(req.params.userId);
+      if (chats[legacyKey]) delete chats[legacyKey];
+    }
+    saveChats(chats);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar conversa:', error);
+    res.status(500).json({ error: 'Erro ao deletar conversa' });
+  }
+});
+
+// === ROTAS DE CHAT PARA USUÁRIO ===
+
+// Lista conversas do usuário (quais admins ele conversou)
+app.get('/api/chat/conversations', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
@@ -1121,7 +1200,55 @@ app.get('/api/chat/messages', (req, res) => {
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
 
     const chats = loadChats();
-    const messages = chats[decoded.id] || [];
+    const users = loadUsers();
+    const result = [];
+
+    for (const [convKey, messages] of Object.entries(chats)) {
+      if (!messages || !messages.length) continue;
+      const [, keyUserId] = convKey.split(':');
+      if (!keyUserId) continue;
+      if (parseInt(keyUserId) !== decoded.id) continue;
+
+      // Encontrar admin desta conversa
+      const [keyAdminId] = convKey.split(':');
+      const adminMsgs = messages.filter(m => m.from === 'admin');
+      const adminName = adminMsgs.length > 0 ? adminMsgs[adminMsgs.length - 1].adminName : 'Atendimento';
+      const adminUserId = keyAdminId !== 'general' ? parseInt(keyAdminId) : null;
+
+      const unread = messages.filter(m => m.from === 'admin' && !m.read).length;
+      result.push({
+        conversationKey: convKey,
+        adminUserId: adminUserId,
+        adminName: adminName,
+        unreadCount: unread,
+        totalMessages: messages.length,
+        lastMessage: messages[messages.length - 1],
+        updatedAt: messages[messages.length - 1].createdAt,
+        isGeneral: keyAdminId === 'general'
+      });
+    }
+
+    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao carregar conversas:', error);
+    res.status(500).json([]);
+  }
+});
+
+// Usuário busca mensagens de uma conversa específica (com um admin)
+app.get('/api/chat/messages/:adminUserId', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
+
+    const chats = loadChats();
+    const key = req.params.adminUserId + ':' + decoded.id;
+    const generalKey = 'general:' + decoded.id;
+    const messages = chats[key] || chats[generalKey] || [];
     res.json(messages);
   } catch (error) {
     console.error('Erro ao carregar mensagens:', error);
@@ -1129,8 +1256,8 @@ app.get('/api/chat/messages', (req, res) => {
   }
 });
 
-// Usuário envia mensagem para o admin
-app.post('/api/chat/send', (req, res) => {
+// Usuário envia mensagem para um admin específico
+app.post('/api/chat/send/:adminUserId', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -1145,23 +1272,57 @@ app.post('/api/chat/send', (req, res) => {
       return res.status(400).json({ error: 'Mensagem vazia' });
     }
 
+    const adminUserId = req.params.adminUserId;
     const chats = loadChats();
-    if (!chats[decoded.id]) chats[decoded.id] = [];
-    chats[decoded.id].push({
+    let key;
+
+    if (adminUserId === 'general') {
+      key = 'general:' + decoded.id;
+    } else {
+      key = adminUserId + ':' + decoded.id;
+    }
+
+    if (!chats[key]) chats[key] = [];
+    chats[key].push({
       from: 'user',
       message: message.trim(),
       createdAt: new Date().toISOString(),
       read: false
     });
     saveChats(chats);
-    res.json({ success: true });
+    res.json({ success: true, conversationKey: key });
   } catch (error) {
     console.error('Erro ao enviar mensagem:', error);
     res.status(500).json({ error: 'Erro ao enviar mensagem' });
   }
 });
 
-// Usuário marca mensagens como lidas
+// Usuário deleta conversa com um admin específico
+app.delete('/api/chat/conversation/:adminUserId', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const chats = loadChats();
+    const key = req.params.adminUserId + ':' + decoded.id;
+    const generalKey = 'general:' + decoded.id;
+
+    if (chats[key]) delete chats[key];
+    else if (chats[generalKey]) delete chats[generalKey];
+    saveChats(chats);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar conversa:', error);
+    res.status(500).json({ error: 'Erro ao deletar conversa' });
+  }
+});
+
+// Usuário marca mensagens como lidas (de todas as conversas)
 app.post('/api/chat/read', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -1173,60 +1334,34 @@ app.post('/api/chat/read', (req, res) => {
     }
 
     const chats = loadChats();
-    if (chats[decoded.id]) {
-      chats[decoded.id].forEach(m => {
+    const userId = decoded.id;
+    let modified = false;
+
+    // Mark all admin messages as read in any conversation for this user
+    for (const [convKey, messages] of Object.entries(chats)) {
+      const [, keyUserId] = convKey.split(':');
+      if (!keyUserId) continue;
+      if (parseInt(keyUserId) === userId) {
+        messages.forEach(m => {
+          if (m.from === 'admin') m.read = true;
+        });
+        modified = true;
+      }
+    }
+
+    // Also handle legacy format
+    if (chats[userId] && Array.isArray(chats[userId])) {
+      chats[userId].forEach(m => {
         if (m.from === 'admin') m.read = true;
       });
-      saveChats(chats);
+      modified = true;
     }
+
+    if (modified) saveChats(chats);
     res.json({ success: true });
   } catch (error) {
     console.error('Erro ao marcar como lido:', error);
     res.status(500).json({ error: 'Erro ao marcar como lido' });
-  }
-});
-
-// Admin lista TODAS as conversas (não só não lidas)
-app.get('/api/admin/all-chats', adminAuth, (req, res) => {
-  try {
-    const chats = loadChats();
-    const users = loadUsers();
-    const result = [];
-    for (const [userId, messages] of Object.entries(chats)) {
-      if (!messages.length) continue;
-      const unread = messages.filter(m => m.from === 'user' && !m.read).length;
-      const user = users.find(u => u.id == userId);
-      result.push({
-        userId: parseInt(userId),
-        userName: user ? user.nome : 'Usuário #' + userId,
-        userEmail: user ? user.email : '',
-        unreadCount: unread,
-        totalMessages: messages.length,
-        lastMessage: messages[messages.length - 1],
-        updatedAt: messages[messages.length - 1].createdAt
-      });
-    }
-    // Ordenar por mais recente primeiro
-    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    res.json(result);
-  } catch (error) {
-    console.error('Erro ao carregar conversas:', error);
-    res.status(500).json([]);
-  }
-});
-
-// Admin deleta uma conversa
-app.delete('/api/admin/chat/:userId', adminAuth, (req, res) => {
-  try {
-    const chats = loadChats();
-    if (chats[req.params.userId]) {
-      delete chats[req.params.userId];
-      saveChats(chats);
-    }
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao deletar conversa:', error);
-    res.status(500).json({ error: 'Erro ao deletar conversa' });
   }
 });
 
