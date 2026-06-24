@@ -4,7 +4,8 @@ let currentFilters = {
   categoria: '',
   precoMin: '',
   precoMax: '',
-  ordem: 'relevancia'
+  ordem: 'relevancia',
+  freteGratis: false
 };
 let currentPage = 1;
 const ITEMS_PER_PAGE = 24;
@@ -12,25 +13,42 @@ let totalPages = 1;
 
 // Carregar página
 document.addEventListener('DOMContentLoaded', async () => {
-  // Pegar parâmetros da URL
   const params = new URLSearchParams(window.location.search);
   currentFilters.q = params.get('q') || '';
   currentFilters.categoria = params.get('categoria') || '';
-  currentFilters.precoMin = params.get('priceMin') || '';
-  currentFilters.precoMax = params.get('priceMax') || '';
+  currentFilters.precoMin = params.get('precoMin') || '';
+  currentFilters.precoMax = params.get('precoMax') || '';
   currentFilters.ordem = params.get('ordem') || 'relevancia';
+  currentFilters.freteGratis = params.get('freteGratis') === 'true';
+  const page = parseInt(params.get('page')) || 1;
 
-  // Preencher campo de busca
   if (currentFilters.q) {
     document.getElementById('searchInput').value = currentFilters.q;
   }
 
-  // Carregar categorias para filtro
+  const freteCheckbox = document.getElementById('freteGratis');
+  if (freteCheckbox) freteCheckbox.checked = currentFilters.freteGratis;
+
+  const sortSelect = document.getElementById('sortSelect');
+  if (sortSelect) sortSelect.value = currentFilters.ordem;
+
   await loadCategoriesFilter();
-  
-  // Carregar produtos
-  await loadProducts();
+  await loadProducts(page);
 });
+
+// Sincronizar filtros com a URL (sem recarregar a página)
+function syncFiltersToURL(page) {
+  const params = new URLSearchParams();
+  if (currentFilters.q) params.set('q', currentFilters.q);
+  if (currentFilters.categoria) params.set('categoria', currentFilters.categoria);
+  if (currentFilters.precoMin) params.set('precoMin', currentFilters.precoMin);
+  if (currentFilters.precoMax) params.set('precoMax', currentFilters.precoMax);
+  if (currentFilters.ordem && currentFilters.ordem !== 'relevancia') params.set('ordem', currentFilters.ordem);
+  if (currentFilters.freteGratis) params.set('freteGratis', 'true');
+  if (page && page > 1) params.set('page', page);
+  const url = params.toString() ? '/busca?' + params.toString() : '/busca';
+  history.replaceState(null, '', url);
+}
 
 // Carregar categorias no filtro
 async function loadCategoriesFilter() {
@@ -62,6 +80,7 @@ function selectCategory(categoria) {
     currentFilters.freteGratis = freteGratisCheckbox.checked;
   }
   
+  syncFiltersToURL();
   loadProducts();
 }
 
@@ -69,6 +88,7 @@ function selectCategory(categoria) {
 async function loadProducts(page) {
   try {
     currentPage = page || 1;
+    syncFiltersToURL(currentPage);
     var params = new URLSearchParams();
     if (currentFilters.q) params.set('q', currentFilters.q);
     if (currentFilters.categoria) params.set('categoria', currentFilters.categoria);
@@ -158,14 +178,16 @@ function renderPagination() {
 // Mudar ordenação
 function changeSort() {
   currentFilters.ordem = document.getElementById('sortSelect').value;
+  syncFiltersToURL();
   loadProducts();
 }
 
 // Ordenar produtos (chamado pelo select)
 function sortProducts() {
   currentFilters.ordem = document.getElementById('sortSelect').value;
-  currentFilters.referencePrice = null; // Limpa filtro de referência ao usar ordenação padrão
+  currentFilters.referencePrice = null;
   currentFilters.priceOrder = null;
+  syncFiltersToURL();
   loadProducts();
 }
 
@@ -197,14 +219,12 @@ function applyPriceFilter() {
   const referencePrice = parseFloat(document.getElementById('referencePrice').value) || 0;
   const order = document.getElementById('priceOrder').value;
   
-  // Armazenar preferências de filtro
   currentFilters.referencePrice = referencePrice;
   currentFilters.priceOrder = order;
   
-  // Fechar modal
   closePriceFilterModal();
   
-  // Recarregar produtos com novo filtro
+  syncFiltersToURL();
   loadProducts();
   
   showNotification('Filtro de preço aplicado!', 'success');
