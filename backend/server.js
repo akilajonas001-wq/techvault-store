@@ -47,7 +47,11 @@ if (!fs.existsSync(path.join(__dirname, 'data'))) {
 
 // Inicializar arquivos de dados
 if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, '[]');
+  const defaultUsers = [
+    { id: 1782180950305, nome: 'Akila Jonas', email: 'akilajonas001@gmail.com', senha: '$2a$10$3USPaX2T1MYLj7DHTFv3VOO20rZ33OjX1Qd3niP6LoZ0Y0308ZH2C', telefone: '', admin: true, role: 'admin', createdAt: '2026-06-23T02:15:50.305Z' },
+    { id: 1782315000000, nome: 'Kauanne Lopes da Silva', email: 'kkauanne80kau@gmail.com', senha: '$2a$10$2wMgvFy.ZpqPW/dOTTWOT.8XfpXNMQc1whv6UguGpUdhrZ2P1r7tq', telefone: '81999188978', admin: true, role: 'admin', createdAt: '2026-06-24T15:30:00.000Z' }
+  ];
+  fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
 }
 if (!fs.existsSync(ORDERS_FILE)) {
   fs.writeFileSync(ORDERS_FILE, '[]');
@@ -127,35 +131,47 @@ app.post('/api/register', async (req, res) => {
     const { nome, email, senha, telefone } = req.body;
     
     const users = loadUsers();
+    const existing = users.find(u => u.email === email);
     
-    if (users.find(u => u.email === email)) {
+    // Se ja existe um usuario com senha (registro completo), rejeita
+    if (existing && existing.senha) {
       return res.status(400).json({ error: 'Email já cadastrado' });
     }
     
     const senhaHash = await bcrypt.hash(senha, 10);
     
-    const newUser = {
-      id: Date.now(),
-      nome,
-      email,
-      senha: senhaHash,
-      telefone,
-      admin: false,
-      role: null,
-      createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
+    let user;
+    if (existing) {
+      // Placeholder criado via newsletter/cupom — atualiza com dados reais
+      existing.nome = nome;
+      existing.senha = senhaHash;
+      existing.telefone = telefone || existing.telefone || '';
+      if (!existing.admin) existing.admin = false;
+      if (!existing.role) existing.role = null;
+      user = existing;
+    } else {
+      user = {
+        id: Date.now(),
+        nome,
+        email,
+        senha: senhaHash,
+        telefone: telefone || '',
+        admin: false,
+        role: null,
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+    }
     saveUsers(users);
     
-    const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false, role: null }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, email: user.email, admin: user.admin === true, role: user.role || null }, JWT_SECRET, {
       expiresIn: '7d'
     });
     
     res.json({ 
       success: true, 
       token,
-      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false, role: null }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: user.admin === true, role: user.role || null }
     });
   } catch (error) {
     console.error('Erro no registro:', error);
@@ -656,6 +672,149 @@ if (!fs.existsSync(COUPONS_FILE)) {
     { code: 'FRETEGRATIS', discount: 100, type: 'frete', minValue: 150, valid: true }
   ], null, 2));
 }
+
+// Notificacoes
+const NOTIFICATIONS_FILE = path.join(__dirname, 'data', 'notifications.json');
+if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+  fs.writeFileSync(NOTIFICATIONS_FILE, '[]');
+}
+
+app.get('/api/notifications/my', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const notifications = JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, 'utf8'));
+    const userNotifs = notifications.filter(n => n.userId === decoded.id && !n.read);
+    res.json(userNotifs);
+  } catch { res.json([]); }
+});
+
+app.post('/api/notifications/read/:id', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const notifications = JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, 'utf8'));
+    const notif = notifications.find(n => n.id === req.params.id);
+    if (notif) notif.read = true;
+    fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Erro' }); }
+});
+
+app.post('/api/admin/coupons/create', adminAuth, (req, res) => {
+  try {
+    if (req.adminUser.role === 'funcionario') {
+      return res.status(403).json({ error: 'Apenas administradores podem criar cupons' });
+    }
+    const { email, code, discount } = req.body;
+    if (!email || !code || !discount) {
+      return res.status(400).json({ error: 'Email, código e desconto são obrigatórios' });
+    }
+    const users = loadUsers();
+    let user = users.find(u => u.email === email);
+
+    // Se o email não for um usuário registrado, verifica se está na newsletter
+    if (!user) {
+      const subscribers = JSON.parse(fs.readFileSync(NEWSLETTER_FILE, 'utf8'));
+      const subscriber = subscribers.find(s => s.email === email);
+      if (!subscriber) {
+        return res.status(404).json({ error: 'Email não encontrado na newsletter nem entre os usuários cadastrados' });
+      }
+      // Cria um usuário placeholder para vincular o cupom
+      user = {
+        id: Date.now(),
+        nome: email.split('@')[0],
+        email,
+        admin: false,
+        role: null,
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    }
+
+    const coupons = JSON.parse(fs.readFileSync(COUPONS_FILE, 'utf8'));
+    if (coupons.find(c => c.code.toUpperCase() === code.toUpperCase())) {
+      return res.status(400).json({ error: 'Código de cupom já existe' });
+    }
+
+    const coupon = {
+      code: code.toUpperCase(),
+      discount: parseFloat(discount),
+      type: 'percent',
+      minValue: 0,
+      userId: user.id,
+      userEmail: email,
+      used: false,
+      createdAt: new Date().toISOString(),
+      usedAt: null
+    };
+    coupons.push(coupon);
+    fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2));
+
+    const notifications = JSON.parse(fs.readFileSync(NOTIFICATIONS_FILE, 'utf8'));
+    notifications.push({
+      id: 'notif_' + Date.now(),
+      userId: user.id,
+      type: 'coupon',
+      title: '🎉 Cupom de desconto!',
+      message: `Você ganhou um cupom de ${discount}% de desconto! Use o código: ${code.toUpperCase()} no checkout.`,
+      couponCode: code.toUpperCase(),
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
+
+    res.json({ success: true, coupon });
+  } catch (error) {
+    console.error('Erro ao criar cupom:', error);
+    res.status(500).json({ error: 'Erro ao criar cupom' });
+  }
+});
+
+app.get('/api/coupons/my', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const coupons = JSON.parse(fs.readFileSync(COUPONS_FILE, 'utf8'));
+    const myCoupons = coupons.filter(c =>
+      (c.userId === decoded.id || c.userEmail === decoded.email) &&
+      !c.used
+    );
+    res.json(myCoupons);
+  } catch { res.json([]); }
+});
+
+app.post('/api/coupons/apply', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
+
+    const coupons = JSON.parse(fs.readFileSync(COUPONS_FILE, 'utf8'));
+    const coupon = coupons.find(c =>
+      c.code.toUpperCase() === code.toUpperCase() &&
+      (c.userId === decoded.id || c.userEmail === decoded.email) &&
+      !c.used
+    );
+    if (!coupon) return res.status(404).json({ error: 'Cupom não encontrado ou já utilizado' });
+
+    coupon.used = true;
+    coupon.usedAt = new Date().toISOString();
+    coupon.usedBy = decoded.id;
+    fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2));
+
+    res.json({ success: true, coupon: { code: coupon.code, discount: coupon.discount, type: coupon.type } });
+  } catch (error) {
+    console.error('Erro ao aplicar cupom:', error);
+    res.status(500).json({ error: 'Erro ao aplicar cupom' });
+  }
+});
 
 app.post('/api/coupons/validate', (req, res) => {
   try {

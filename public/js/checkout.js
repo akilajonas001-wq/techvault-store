@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkAuth();
   loadCartItems();
   loadUserData();
+  loadUserCoupons();
 });
 
 // Verificar autenticação
@@ -299,6 +300,42 @@ async function handleCheckout(event) {
 // Cupom de desconto
 let appliedCoupon = null;
 
+async function loadUserCoupons() {
+  try {
+    const token = localStorage.getItem('techvault-token');
+    if (!token) return;
+    const res = await fetch('/api/coupons/my', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const coupons = await res.json();
+    if (!coupons.length) return;
+    
+    const infoSection = document.querySelector('.checkout-section');
+    if (!infoSection) return;
+    
+    const cupomSection = infoSection.querySelector('[class*="gift"]')?.closest('div[style*="padding"]') || infoSection.querySelector('[style*="background: linear-gradient(135deg, rgba(26, 115, 232, 0.05)"]');
+    if (!cupomSection) return;
+    
+    let couponHtml = '<div style="margin-top:12px;padding:12px;background:#fefce8;border-radius:8px;border:1px solid #fde68a;">' +
+      '<p style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px;"><i class="fas fa-tag"></i> Seus cupons disponíveis:</p>';
+    
+    coupons.forEach(c => {
+      couponHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid #fef9c3;">' +
+        '<div><span style="font-size:12px;font-weight:700;color:#d97706;">' + c.code + '</span><span style="font-size:11px;color:#6b7280;margin-left:6px;">' + c.discount + '% off</span></div>' +
+        '<button onclick="quickApplyCoupon(\'' + c.code + '\')" style="padding:4px 10px;border:none;border-radius:4px;background:#d97706;color:white;font-size:11px;font-weight:600;cursor:pointer;">Usar</button>' +
+      '</div>';
+    });
+    
+    couponHtml += '</div>';
+    cupomSection.insertAdjacentHTML('afterend', couponHtml);
+  } catch {}
+}
+
+async function quickApplyCoupon(code) {
+  document.getElementById('couponInput').value = code;
+  await applyCoupon();
+}
+
 async function applyCoupon() {
   const input = document.getElementById('couponInput');
   const result = document.getElementById('couponResult');
@@ -309,6 +346,36 @@ async function applyCoupon() {
   if (!cartData) return;
   const total = cartData.total;
 
+  // Try personal coupon first
+  const token = localStorage.getItem('techvault-token');
+  if (token) {
+    try {
+      const myRes = await fetch('/api/coupons/my', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const myCoupons = await myRes.json();
+      const personal = myCoupons.find(c => c.code.toUpperCase() === code.toUpperCase());
+      if (personal) {
+        const applyRes = await fetch('/api/coupons/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ code })
+        });
+        const applyData = await applyRes.json();
+        if (applyData.success) {
+          const discountValue = total * (personal.discount / 100);
+          appliedCoupon = { code: personal.code, discountValue, discount: personal.discount, type: 'percent' };
+          const novoTotal = total - discountValue;
+          result.innerHTML = '<span style="color:var(--success)">✓ Cupom pessoal aplicado! Desconto de R$ ' + discountValue.toFixed(2).replace('.', ',') + '</span>';
+          document.getElementById('orderTotal').textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
+          loadUserCoupons();
+          return;
+        }
+      }
+    } catch {}
+  }
+
+  // Fallback: try global coupon validation
   try {
     const res = await fetch('/api/coupons/validate', {
       method: 'POST',

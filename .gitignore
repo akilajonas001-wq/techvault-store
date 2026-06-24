@@ -36,3 +36,10 @@ lerna-debug.log*
 # Environment
 .env
 .git-credentials
+
+# Data files (persist only on server, not in repo)
+backend/data/users.json
+backend/data/orders.json
+backend/data/cart.json
+backend/data/chats.json
+backend/data/coupons.json

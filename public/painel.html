@@ -485,6 +485,32 @@
       </div>
     </div>
 
+    <!-- Coupon Modal -->
+    <div class="modal-overlay" id="couponModal" style="display:none;">
+      <div class="modal-content" style="max-width:420px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-gift"></i> Dar Cupom</h3>
+          <button class="modal-close" onclick="closeCouponModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="padding:20px 0;">
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Email</label>
+            <input type="text" id="couponEmail" readonly style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg-cool);">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Código do Cupom</label>
+            <input type="text" id="couponCode" placeholder="Ex: DESCONTO10" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Desconto (%)</label>
+            <input type="number" id="couponDiscount" placeholder="10" min="1" max="100" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
+          </div>
+          <div id="couponResult" style="font-size:13px;margin-bottom:12px;"></div>
+          <button class="btn btn-primary btn-block" onclick="giveCoupon()"><i class="fas fa-check"></i> Criar Cupom</button>
+        </div>
+      </div>
+    </div>
+
   <script>
     const API_URL = '';
     let allOrders = [];
@@ -513,6 +539,8 @@
         if (currentUserRole === 'funcionario') {
           document.getElementById('addStaffForm').style.display = 'none';
           document.getElementById('revenueCard').style.display = 'none';
+          const nlBtn = document.querySelector('.tab-btn[data-tab="newsletter"]');
+          if (nlBtn) nlBtn.style.display = 'none';
         }
         document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
         loadAllData(token);
@@ -924,19 +952,65 @@
         return;
       }
 
+      const isAdmin = currentUserRole !== 'funcionario';
       container.innerHTML = '<div class="table-wrap"><table>' +
         '<thead><tr>' +
           '<th>Email</th>' +
           '<th>Data de Inscrição</th>' +
+          (isAdmin ? '<th style="width:120px">Cupom</th>' : '') +
         '</tr></thead><tbody>' +
         allNewsletter.map(s => {
           const date = s.createdAt ? new Date(s.createdAt).toLocaleString('pt-BR') : 'N/A';
           return '<tr>' +
             '<td>' + s.email + '</td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + date + '</td>' +
+            (isAdmin ? '<td><button class="order-detail-btn" onclick="openCouponModal(\'' + s.email + '\')" style="border-color:var(--success);color:var(--success);font-size:11px;"><i class="fas fa-gift"></i> Dar Cupom</button></td>' : '') +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
+    }
+
+    // Coupon modal
+    function openCouponModal(email) {
+      document.getElementById('couponEmail').value = email;
+      document.getElementById('couponCode').value = '';
+      document.getElementById('couponDiscount').value = '';
+      document.getElementById('couponResult').innerHTML = '';
+      document.getElementById('couponModal').style.display = 'flex';
+    }
+
+    function closeCouponModal() {
+      document.getElementById('couponModal').style.display = 'none';
+    }
+
+    async function giveCoupon() {
+      const email = document.getElementById('couponEmail').value;
+      const code = document.getElementById('couponCode').value.trim();
+      const discount = document.getElementById('couponDiscount').value.trim();
+      const result = document.getElementById('couponResult');
+
+      if (!code || !discount) {
+        result.innerHTML = '<span style="color:var(--error)">Preencha código e desconto</span>';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/coupons/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+          body: JSON.stringify({ email, code, discount })
+        });
+        const data = await res.json();
+        if (data.success) {
+          result.innerHTML = '<span style="color:var(--success)">✓ Cupom ' + data.coupon.code + ' criado com ' + discount + '% de desconto!</span>';
+          document.getElementById('couponCode').value = '';
+          document.getElementById('couponDiscount').value = '';
+        } else {
+          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro ao criar cupom') + '</span>';
+        }
+      } catch {
+        result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
+      }
     }
 
     function switchTab(tab, btn) {

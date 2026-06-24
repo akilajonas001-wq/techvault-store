@@ -90,10 +90,15 @@ function showUserMenu() {
       adminLink = `<a href="/painel" style="font-size: 14px; font-weight: 600; color: #1a73e8; text-decoration: none; transition: color 0.2s; display: flex; align-items: center; gap: 4px;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
-      <a href="/conta" style="font-size: 14px; font-weight: 500; color: var(--text-light); text-decoration: none; transition: color 0.2s;">Minha Conta</a>
+      <a href="/conta" style="font-size:14px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;">Minha Conta</a>
+      <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);" onclick="toggleNotifs()" title="Notificações">
+        <i class="far fa-bell"></i>
+        <span id="notifCount" style="display:none;position:absolute;top:-6px;right:-8px;background:#ef4444;color:white;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
+      </div>
       ${adminLink}
-      <a href="#" onclick="logout()" style="font-size: 14px; color: var(--text-light); text-decoration: none;">Sair</a>
+      <a href="#" onclick="logout()" style="font-size:14px;color:var(--text-light);text-decoration:none;">Sair</a>
     `;
+    checkNotifications();
   }
   if (userName && currentUser) userName.textContent = `Olá, ${currentUser.nome}`;
 
@@ -721,4 +726,102 @@ async function deleteConversation(adminUserId) {
   } catch {}
 }
 
+// Notificações
+let notifCount = 0;
+let notifInterval = null;
 
+function getToken() {
+  return localStorage.getItem('techvault-token');
+}
+
+async function checkNotifications() {
+  try {
+    const token = getToken();
+    if (!token) { hideNotifBadge(); return; }
+    const res = await fetch('/api/notifications/my', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) { hideNotifBadge(); return; }
+    const notifs = await res.json();
+    notifCount = notifs.length;
+    const badge = document.getElementById('notifCount');
+    const bell = document.getElementById('notifBell');
+    if (badge) {
+      if (notifCount > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = notifCount > 99 ? '99+' : notifCount;
+        if (bell) bell.style.color = '#f59e0b';
+      } else {
+        hideNotifBadge();
+      }
+    }
+  } catch { hideNotifBadge(); }
+}
+
+function hideNotifBadge() {
+  const badge = document.getElementById('notifCount');
+  const bell = document.getElementById('notifBell');
+  if (badge) { badge.style.display = 'none'; }
+  if (bell) { bell.style.color = ''; }
+}
+
+function toggleNotifs() {
+  const existing = document.getElementById('notifDropdown');
+  if (existing) { existing.remove(); return; }
+
+  const bell = document.getElementById('notifBell');
+  const dropdown = document.createElement('div');
+  dropdown.id = 'notifDropdown';
+  dropdown.style.cssText = 'position:fixed;top:' + (bell ? bell.getBoundingClientRect().bottom + 8 : 60) + 'px;right:20px;width:340px;max-height:400px;overflow-y:auto;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:99999;padding:0;';
+
+  dropdown.innerHTML = '<div style="padding:16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:14px;">Notificações</strong></div>';
+
+  const token = getToken();
+  if (!token) { dropdown.innerHTML += '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">Faça login para ver notificações</div>'; document.body.appendChild(dropdown); return; }
+
+  fetch('/api/notifications/my', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(r => r.json())
+    .then(notifs => {
+      if (!notifs.length) {
+        dropdown.innerHTML += '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">Nenhuma notificação</div>';
+      } else {
+        notifs.forEach(n => {
+          dropdown.innerHTML += '<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'" onclick="readNotif(\'' + n.id + '\',\'' + (n.couponCode || '') + '\')">' +
+            '<div style="font-size:13px;font-weight:600;color:#111;margin-bottom:2px;">' + (n.title || 'Notificação') + '</div>' +
+            '<div style="font-size:12px;color:#6b7280;line-height:1.4;">' + (n.message || '') + '</div>' +
+            (n.couponCode ? '<div style="margin-top:6px;display:inline-block;background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">Código: ' + n.couponCode + '</div>' : '') +
+          '</div>';
+        });
+      }
+      document.body.appendChild(dropdown);
+    })
+    .catch(() => {
+      dropdown.innerHTML += '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">Erro ao carregar</div>';
+      document.body.appendChild(dropdown);
+    });
+
+  document.addEventListener('click', function closeDropdown(e) {
+    if (!dropdown.contains(e.target) && e.target.closest('#notifBell') !== document.getElementById('notifBell')) {
+      dropdown.remove();
+      document.removeEventListener('click', closeDropdown);
+    }
+  });
+}
+
+async function readNotif(notifId, couponCode) {
+  try {
+    await fetch('/api/notifications/read/' + notifId, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    checkNotifications();
+    const dd = document.getElementById('notifDropdown');
+    if (dd) dd.remove();
+    if (couponCode) {
+      window.location.href = '/checkout?coupon=' + couponCode;
+    }
+  } catch {}
+}
+
+// Poll notifications every 30s
+setInterval(checkNotifications, 30000);
