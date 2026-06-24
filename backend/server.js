@@ -38,6 +38,7 @@ const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
 const COMMENTS_FILE = path.join(__dirname, 'data', 'comments.json');
 const CART_FILE = path.join(__dirname, 'data', 'cart.json');
+const CHATS_FILE = path.join(__dirname, 'data', 'chats.json');
 
 // Criar diretório data se não existir
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -59,6 +60,9 @@ if (!fs.existsSync(COMMENTS_FILE)) {
 }
 if (!fs.existsSync(CART_FILE)) {
   fs.writeFileSync(CART_FILE, '{}');
+}
+if (!fs.existsSync(CHATS_FILE)) {
+  fs.writeFileSync(CHATS_FILE, '{}');
 }
 
 // Funções auxiliares
@@ -96,6 +100,14 @@ function loadCarts() {
 
 function saveCarts(carts) {
   fs.writeFileSync(CART_FILE, JSON.stringify(carts, null, 2));
+}
+
+function loadChats() {
+  return JSON.parse(fs.readFileSync(CHATS_FILE, 'utf8'));
+}
+
+function saveChats(chats) {
+  fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2));
 }
 
 // Configuração do Nodemailer
@@ -1031,6 +1043,146 @@ app.post('/api/admin/products/:id/toggle-pause', adminAuth, (req, res) => {
   } catch (error) {
     console.error('Erro ao pausar/reativar produto:', error);
     res.status(500).json({ error: 'Erro ao atualizar produto' });
+  }
+});
+
+// === ROTAS DE CHAT ===
+
+// Admin envia mensagem para um usuário
+app.post('/api/admin/chat/send', adminAuth, (req, res) => {
+  try {
+    const { userId, message } = req.body;
+    if (!userId || !message || !message.trim()) {
+      return res.status(400).json({ error: 'userId e mensagem são obrigatórios' });
+    }
+
+    const chats = loadChats();
+    if (!chats[userId]) chats[userId] = [];
+    chats[userId].push({
+      from: 'admin',
+      adminName: req.adminUser.nome,
+      message: message.trim(),
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+    saveChats(chats);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    res.status(500).json({ error: 'Erro ao enviar mensagem' });
+  }
+});
+
+// Admin busca histórico de chat com um usuário
+app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
+  try {
+    const chats = loadChats();
+    const messages = chats[req.params.userId] || [];
+    res.json(messages);
+  } catch (error) {
+    console.error('Erro ao carregar chat:', error);
+    res.status(500).json({ error: 'Erro ao carregar chat' });
+  }
+});
+
+// Listar chats com não lidos (admin)
+app.get('/api/admin/chat-unread', adminAuth, (req, res) => {
+  try {
+    const chats = loadChats();
+    const users = loadUsers();
+    const result = [];
+    for (const [userId, messages] of Object.entries(chats)) {
+      const unread = messages.filter(m => m.from === 'user' && !m.read);
+      if (unread.length > 0) {
+        const user = users.find(u => u.id == userId);
+        result.push({
+          userId: parseInt(userId),
+          userName: user ? user.nome : 'Usuário #' + userId,
+          userEmail: user ? user.email : '',
+          unreadCount: unread.length,
+          lastMessage: messages[messages.length - 1]
+        });
+      }
+    }
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao carregar não lidos:', error);
+    res.status(500).json({ error: 'Erro ao carregar não lidos' });
+  }
+});
+
+// Usuário busca suas mensagens
+app.get('/api/chat/messages', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
+
+    const chats = loadChats();
+    const messages = chats[decoded.id] || [];
+    res.json(messages);
+  } catch (error) {
+    console.error('Erro ao carregar mensagens:', error);
+    res.status(500).json([]);
+  }
+});
+
+// Usuário envia mensagem para o admin
+app.post('/api/chat/send', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Mensagem vazia' });
+    }
+
+    const chats = loadChats();
+    if (!chats[decoded.id]) chats[decoded.id] = [];
+    chats[decoded.id].push({
+      from: 'user',
+      message: message.trim(),
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+    saveChats(chats);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao enviar mensagem:', error);
+    res.status(500).json({ error: 'Erro ao enviar mensagem' });
+  }
+});
+
+// Usuário marca mensagens como lidas
+app.post('/api/chat/read', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const chats = loadChats();
+    if (chats[decoded.id]) {
+      chats[decoded.id].forEach(m => {
+        if (m.from === 'admin') m.read = true;
+      });
+      saveChats(chats);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao marcar como lido:', error);
+    res.status(500).json({ error: 'Erro ao marcar como lido' });
   }
 });
 

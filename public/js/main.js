@@ -52,6 +52,7 @@ async function checkAuth() {
       currentUser = data.user;
       showUserMenu();
       syncCartToServer();
+      initUserChat();
     } else {
       localStorage.removeItem('techvault-token');
       showAuthButtons();
@@ -401,3 +402,212 @@ function toggleWishlist(productId, btn) {
 function isInWishlist(productId) {
   return getWishlist().includes(productId);
 }
+
+// === CHAT DO USUÁRIO ===
+let userChatInterval = null;
+let userChatModalActive = false;
+
+function initUserChat() {
+  if (!currentUser) return;
+  loadUnreadCount();
+
+  // Create chat bubble
+  if (!document.getElementById('userChatBubble')) {
+    const bubble = document.createElement('div');
+    bubble.id = 'userChatBubble';
+    bubble.innerHTML = '<i class="fas fa-comment-dots"></i><span id="chatBadge" style="display:none">0</span>';
+    bubble.onclick = toggleUserChat;
+    document.body.appendChild(bubble);
+  }
+
+  // Create chat modal
+  if (!document.getElementById('userChatModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'userChatModal';
+    modal.className = 'user-chat-modal';
+    modal.innerHTML = `
+      <div class="user-chat-header">
+        <span><i class="fas fa-headset"></i> Atendimento</span>
+        <button onclick="toggleUserChat()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="user-chat-messages" id="userChatMessages">
+        <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
+      </div>
+      <div class="user-chat-input">
+        <input type="text" id="userChatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendUserMessage()">
+        <button onclick="sendUserMessage()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    // Styles
+    const style = document.createElement('style');
+    style.textContent = `
+      #userChatBubble {
+        position:fixed;bottom:100px;right:24px;z-index:9999;
+        width:56px;height:56px;border-radius:50%;
+        background:var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1));
+        color:white;border:none;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 4px 20px rgba(0,0,0,0.25);
+        font-size:22px;transition:transform .2s;
+      }
+      #userChatBubble:hover { transform:scale(1.1); }
+      #chatBadge {
+        position:absolute;top:-4px;right:-4px;
+        background:#ef4444;color:white;font-size:11px;
+        min-width:20px;height:20px;border-radius:10px;
+        display:flex;align-items:center;justify-content:center;
+        font-weight:700;padding:0 5px;
+      }
+      .user-chat-modal {
+        position:fixed;bottom:170px;right:24px;z-index:9999;
+        width:360px;max-width:calc(100vw - 48px);
+        background:white;border-radius:16px;
+        box-shadow:0 8px 40px rgba(0,0,0,0.2);
+        display:none;flex-direction:column;
+        max-height:480px;overflow:hidden;
+        font-family:var(--font-family, 'Segoe UI', sans-serif);
+      }
+      .user-chat-modal.active { display:flex; }
+      .user-chat-header {
+        display:flex;justify-content:space-between;align-items:center;
+        padding:14px 18px;background:var(--primary, #1a73e8);color:white;
+        font-weight:600;font-size:15px;border-radius:16px 16px 0 0;
+      }
+      .user-chat-header button {
+        background:none;border:none;color:white;font-size:18px;cursor:pointer;padding:4px;
+      }
+      .user-chat-messages {
+        flex:1;padding:14px;overflow-y:auto;
+        display:flex;flex-direction:column;gap:8px;
+        background:#f8f9fa;min-height:250px;
+      }
+      .user-chat-input {
+        display:flex;gap:8px;padding:12px 14px;
+        border-top:1px solid #e2e8f0;
+        background:white;border-radius:0 0 16px 16px;
+      }
+      .user-chat-input input {
+        flex:1;padding:10px 14px;border:2px solid #e2e8f0;
+        border-radius:12px;font-size:14px;outline:none;
+        font-family:inherit;
+      }
+      .user-chat-input input:focus { border-color:var(--primary, #1a73e8); }
+      .user-chat-input button {
+        width:42px;height:42px;border-radius:12px;
+        background:var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1));
+        color:white;border:none;cursor:pointer;font-size:16px;
+        display:flex;align-items:center;justify-content:center;
+      }
+      .user-chat-input button:hover { opacity:.9; }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (userChatInterval) clearInterval(userChatInterval);
+  userChatInterval = setInterval(() => {
+    loadUnreadCount();
+    if (userChatModalActive) loadUserMessages();
+  }, 5000);
+}
+
+async function loadUnreadCount() {
+  if (!currentUser) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/messages', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const messages = await res.json();
+    const unread = messages.filter(m => m.from === 'admin' && !m.read).length;
+    const badge = document.getElementById('chatBadge');
+    if (badge) {
+      if (unread > 0) {
+        badge.textContent = unread;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  } catch {}
+}
+
+function toggleUserChat() {
+  const modal = document.getElementById('userChatModal');
+  if (!modal) return;
+  userChatModalActive = !modal.classList.contains('active');
+  modal.classList.toggle('active');
+  if (userChatModalActive) {
+    loadUserMessages();
+    markMessagesRead();
+  }
+}
+
+async function loadUserMessages() {
+  if (!currentUser) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/messages', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const messages = await res.json();
+    renderUserMessages(messages);
+  } catch {}
+}
+
+function renderUserMessages(messages) {
+  const container = document.getElementById('userChatMessages');
+  if (!container) return;
+  if (!messages.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda.<br>Envie uma mensagem para entrar em contato!</p></div>';
+    return;
+  }
+  container.innerHTML = messages.map(m => {
+    const isAdmin = m.from === 'admin';
+    const align = isAdmin ? 'flex-start' : 'flex-end';
+    const bg = isAdmin ? '#e8f0fe' : 'var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1))';
+    const color = isAdmin ? 'var(--text, #1a1a2e)' : 'white';
+    const time = new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const name = isAdmin ? (m.adminName || 'Admin') : 'Você';
+    return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:85%;align-self:' + align + ';">' +
+      '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
+      '<div style="background:' + bg + ';color:' + color + ';padding:10px 14px;border-radius:16px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
+      m.message +
+      '</div></div>';
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+async function markMessagesRead() {
+  if (!currentUser) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    await fetch('/api/chat/read', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+  } catch {}
+}
+
+async function sendUserMessage() {
+  const input = document.getElementById('userChatInput');
+  const message = input.value.trim();
+  if (!message) return;
+  input.value = '';
+
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadUserMessages();
+    }
+  } catch {}
+}
+
+
