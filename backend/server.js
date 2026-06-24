@@ -1186,6 +1186,50 @@ app.post('/api/chat/read', (req, res) => {
   }
 });
 
+// Admin lista TODAS as conversas (não só não lidas)
+app.get('/api/admin/all-chats', adminAuth, (req, res) => {
+  try {
+    const chats = loadChats();
+    const users = loadUsers();
+    const result = [];
+    for (const [userId, messages] of Object.entries(chats)) {
+      if (!messages.length) continue;
+      const unread = messages.filter(m => m.from === 'user' && !m.read).length;
+      const user = users.find(u => u.id == userId);
+      result.push({
+        userId: parseInt(userId),
+        userName: user ? user.nome : 'Usuário #' + userId,
+        userEmail: user ? user.email : '',
+        unreadCount: unread,
+        totalMessages: messages.length,
+        lastMessage: messages[messages.length - 1],
+        updatedAt: messages[messages.length - 1].createdAt
+      });
+    }
+    // Ordenar por mais recente primeiro
+    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao carregar conversas:', error);
+    res.status(500).json([]);
+  }
+});
+
+// Admin deleta uma conversa
+app.delete('/api/admin/chat/:userId', adminAuth, (req, res) => {
+  try {
+    const chats = loadChats();
+    if (chats[req.params.userId]) {
+      delete chats[req.params.userId];
+      saveChats(chats);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar conversa:', error);
+    res.status(500).json({ error: 'Erro ao deletar conversa' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));

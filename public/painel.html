@@ -458,7 +458,10 @@
       <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
           <h3><i class="fas fa-comments"></i> Chat com <span id="chatUserName">---</span></h3>
-          <button class="modal-close" onclick="closeChatModal()"><i class="fas fa-times"></i></button>
+          <div style="display:flex;gap:6px;">
+            <button class="modal-close" onclick="if(confirm('Deletar esta conversa?'))deleteCurrentChat()" id="deleteChatBtn" style="color:var(--error);" title="Deletar conversa"><i class="fas fa-trash-alt"></i></button>
+            <button class="modal-close" onclick="closeChatModal()"><i class="fas fa-times"></i></button>
+          </div>
         </div>
         <div id="chatMessages" style="max-height:400px;overflow-y:auto;margin-bottom:16px;padding:12px;background:var(--bg-cool);border-radius:12px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;">
           <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
@@ -985,6 +988,7 @@
 
     // === CHAT TAB + UNREAD POLLING ===
     let chatUnreadInterval = null;
+    let allConversations = [];
 
     function initChatUnreadPolling() {
       checkUnreadChats();
@@ -994,11 +998,19 @@
 
     async function checkUnreadChats() {
       try {
-        const res = await fetch('/api/admin/chat-unread', {
-          headers: { 'Authorization': 'Bearer ' + getToken() }
-        });
-        const list = await res.json();
-        const totalUnread = list.reduce((sum, c) => sum + c.unreadCount, 0);
+        const [unreadRes, allRes] = await Promise.all([
+          fetch('/api/admin/chat-unread', {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+          }),
+          fetch('/api/admin/all-chats', {
+            headers: { 'Authorization': 'Bearer ' + getToken() }
+          })
+        ]);
+        const unreadList = await unreadRes.json();
+        const allList = await allRes.json();
+        allConversations = allList;
+
+        const totalUnread = unreadList.reduce((sum, c) => sum + c.unreadCount, 0);
         const badge = document.getElementById('chatUnreadBadge');
         if (badge) {
           if (totalUnread > 0) {
@@ -1011,36 +1023,68 @@
         // If chats tab is active, update the list
         const chatsTab = document.getElementById('tab-chats');
         if (chatsTab && chatsTab.classList.contains('active')) {
-          renderAllChats(list);
+          renderAllChats(allList);
         }
-        return list;
       } catch { return []; }
     }
 
-    async function renderAllChats(list) {
+    function renderAllChats(list) {
       const container = document.getElementById('allChatsContainer');
       if (!list || !list.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa ainda</p></div>';
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa ainda</p><p style="font-size:12px;margin-top:8px;">Para iniciar, clique no ícone de chat nos Carrinhos ou Usuários</p></div>';
         document.getElementById('chatsCount').textContent = '';
         return;
       }
       document.getElementById('chatsCount').textContent = list.length + ' conversa' + (list.length !== 1 ? 's' : '');
       container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
-        '<th>Cliente</th><th>Email</th><th>Última mensagem</th><th>Não lidas</th><th></th>' +
+        '<th>Cliente</th><th>Email</th><th>Última mensagem</th><th></th><th>Ações</th>' +
         '</tr></thead><tbody>' +
         list.map(c => {
           const time = new Date(c.lastMessage.createdAt).toLocaleString('pt-BR');
-          const preview = c.lastMessage.message.length > 50 ? c.lastMessage.message.slice(0, 50) + '...' : c.lastMessage.message;
+          const preview = c.lastMessage.message.length > 55 ? c.lastMessage.message.slice(0, 55) + '...' : c.lastMessage.message;
           const fromLabel = c.lastMessage.from === 'admin' ? 'Admin' : 'Cliente';
+          const unreadBadge = c.unreadCount > 0
+            ? '<span style="background:#ef4444;color:white;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:700;">' + c.unreadCount + '</span>'
+            : '';
           return '<tr>' +
             '<td><strong>' + c.userName + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + c.userEmail + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
-            '<td><span style="background:#ef4444;color:white;border-radius:10px;padding:2px 10px;font-size:12px;font-weight:700;">' + c.unreadCount + '</span></td>' +
-            '<td><button onclick="openChat(' + c.userId + ', \'' + (c.userName || '').replace(/'/g, "\\'") + '\')" class="btn btn-primary" style="padding:6px 14px;font-size:12px;"><i class="fas fa-reply"></i> Responder</button></td>' +
+            '<td style="text-align:center;">' + unreadBadge + '</td>' +
+            '<td style="white-space:nowrap;">' +
+              '<button onclick="openChat(' + c.userId + ', \'' + (c.userName || '').replace(/'/g, "\\'") + '\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;margin-right:4px;"><i class="fas fa-reply"></i></button>' +
+              '<button onclick="deleteChat(' + c.userId + ')" class="btn" style="padding:5px 10px;font-size:11px;background:rgba(239,68,68,0.1);color:var(--error);"><i class="fas fa-trash-alt"></i></button>' +
+            '</td>' +
           '</tr>';
         }).join('') +
-        '</tbody></table></div>';
+        '</tbody></table></div>' +
+        '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center;">' +
+          'Total: ' + list.length + ' conversa' + (list.length !== 1 ? 's' : '') +
+        '</div>';
+    }
+
+    async function deleteChat(userId) {
+      const name = allConversations.find(c => c.userId === userId)?.userName || 'Usuário #' + userId;
+      if (!confirm('Deletar conversa com ' + name + '? Todas as mensagens serão perdidas.')) return;
+      try {
+        const res = await fetch('/api/admin/chat/' + userId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          // If this chat is currently open, close it
+          if (chatUserId === userId) closeChatModal();
+          checkUnreadChats();
+        }
+      } catch (err) {
+        console.error('Erro ao deletar:', err);
+      }
+    }
+
+    // Add delete from modal too (when modal is open, delete the current chat)
+    async function deleteCurrentChat() {
+      if (chatUserId) await deleteChat(chatUserId);
     }
 
     // Override switchTab to load chats when the tab is selected
