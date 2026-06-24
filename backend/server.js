@@ -1005,6 +1005,9 @@ app.get('/api/admin/products', adminAuth, (req, res) => {
 // Alterar preço de produto
 app.post('/api/admin/products/:id/update-price', adminAuth, (req, res) => {
   try {
+    if (req.adminUser.role === 'funcionario') {
+      return res.status(403).json({ error: 'Apenas administradores podem alterar preços' });
+    }
     const { preco } = req.body;
     if (!preco || preco <= 0) return res.status(400).json({ error: 'Preço inválido' });
 
@@ -1031,6 +1034,9 @@ app.post('/api/admin/products/:id/update-price', adminAuth, (req, res) => {
 // Pausar/reativar produto
 app.post('/api/admin/products/:id/toggle-pause', adminAuth, (req, res) => {
   try {
+    if (req.adminUser.role === 'funcionario') {
+      return res.status(403).json({ error: 'Apenas administradores podem pausar/reativar produtos' });
+    }
     const products = loadProducts();
     const product = products.find(p => p.id === parseInt(req.params.id));
     if (!product) return res.status(404).json({ error: 'Produto não encontrado' });

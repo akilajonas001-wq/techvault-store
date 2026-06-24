@@ -794,14 +794,15 @@
             ? '<span style="color:var(--error);font-weight:700;">R$ ' + (p.preco || 0).toFixed(2).replace('.', ',') + '</span>' +
               (p.precoOriginal ? '<br><span style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">R$ ' + p.precoOriginal.toFixed(2).replace('.', ',') + '</span>' : '')
             : 'R$ ' + (p.preco || 0).toFixed(2).replace('.', ',');
+          const isAdmin = currentUserRole !== 'funcionario';
           return '<tr' + rowBg + '>' +
             '<td><strong>' + (p.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (p.categoria || '') + '</td>' +
             '<td>' + priceDisplay +
-              '<br><button class="order-detail-btn" onclick="editPrice(' + p.id + ', ' + (p.preco || 0) + ')" style="margin-top:4px;font-size:11px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-edit"></i> Alterar</button>' +
+              (isAdmin ? '<br><button class="order-detail-btn" onclick="editPrice(' + p.id + ', ' + (p.preco || 0) + ')" style="margin-top:4px;font-size:11px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-edit"></i> Alterar</button>' : '') +
             '</td>' +
             '<td>' + statusBadge + '</td>' +
-            '<td><button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + '"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button></td>' +
+            '<td>' + (isAdmin ? '<button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + '"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button>' : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>' +
