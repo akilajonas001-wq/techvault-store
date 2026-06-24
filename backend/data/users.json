@@ -17,5 +17,14 @@
     "telefone": "",
     "admin": true,
     "createdAt": "2026-06-23T02:15:50.305Z"
+  },
+  {
+    "id": 1782315000000,
+    "nome": "Kauanne Lopes da Silva",
+    "email": "kkauanne80kau@gmail.com",
+    "senha": "$2a$10$2wMgvFy.ZpqPW/dOTTWOT.8XfpXNMQc1whv6UguGpUdhrZ2P1r7tq",
+    "telefone": "81999188978",
+    "admin": true,
+    "createdAt": "2026-06-24T15:30:00.000Z"
   }
 ]
