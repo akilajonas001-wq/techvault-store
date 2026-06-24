@@ -114,28 +114,51 @@ function updatePriceBreakdown(total) {
   netEl.textContent = `R$ ${netAmount.toFixed(2)}`;
 }
 
+// Máscara de CEP
+function mascaraCEP(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
+  input.value = v;
+}
+
 // Buscar CEP via API ViaCEP
 async function buscarCEP() {
   const cepInput = document.getElementById('cep');
   let cep = cepInput.value.replace(/\D/g, '');
   
   if (cep.length !== 8) return;
-  
+
+  // Mostrar loading
+  const campos = ['logradouro', 'bairro', 'cidade', 'estado'];
+  campos.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = 'Buscando...';
+  });
+
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await response.json();
     
     if (!data.erro) {
-      document.getElementById('logradouro').value = data.logradouro;
-      document.getElementById('bairro').value = data.bairro;
-      document.getElementById('cidade').value = data.localidade;
-      document.getElementById('estado').value = data.uf;
+      document.getElementById('logradouro').value = data.logradouro || '';
+      document.getElementById('bairro').value = data.bairro || '';
+      document.getElementById('cidade').value = data.localidade || '';
+      document.getElementById('estado').value = data.uf || '';
+      document.getElementById('numero')?.focus();
     } else {
       showNotification('CEP não encontrado', 'error');
+      campos.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
     }
   } catch (error) {
     console.error('Erro ao buscar CEP:', error);
-    showNotification('Erro ao buscar CEP', 'error');
+    showNotification('Erro ao buscar CEP. Tente novamente.', 'error');
+    campos.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
   }
 }
 

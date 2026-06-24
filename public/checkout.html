@@ -506,7 +506,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="cep">CEP *</label>
-                <input type="text" id="cep" name="cep" required placeholder="00000-000" maxlength="9" onblur="buscarCEP()">
+                <input type="text" id="cep" name="cep" required placeholder="00000-000" maxlength="9" oninput="mascaraCEP(this)" onblur="buscarCEP()">
               </div>
               <div class="form-group">
                 <label for="cidade">Cidade *</label>
@@ -521,7 +521,7 @@
               </div>
               <div class="form-group">
                 <label for="bairro">Bairro *</label>
-                <input type="text" id="bairro" name="bairro" required>
+                <input type="text" id="bairro" name="bairro" required readonly>
               </div>
             </div>
             
