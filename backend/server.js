@@ -962,7 +962,7 @@ app.post('/api/admin/set-role', adminAuth, (req, res) => {
   }
 });
 
-// Listar todos os produtos (admin) com status paused
+// Listar todos os produtos (admin) com status paused e precoAlterado
 app.get('/api/admin/products', adminAuth, (req, res) => {
   try {
     const products = loadProducts();
@@ -974,10 +974,44 @@ app.get('/api/admin/products', adminAuth, (req, res) => {
     }
     if (paused === 'true') filtered = filtered.filter(p => p.paused === true);
     if (paused === 'false') filtered = filtered.filter(p => !p.paused);
-    res.json(filtered.map(p => ({ id: p.id, nome: p.nome, categoria: p.categoria, preco: p.preco, paused: p.paused === true, imagem: p.imagem, estoque: p.estoque || 'N/A' })));
+    res.json(filtered.map(p => {
+      const modified = p.paused === true || p.precoAlterado === true;
+      return {
+        id: p.id, nome: p.nome, categoria: p.categoria,
+        preco: p.preco, precoOriginal: p.precoOriginal || null,
+        paused: p.paused === true, precoAlterado: p.precoAlterado === true,
+        modified,
+        imagem: p.imagem, estoque: p.estoque || 'N/A'
+      };
+    }));
   } catch (error) {
     console.error('Erro ao carregar produtos (admin):', error);
     res.status(500).json({ error: 'Erro ao carregar produtos' });
+  }
+});
+
+// Alterar preço de produto
+app.post('/api/admin/products/:id/update-price', adminAuth, (req, res) => {
+  try {
+    const { preco } = req.body;
+    if (!preco || preco <= 0) return res.status(400).json({ error: 'Preço inválido' });
+
+    const products = loadProducts();
+    const product = products.find(p => p.id === parseInt(req.params.id));
+    if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
+
+    if (!product.precoOriginal) {
+      product.precoOriginal = product.preco;
+    }
+    product.preco = parseFloat(preco);
+    product.precoAlterado = true;
+    const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
+
+    res.json({ success: true, id: product.id, nome: product.nome, preco: product.preco, precoOriginal: product.precoOriginal, precoAlterado: true });
+  } catch (error) {
+    console.error('Erro ao alterar preço:', error);
+    res.status(500).json({ error: 'Erro ao alterar preço' });
   }
 });
 

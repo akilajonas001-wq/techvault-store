@@ -638,6 +638,13 @@
       else if (filter === 'paused') filtered = filtered.filter(p => p.paused);
       if (search) filtered = filtered.filter(p => p.nome.toLowerCase().includes(search) || p.categoria.toLowerCase().includes(search));
 
+      // Produtos modificados/pausados aparecem primeiro
+      filtered.sort((a, b) => {
+        const aMod = a.modified || a.paused ? 1 : 0;
+        const bMod = b.modified || b.paused ? 1 : 0;
+        return bMod - aMod;
+      });
+
       if (!filtered.length) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-boxes"></i><p>Nenhum produto encontrado</p></div>';
         return;
@@ -652,22 +659,65 @@
           '<th>Ação</th>' +
         '</tr></thead><tbody>' +
         filtered.map(p => {
+          const isModified = p.modified || p.paused;
           const statusBadge = p.paused
             ? '<span class="badge badge-red"><i class="fas fa-pause-circle"></i> Pausado</span>'
-            : '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Ativo</span>';
+            : p.precoAlterado
+              ? '<span class="badge badge-orange"><i class="fas fa-dollar-sign"></i> Preço Alterado</span>'
+              : '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Ativo</span>';
+          const rowBg = isModified ? ' style="background:rgba(239,68,68,0.05);"' : '';
           const btnText = p.paused ? 'Reativar' : 'Pausar';
-          const btnClass = p.paused ? 'order-detail-btn' : 'order-detail-btn';
           const btnColor = p.paused ? 'var(--success)' : 'var(--error)';
-          return '<tr>' +
+          const priceDisplay = p.precoAlterado
+            ? '<span style="color:var(--error);font-weight:700;">R$ ' + (p.preco || 0).toFixed(2).replace('.', ',') + '</span>' +
+              (p.precoOriginal ? '<br><span style="font-size:11px;color:var(--text-muted);text-decoration:line-through;">R$ ' + p.precoOriginal.toFixed(2).replace('.', ',') + '</span>' : '')
+            : 'R$ ' + (p.preco || 0).toFixed(2).replace('.', ',');
+          return '<tr' + rowBg + '>' +
             '<td><strong>' + (p.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (p.categoria || '') + '</td>' +
-            '<td>R$ ' + (p.preco || 0).toFixed(2).replace('.', ',') + '</td>' +
+            '<td>' + priceDisplay +
+              '<br><button class="order-detail-btn" onclick="editPrice(' + p.id + ', ' + (p.preco || 0) + ')" style="margin-top:4px;font-size:11px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-edit"></i> Alterar</button>' +
+            '</td>' +
             '<td>' + statusBadge + '</td>' +
             '<td><button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + '"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button></td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>' +
-        '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">Mostrando ' + filtered.length + ' de ' + allProducts.length + ' produtos</div>';
+        '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);">' +
+          'Mostrando ' + filtered.length + ' de ' + allProducts.length + ' produtos | ' +
+          '<span style="color:var(--error)">🔴 Modificados</span> aparecem no topo' +
+        '</div>';
+    }
+
+    function editPrice(productId, currentPrice) {
+      const newPrice = prompt('Novo preço (R$):', currentPrice.toFixed(2).replace('.', ','));
+      if (!newPrice) return;
+      const price = parseFloat(newPrice.replace(',', '.'));
+      if (isNaN(price) || price <= 0) {
+        alert('Preço inválido');
+        return;
+      }
+      fetch('/api/admin/products/' + productId + '/update-price', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preco: price })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          const p = allProducts.find(x => x.id === productId);
+          if (p) {
+            p.preco = data.preco;
+            p.precoOriginal = data.precoOriginal;
+            p.precoAlterado = data.precoAlterado;
+            p.modified = true;
+          }
+          renderProducts();
+        } else {
+          alert(data.error || 'Erro ao alterar preço');
+        }
+      })
+      .catch(() => alert('Erro de conexão'));
     }
 
     function filterProducts() {
