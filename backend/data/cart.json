@@ -1,19 +1,6 @@
 {
   "1782180950305": {
-    "items": [
-      {
-        "id": "1-256",
-        "nome": "iPhone 16 Pro Max 256GB",
-        "preco": 13601,
-        "imagem": "/images/products/produto-1.svg",
-        "quantidade": 1,
-        "variantSpecs": {
-          "armazenamento": "256GB",
-          "cor": "Titânio Natural",
-          "memoria_ram": "8GB"
-        }
-      }
-    ],
-    "updatedAt": "2026-06-24T20:36:18.764Z"
+    "items": [],
+    "updatedAt": "2026-06-24T20:40:00.000Z"
   }
 }
