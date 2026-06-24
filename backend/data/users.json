@@ -11,9 +11,11 @@
     "id": 1782180950305,
     "nome": "Akila Jonas",
     "email": "akilajonas001@gmail.com",
+    "senha": "$2a$10$3USPaX2T1MYLj7DHTFv3VOO20rZ33OjX1Qd3niP6LoZ0Y0308ZH2C",
     "googleId": "104480679598695332283",
     "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIjTYwuICBAs8RqKhViPfpYnLqFO7sae3LBqWjmoP0ouY6bnA=s96-c",
     "telefone": "",
+    "admin": true,
     "createdAt": "2026-06-23T02:15:50.305Z"
   }
 ]

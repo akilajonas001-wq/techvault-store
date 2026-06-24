@@ -51,6 +51,7 @@ async function checkAuth() {
     if (data.authenticated) {
       currentUser = data.user;
       showUserMenu();
+      syncCartToServer();
     } else {
       localStorage.removeItem('techvault-token');
       showAuthButtons();
@@ -83,8 +84,13 @@ function showUserMenu() {
   if (authButtons) authButtons.style.display = 'none';
   if (userMenu) {
     userMenu.style.display = 'flex';
+    let adminLink = '';
+    if (currentUser && currentUser.admin) {
+      adminLink = `<a href="/painel" style="font-size: 14px; font-weight: 600; color: #1a73e8; text-decoration: none; transition: color 0.2s; display: flex; align-items: center; gap: 4px;"><i class="fas fa-shield-alt"></i> Painel</a>`;
+    }
     userMenu.innerHTML = `
       <a href="/conta" style="font-size: 14px; font-weight: 500; color: var(--text-light); text-decoration: none; transition: color 0.2s;">Minha Conta</a>
+      ${adminLink}
       <a href="#" onclick="logout()" style="font-size: 14px; color: var(--text-light); text-decoration: none;">Sair</a>
     `;
   }
@@ -97,6 +103,7 @@ function showUserMenu() {
     const registerLink = mobileNav.querySelector('a[href="/registro"]');
     const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
     const existingLogout = mobileNav.querySelector('.mobile-logout');
+    const existingAdminLink = mobileNav.querySelector('.mobile-admin-link');
     if (loginLink) loginLink.style.display = 'none';
     if (registerLink) registerLink.style.display = 'none';
     if (myAccountLink) myAccountLink.style.display = 'flex';
@@ -107,6 +114,17 @@ function showUserMenu() {
       logoutLink.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sair';
       logoutLink.onclick = (e) => { e.preventDefault(); logout(); };
       myAccountLink?.after(logoutLink);
+    }
+    if (currentUser && currentUser.admin && !existingAdminLink) {
+      const adminLink = document.createElement('a');
+      adminLink.href = '/painel';
+      adminLink.className = 'mobile-admin-link';
+      adminLink.innerHTML = '<i class="fas fa-shield-alt" style="color:#1a73e8"></i> Painel Admin';
+      adminLink.onclick = () => { toggleMobileMenu(); };
+      myAccountLink?.after(adminLink);
+    }
+    if (existingAdminLink && (!currentUser || !currentUser.admin)) {
+      existingAdminLink.remove();
     }
   }
 }
@@ -129,6 +147,22 @@ function logout() {
   window.location.href = '/';
 }
 
+// Sincronizar carrinho com o servidor (para admin ver carrinhos ativos)
+async function syncCartToServer() {
+  const token = localStorage.getItem('techvault-token');
+  if (!token || !currentUser) return;
+  try {
+    await fetch('/api/cart/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ items: cart })
+    });
+  } catch (e) { /* silencioso */ }
+}
+
 function addToCart(produto) {
   const existingItem = cart.find(item => item.id === produto.id);
 
@@ -139,12 +173,14 @@ function addToCart(produto) {
   }
 
   saveCart();
+  syncCartToServer();
   showNotification(`${produto.nome} adicionado ao carrinho!`, 'success');
 }
 
 function removeFromCart(productId) {
   cart = cart.filter(item => item.id !== productId);
   saveCart();
+  syncCartToServer();
   renderCartItems();
 }
 
@@ -233,6 +269,7 @@ function changeQuantity(productId, delta) {
     removeFromCart(productId);
   } else {
     saveCart();
+    syncCartToServer();
     renderCartItems();
   }
 }

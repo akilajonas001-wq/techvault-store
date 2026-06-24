@@ -37,6 +37,7 @@ const USERS_FILE = path.join(__dirname, 'data', 'users.json');
 const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
 const COMMENTS_FILE = path.join(__dirname, 'data', 'comments.json');
+const CART_FILE = path.join(__dirname, 'data', 'cart.json');
 
 // Criar diretório data se não existir
 if (!fs.existsSync(path.join(__dirname, 'data'))) {
@@ -55,6 +56,9 @@ if (!fs.existsSync(PRODUCTS_FILE)) {
 }
 if (!fs.existsSync(COMMENTS_FILE)) {
   fs.writeFileSync(COMMENTS_FILE, '[]');
+}
+if (!fs.existsSync(CART_FILE)) {
+  fs.writeFileSync(CART_FILE, '{}');
 }
 
 // Funções auxiliares
@@ -84,6 +88,14 @@ function loadComments() {
 
 function saveComments(comments) {
   fs.writeFileSync(COMMENTS_FILE, JSON.stringify(comments, null, 2));
+}
+
+function loadCarts() {
+  return JSON.parse(fs.readFileSync(CART_FILE, 'utf8'));
+}
+
+function saveCarts(carts) {
+  fs.writeFileSync(CART_FILE, JSON.stringify(carts, null, 2));
 }
 
 // Configuração do Nodemailer
@@ -116,20 +128,21 @@ app.post('/api/register', async (req, res) => {
       email,
       senha: senhaHash,
       telefone,
+      admin: false,
       createdAt: new Date().toISOString()
     };
     
     users.push(newUser);
     saveUsers(users);
     
-    const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, {
+    const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false }, JWT_SECRET, {
       expiresIn: '7d'
     });
     
     res.json({ 
       success: true, 
       token,
-      user: { id: newUser.id, nome: newUser.nome, email: newUser.email }
+      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false }
     });
   } catch (error) {
     console.error('Erro no registro:', error);
@@ -155,14 +168,15 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
     
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+    const isAdmin = user.admin === true;
+    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin }, JWT_SECRET, {
       expiresIn: '7d'
     });
     
     res.json({ 
       success: true, 
       token,
-      user: { id: user.id, nome: user.nome, email: user.email }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin }
     });
   } catch (error) {
     console.error('Erro no login:', error);
@@ -202,6 +216,7 @@ app.post('/api/auth/google', async (req, res) => {
         googleId,
         avatar: picture || null,
         telefone: '',
+        admin: false,
         createdAt: new Date().toISOString()
       };
       users.push(user);
@@ -212,14 +227,15 @@ app.post('/api/auth/google', async (req, res) => {
       saveUsers(users);
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+    const isAdmin = user.admin === true;
+    const token = jwt.sign({ id: user.id, email: user.email, admin: isAdmin }, JWT_SECRET, {
       expiresIn: '7d'
     });
 
     res.json({
       success: true,
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, avatar: user.avatar }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, avatar: user.avatar }
     });
   } catch (error) {
     console.error('Erro no login com Google:', error);
@@ -388,9 +404,10 @@ app.get('/api/auth/check', (req, res) => {
       return res.json({ authenticated: false });
     }
     
+    const isAdmin = user.admin === true;
     res.json({ 
       authenticated: true, 
-      user: { id: user.id, nome: user.nome, email: user.email }
+      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin }
     });
   } catch (error) {
     res.json({ authenticated: false });
@@ -759,6 +776,127 @@ app.delete('/api/products/:id/comments/:commentId', (req, res) => {
   }
 });
 
+// Middleware de admin
+function adminAuth(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const users = loadUsers();
+    const user = users.find(u => u.id === decoded.id);
+    if (!user || user.admin !== true) {
+      return res.status(403).json({ error: 'Acesso restrito a administradores' });
+    }
+    req.adminUser = user;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Token inválido' });
+  }
+}
+
+// Sincronizar carrinho do usuário no servidor
+app.post('/api/cart/sync', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const { items } = req.body;
+    const carts = loadCarts();
+    carts[decoded.id] = { items: items || [], updatedAt: new Date().toISOString() };
+    saveCarts(carts);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao sincronizar carrinho:', error);
+    res.status(500).json({ error: 'Erro ao salvar carrinho' });
+  }
+});
+
+// Limpar carrinho do servidor (após compra)
+app.post('/api/cart/clear', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const carts = loadCarts();
+    delete carts[decoded.id];
+    saveCarts(carts);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao limpar carrinho:', error);
+    res.status(500).json({ error: 'Erro ao limpar carrinho' });
+  }
+});
+
+// === ROTAS DE ADMIN ===
+
+app.get('/api/admin/orders', adminAuth, (req, res) => {
+  try {
+    const orders = loadOrders();
+    const sorted = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    res.json(sorted);
+  } catch (error) {
+    console.error('Erro ao carregar pedidos (admin):', error);
+    res.status(500).json({ error: 'Erro ao carregar pedidos' });
+  }
+});
+
+app.get('/api/admin/users', adminAuth, (req, res) => {
+  try {
+    const users = loadUsers();
+    const safe = users.map(u => ({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      telefone: u.telefone || '',
+      admin: u.admin === true,
+      createdAt: u.createdAt,
+      googleId: u.googleId ? true : false
+    }));
+    res.json(safe);
+  } catch (error) {
+    console.error('Erro ao carregar usuários (admin):', error);
+    res.status(500).json({ error: 'Erro ao carregar usuários' });
+  }
+});
+
+app.get('/api/admin/carts', adminAuth, (req, res) => {
+  try {
+    const carts = loadCarts();
+    const users = loadUsers();
+    const result = [];
+
+    for (const [userId, cartData] of Object.entries(carts)) {
+      const user = users.find(u => u.id == userId);
+      if (user && cartData.items && cartData.items.length > 0) {
+        result.push({
+          userId: parseInt(userId),
+          userName: user.nome,
+          userEmail: user.email,
+          items: cartData.items,
+          itemCount: cartData.items.reduce((s, i) => s + (i.quantidade || 1), 0),
+          updatedAt: cartData.updatedAt
+        });
+      }
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao carregar carrinhos (admin):', error);
+    res.status(500).json({ error: 'Erro ao carregar carrinhos' });
+  }
+});
+
 // Servir páginas
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
@@ -819,6 +957,10 @@ app.get('/frete-entrega', (req, res) => {
 
 app.get('/devolucoes', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'devolucoes.html'));
+});
+
+app.get('/painel', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'painel.html'));
 });
 
 app.listen(PORT, () => {

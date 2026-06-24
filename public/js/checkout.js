@@ -219,6 +219,11 @@ async function handleCheckout(event) {
     if (response.ok && data.success) {
       // Limpar carrinho
       localStorage.removeItem('techvault-cart');
+      // Limpar carrinho no servidor
+      fetch('/api/cart/clear', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).catch(() => {});
       
       // Mostrar mensagem de sucesso
       const picpayFee = finalTotal * PICPAY_FEE;
