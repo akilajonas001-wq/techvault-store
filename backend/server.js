@@ -1000,11 +1000,12 @@ app.post('/api/admin/products/:id/update-price', adminAuth, (req, res) => {
     const product = products.find(p => p.id === parseInt(req.params.id));
     if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
+    const parsedPreco = parseFloat(preco);
     if (!product.precoOriginal) {
       product.precoOriginal = product.preco;
     }
-    product.preco = parseFloat(preco);
-    product.precoAlterado = true;
+    product.preco = parsedPreco;
+    product.precoAlterado = parsedPreco !== product.precoOriginal;
     const PRODUCTS_FILE = path.join(__dirname, 'data', 'products.json');
     fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
 
