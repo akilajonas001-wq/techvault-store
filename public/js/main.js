@@ -179,7 +179,8 @@ function addToCart(produto) {
 }
 
 function removeFromCart(productId) {
-  cart = cart.filter(item => item.id !== productId);
+  const id = Number(productId);
+  cart = cart.filter(item => item.id !== id);
   saveCart();
   syncCartToServer();
   renderCartItems();
@@ -262,7 +263,8 @@ function renderCartItems() {
 }
 
 function changeQuantity(productId, delta) {
-  const item = cart.find(i => i.id === productId);
+  const id = Number(productId);
+  const item = cart.find(i => i.id === id);
   if (!item) return;
 
   item.quantidade += delta;
