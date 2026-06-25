@@ -60,7 +60,9 @@ router.post('/products', async (req, res) => {
       categoria: p.categoria || 'outros', imagem: p.imagem || '',
       imagens: p.imagens || [], estoque: p.estoque || 'N/A',
       destaque: p.destaque === true, avaliacao: parseFloat(p.avaliacao) || 0,
-      reviews: parseInt(p.reviews) || 0, createdAt: new Date().toISOString()
+      reviews: parseInt(p.reviews) || 0,
+      specs: p.specs || {}, variants: p.variants || [],
+      createdAt: new Date().toISOString()
     });
     res.json({ success: true, product: produto });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao criar produto' }); }

@@ -421,16 +421,111 @@
       <div class="card">
         <div class="card-header">
           <h2><i class="fas fa-boxes"></i> Gerenciar Produtos</h2>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
             <input type="text" id="productSearch" placeholder="Buscar produto..." oninput="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;width:200px;">
             <select id="productFilter" onchange="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:var(--white);">
               <option value="all">Todos</option>
               <option value="active">Ativos</option>
               <option value="paused">Pausados</option>
             </select>
+            <button class="order-detail-btn" onclick="openCreateProductModal()" style="border-color:var(--success);color:var(--success);font-weight:600;"><i class="fas fa-plus-circle"></i> Novo Produto</button>
           </div>
         </div>
         <div id="productsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando produtos...</div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="createProductModal" style="z-index:2000;">
+      <div class="modal-content" style="max-width:800px;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header">
+          <h3><i class="fas fa-plus-circle"></i> Criar Novo Produto</h3>
+          <button class="modal-close" onclick="closeCreateProductModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="createProductContent" style="padding:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Nome do Produto *</label>
+              <input type="text" id="cpNome" placeholder="Ex: iPhone 16 Pro Max 512GB" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Descrição</label>
+              <textarea id="cpDescricao" placeholder="Descrição detalhada do produto..." rows="3" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Preço (R$) *</label>
+              <input type="number" id="cpPreco" placeholder="1299" step="0.01" min="0" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Preço Original (opcional)</label>
+              <input type="number" id="cpPrecoOriginal" placeholder="1499" step="0.01" min="0" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Categoria</label>
+              <input type="text" id="cpCategoria" placeholder="Ex: Celulares e Smartphones" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div>
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Estoque</label>
+              <input type="text" id="cpEstoque" placeholder="45 ou N/A" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">URL da Imagem Principal</label>
+              <input type="url" id="cpImagem" placeholder="/images/products/produto-xxx.svg" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagens Adicionais (URLs, uma por linha)</label>
+              <textarea id="cpImagens" placeholder="/images/products/produto-xxx-1.svg&#10;/images/products/produto-xxx-2.svg" rows="2" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+            </div>
+            <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="cpDestaque" style="width:18px;height:18px;">
+              <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
+            </div>
+          </div>
+
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h4 style="font-size:15px;font-weight:600;"><i class="fas fa-layer-group"></i> Variantes do Produto</h4>
+            <button class="order-detail-btn" onclick="addVariant()" style="border-color:var(--primary);color:var(--primary);font-size:12px;"><i class="fas fa-plus"></i> Adicionar Variante</button>
+          </div>
+          <div id="variantsContainer" style="display:flex;flex-direction:column;gap:16px;">
+            <div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <strong style="font-size:14px;">Variante 1</strong>
+                <button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div>
+                  <label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label>
+                  <input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+                </div>
+                <div>
+                  <label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label>
+                  <input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                  <label style="font-size:12px;font-weight:500;">Especificações da Variante</label>
+                  <button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>
+                </div>
+                <div class="vpSpecs">
+                  <div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">
+                    <input type="text" class="vpSpecKey" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">
+                    <input type="text" class="vpSpecValue" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">
+                    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button class="order-detail-btn" onclick="closeCreateProductModal()" style="border-color:var(--text-muted);color:var(--text-muted);">Cancelar</button>
+            <button class="order-detail-btn" onclick="submitCreateProduct()" style="border-color:var(--success);color:var(--success);background:var(--success);color:white;font-weight:600;padding:10px 24px;"><i class="fas fa-check"></i> Criar Produto e Salvar</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -878,6 +973,171 @@
         }
       } catch (err) {
         console.error('Erro ao pausar/reativar:', err);
+      }
+    }
+
+    // === CREATE PRODUCT MODAL ===
+    function openCreateProductModal() {
+      document.getElementById('createProductModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeCreateProductModal() {
+      document.getElementById('createProductModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function addVariant() {
+      const container = document.getElementById('variantsContainer');
+      const cards = container.querySelectorAll('.variant-card');
+      const idx = cards.length;
+      const card = document.createElement('div');
+      card.className = 'variant-card';
+      card.dataset.index = idx;
+      card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;';
+      card.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+          '<strong style="font-size:14px;">Variante ' + (idx+1) + '</strong>' +
+          '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+            '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
+            '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
+          '</div>' +
+          '<div class="vpSpecs"></div>' +
+        '</div>';
+      container.appendChild(card);
+    }
+
+    function removeVariant(btn) {
+      const card = btn.closest('.variant-card');
+      if (document.getElementById('variantsContainer').querySelectorAll('.variant-card').length <= 1) {
+        alert('Deve haver pelo menos uma variante.');
+        return;
+      }
+      card.remove();
+      document.getElementById('variantsContainer').querySelectorAll('.variant-card').forEach(function(c, i) {
+        c.querySelector('strong').textContent = 'Variante ' + (i+1);
+      });
+    }
+
+    function addVariantSpec(btn) {
+      const container = btn.closest('.variant-card').querySelector('.vpSpecs');
+      const row = document.createElement('div');
+      row.className = 'vpSpec-row';
+      row.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
+      row.innerHTML =
+        '<input type="text" class="vpSpecKey" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+        '<input type="text" class="vpSpecValue" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+        '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>';
+      container.appendChild(row);
+    }
+
+    async function submitCreateProduct() {
+      const nome = document.getElementById('cpNome').value.trim();
+      const preco = parseFloat(document.getElementById('cpPreco').value);
+      if (!nome || !preco || preco <= 0) {
+        alert('Nome e preço são obrigatórios.');
+        return;
+      }
+
+      const descricao = document.getElementById('cpDescricao').value.trim();
+      const precoOriginal = document.getElementById('cpPrecoOriginal').value ? parseFloat(document.getElementById('cpPrecoOriginal').value) : null;
+      const categoria = document.getElementById('cpCategoria').value.trim() || 'outros';
+      const estoque = document.getElementById('cpEstoque').value.trim() || 'N/A';
+      const imagem = document.getElementById('cpImagem').value.trim() || '';
+      const imagens = document.getElementById('cpImagens').value.trim().split('\n').filter(Boolean);
+      const destaque = document.getElementById('cpDestaque').checked;
+
+      const variantCards = document.getElementById('variantsContainer').querySelectorAll('.variant-card');
+      const variants = [];
+      const specs = {};
+      variantCards.forEach(function(card) {
+        const vNome = card.querySelector('.vpNome').value.trim();
+        const vPreco = parseFloat(card.querySelector('.vpPreco').value) || 0;
+        const vSpecs = {};
+        card.querySelectorAll('.vpSpec-row').forEach(function(row) {
+          const key = row.querySelector('.vpSpecKey').value.trim();
+          const value = row.querySelector('.vpSpecValue').value.trim();
+          if (key && value) vSpecs[key] = value;
+        });
+        variants.push({ nome: vNome, preco: vPreco, especificacoes: vSpecs });
+
+        // Also collect specs from the first variant for the base specs
+        Object.assign(specs, vSpecs);
+      });
+
+      const productData = {
+        nome: nome,
+        descricao: descricao,
+        preco: preco,
+        precoOriginal: precoOriginal,
+        categoria: categoria,
+        imagem: imagem,
+        imagens: imagens,
+        estoque: estoque,
+        destaque: destaque,
+        avaliacao: 0,
+        reviews: 0,
+        specs: specs,
+        variants: variants
+      };
+
+      try {
+        const res = await fetch('/api/admin/products', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+          body: JSON.stringify(productData)
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeCreateProductModal();
+          alert('Produto "' + nome + '" criado com sucesso!');
+          allProducts.push(data.product);
+          renderProducts();
+          // Reset form
+          document.getElementById('cpNome').value = '';
+          document.getElementById('cpDescricao').value = '';
+          document.getElementById('cpPreco').value = '';
+          document.getElementById('cpPrecoOriginal').value = '';
+          document.getElementById('cpCategoria').value = '';
+          document.getElementById('cpEstoque').value = '';
+          document.getElementById('cpImagem').value = '';
+          document.getElementById('cpImagens').value = '';
+          document.getElementById('cpDestaque').checked = false;
+          document.getElementById('variantsContainer').innerHTML =
+            '<div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+                '<strong style="font-size:14px;">Variante 1</strong>' +
+                '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
+              '</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+                '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+                '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+              '</div>' +
+              '<div>' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                  '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
+                  '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
+                '</div>' +
+                '<div class="vpSpecs">' +
+                  '<div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">' +
+                    '<input type="text" class="vpSpecKey" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+                    '<input type="text" class="vpSpecValue" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+                    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        } else {
+          alert(data.error || 'Erro ao criar produto');
+        }
+      } catch (err) {
+        alert('Erro de conexão: ' + err.message);
       }
     }
 
