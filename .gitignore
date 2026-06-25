@@ -10,3 +10,5 @@ backend/data/chats.json
 backend/data/newsletter.json
 backend/data/wishlist.json
 backend/data/notifications.json
+backend/data/*.db*
+backend/data/*.sqlite*

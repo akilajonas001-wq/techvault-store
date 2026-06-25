@@ -1,0 +1,315 @@
+const express = require('express');
+const db = require('../db');
+const nodemailer = require('nodemailer');
+const { requireAuth } = require('../middleware/auth');
+
+const router = express.Router();
+const PIX_KEY = process.env.PIX_KEY || 'techvault@picpay.com';
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
+    pass: process.env.EMAIL_PASS || ''
+  }
+});
+
+// ========== PRODUTOS ==========
+
+router.get('/products/featured', (req, res) => {
+  try { res.json(db.featuredProducts()); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar destaques' }); }
+});
+
+router.get('/products/offers', (req, res) => {
+  try { res.json(db.offerProducts()); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar ofertas' }); }
+});
+
+router.get('/products/search', (req, res) => {
+  try {
+    const { q, categoria, precoMin, precoMax, ordem, page, limit } = req.query;
+    let products = db.allProducts().filter(p => !p.paused);
+
+    if (q) {
+      const termo = q.toLowerCase();
+      products = products.filter(p =>
+        p.nome.toLowerCase().includes(termo) ||
+        p.descricao?.toLowerCase().includes(termo) ||
+        p.categoria.toLowerCase().includes(termo)
+      );
+    }
+    if (categoria) products = products.filter(p => p.categoria === categoria);
+    if (precoMin) products = products.filter(p => p.preco >= parseFloat(precoMin));
+    if (precoMax) products = products.filter(p => p.preco <= parseFloat(precoMax));
+    if (ordem === 'menor-preco') products.sort((a, b) => a.preco - b.preco);
+    else if (ordem === 'maior-preco') products.sort((a, b) => b.preco - a.preco);
+    else if (ordem === 'mais-vendidos') products.sort((a, b) => (b.reviews || 0) - (a.reviews || 0));
+    else if (ordem === 'melhor-avaliado') products.sort((a, b) => b.avaliacao - a.avaliacao);
+
+    const total = products.length;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 30;
+    const start = (p - 1) * l;
+    res.json({ products: products.slice(start, start + l), total, page: p, totalPages: Math.ceil(total / l) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar produtos' }); }
+});
+
+router.get('/products/category/:categoria', (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    let products = db.allProducts().filter(p => !p.paused && p.categoria === req.params.categoria);
+    const total = products.length;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 30;
+    const start = (p - 1) * l;
+    res.json({ products: products.slice(start, start + l), total, page: p, totalPages: Math.ceil(total / l) });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produtos' }); }
+});
+
+router.get('/categories', (req, res) => {
+  try { res.json(db.getCategories()); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar categorias' }); }
+});
+
+router.get('/products', (req, res) => {
+  try { res.json(db.allProducts().filter(p => !p.paused)); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produtos' }); }
+});
+
+router.get('/products/:id', (req, res) => {
+  try {
+    const p = db.productById(parseInt(req.params.id));
+    if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
+    res.json(p);
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produto' }); }
+});
+
+// ========== COMENTÁRIOS ==========
+
+router.get('/products/:id/comments', (req, res) => {
+  try { res.json(db.allComments(parseInt(req.params.id))); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar comentários' }); }
+});
+
+router.post('/products/:id/comments', (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    const { userId, userName, rating, comment } = req.body;
+    if (!comment || !comment.trim()) return res.status(400).json({ error: 'O comentário não pode estar vazio' });
+    if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'A avaliação deve ser entre 1 e 5' });
+
+    const newComment = db.createComment({
+      id: Date.now(), productId, userId: userId || null,
+      userName: userName || 'Anônimo', rating, comment: comment.trim(),
+      createdAt: new Date().toISOString()
+    });
+    res.json({ success: true, comment: newComment });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao adicionar comentário' }); }
+});
+
+router.delete('/products/:id/comments/:commentId', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    let userId;
+    try { userId = jwt.verify(token, JWT_SECRET).id; }
+    catch { return res.status(401).json({ error: 'Token inválido' }); }
+
+    const commentId = parseInt(req.params.commentId);
+    const comments = db.allComments(parseInt(req.params.id));
+    const comment = comments.find(c => c.id === commentId);
+    if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' });
+    if (comment.userId !== userId) return res.status(403).json({ error: 'Você não tem permissão para deletar este comentário' });
+
+    db.deleteComment(commentId);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao deletar comentário' }); }
+});
+
+// ========== PEDIDOS ==========
+
+router.post('/orders', async (req, res) => {
+  try {
+    const { userId, endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
+    const user = db.userById(userId);
+    if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
+
+    const picpayFee = total * 0.0099;
+    const tax = total * 0.06;
+    const netAmount = total - picpayFee - tax;
+
+    const newOrder = db.createOrder({
+      id: Date.now(), userId,
+      usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
+      endereco, itens, total, totalOriginal: totalOriginal || total,
+      cupom: cupom || null, cliente: cliente || {},
+      taxas: { picpayFee: parseFloat(picpayFee.toFixed(2)), impostos: parseFloat(tax.toFixed(2)), netAmount: parseFloat(netAmount.toFixed(2)) },
+      pagamento: 'PicPay PIX', status: 'aprovado',
+      createdAt: new Date().toISOString()
+    });
+
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
+        to: 'akilajonas001@gmail.com',
+        subject: `Novo Pedido #${newOrder.id} - TechVault`,
+        html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome}</p>`
+      });
+    } catch (emailError) {
+      console.error('Erro ao enviar email:', emailError.message);
+    }
+
+    res.json({
+      success: true, orderId: newOrder.id,
+      message: 'Pedido realizado com sucesso!',
+      pixKey: PIX_KEY,
+      taxas: newOrder.taxas
+    });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao processar pedido' }); }
+});
+
+router.get('/orders/user/:userId', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); }
+    catch { return res.status(401).json({ error: 'Token inválido' }); }
+
+    const userId = parseInt(req.params.userId) || req.params.userId;
+    if (decoded.id != userId) return res.status(403).json({ error: 'Acesso negado' });
+
+    res.json(db.ordersByUserId(userId));
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar pedidos' }); }
+});
+
+// ========== NEWSLETTER ==========
+
+router.post('/newsletter', (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email inválido' });
+    if (db.isNewsletterSubscribed(email)) return res.json({ success: true, message: 'Email já cadastrado' });
+    db.subscribeNewsletter(email);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao cadastrar email' }); }
+});
+
+// ========== CUPONS (USUÁRIO) ==========
+
+router.get('/coupons/my', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = db.userById(decoded.id);
+    res.json(db.userCoupons(decoded.id, user?.email));
+  } catch { res.json([]); }
+});
+
+router.post('/coupons/apply', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
+
+    const user = db.userById(decoded.id);
+    const coupons = db.userCoupons(decoded.id, user?.email);
+    const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && !c.used);
+    if (!coupon) return res.status(404).json({ error: 'Cupom não encontrado ou já utilizado' });
+
+    db.useCoupon(coupon.code, decoded.id);
+    res.json({ success: true, coupon: { code: coupon.code, discount: coupon.discount, type: coupon.type } });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao aplicar cupom' }); }
+});
+
+router.post('/coupons/validate', (req, res) => {
+  try {
+    const { code, total } = req.body;
+    if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
+
+    const coupon = db.couponByCode(code.toUpperCase());
+    if (!coupon || !coupon.valid) return res.status(404).json({ error: 'Cupom não encontrado ou expirado' });
+    if (total < coupon.minValue) {
+      return res.status(400).json({ error: 'Valor mínimo de R$ ' + coupon.minValue.toFixed(2).replace('.', ',') + ' para usar este cupom' });
+    }
+
+    let discount = 0;
+    if (coupon.type === 'percent') discount = total * (coupon.discount / 100);
+    else if (coupon.type === 'fixed') discount = coupon.discount;
+
+    res.json({ success: true, coupon: { code: coupon.code, discount: coupon.discount, type: coupon.type, discountValue: Math.min(discount, total) } });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao validar cupom' }); }
+});
+
+// ========== CARRINHO ==========
+
+router.post('/cart/sync', requireAuth, (req, res) => {
+  try {
+    db.saveCart(req.user.id, req.body.items || []);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao salvar carrinho' }); }
+});
+
+router.post('/cart/clear', requireAuth, (req, res) => {
+  try {
+    db.clearCart(req.user.id);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao limpar carrinho' }); }
+});
+
+// ========== LISTA DE DESEJOS ==========
+
+router.get('/wishlist/:userId', (req, res) => {
+  try { res.json(db.getWishlist(parseInt(req.params.userId) || req.params.userId)); }
+  catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar favoritos' }); }
+});
+
+router.post('/wishlist/:userId', (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId) || req.params.userId;
+    const { productId } = req.body;
+    const added = db.toggleWishlist(userId, productId);
+    res.json({ success: true, items: db.getWishlist(userId), added });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar favoritos' }); }
+});
+
+// ========== NOTIFICAÇÕES ==========
+
+router.get('/notifications/my', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.json([]);
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    res.json(db.userNotifications(decoded.id));
+  } catch { res.json([]); }
+});
+
+router.post('/notifications/read/:id', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    jwt.verify(token, JWT_SECRET);
+    db.markNotificationRead(req.params.id);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Erro' }); }
+});
+
+module.exports = router;

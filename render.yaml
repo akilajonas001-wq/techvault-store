@@ -4,14 +4,17 @@ services:
     runtime: node
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /api/config
     envVars:
       - key: NODE_VERSION
         value: 18
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: EMAIL_USER
         value: akilajonas001@gmail.com
       - key: EMAIL_PASS
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: PIX_KEY
+        value: techvault@picpay.com

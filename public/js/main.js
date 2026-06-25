@@ -916,8 +916,12 @@ async function submitUsername() {
     const data = await res.json();
     if (data.success) {
       currentUser.username = data.username;
+      if (data.token) {
+        localStorage.setItem('techvault-token', data.token);
+      }
       document.getElementById('usernamePromptModal')?.remove();
       showUserMenu();
+      showNotification('Nome de usuário salvo permanentemente!', 'success');
     } else {
       error.textContent = data.error || 'Erro ao salvar nome de usuário';
       error.style.display = 'block';

@@ -21,13 +21,11 @@ async function sendGoogleCredentialToBackend(credential) {
     const data = await res.json();
     if (res.ok && data.success) {
       localStorage.setItem('techvault-token', data.token);
-      if (isRegister && data.needsUsername) {
-        showNotification('Conta criada com Google! Agora escolha seu nome de usuário.', 'success');
-        setTimeout(() => { window.location.href = '/'; }, 1500);
-      } else {
-        showNotification(isRegister ? 'Conta criada com Google!' : 'Login com Google realizado!', 'success');
-        setTimeout(() => { window.location.href = '/'; }, 1000);
-      }
+      const msg = isRegister
+        ? (data.needsUsername ? 'Conta criada! Escolha seu nome de usuário na página inicial.' : 'Conta criada com Google!')
+        : 'Login com Google realizado!';
+      showNotification(msg, 'success');
+      setTimeout(() => { window.location.href = '/'; }, 1200);
     } else {
       showNotification(data.error || 'Erro ao autenticar com Google', 'error');
     }
