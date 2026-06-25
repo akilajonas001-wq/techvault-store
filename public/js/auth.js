@@ -10,8 +10,10 @@ function handleCredentialResponse(response) {
 }
 
 async function sendGoogleCredentialToBackend(credential) {
+  const isRegister = document.title.includes('Registro');
+  const endpoint = isRegister ? '/api/auth/google-register' : '/api/auth/google';
   try {
-    const res = await fetch('/api/auth/google', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ credential })
@@ -19,13 +21,13 @@ async function sendGoogleCredentialToBackend(credential) {
     const data = await res.json();
     if (res.ok && data.success) {
       localStorage.setItem('techvault-token', data.token);
-      showNotification('Login com Google realizado com sucesso!', 'success');
+      showNotification(isRegister ? 'Conta criada com Google!' : 'Login com Google realizado!', 'success');
       setTimeout(() => { window.location.href = '/'; }, 1000);
     } else {
       showNotification(data.error || 'Erro ao autenticar com Google', 'error');
     }
   } catch (error) {
-    console.error('Erro no login com Google:', error);
+    console.error('Erro no Google:', error);
     showNotification('Erro de conexão. Tente novamente.', 'error');
   }
 }

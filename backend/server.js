@@ -214,7 +214,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Login com Google
+// Login com Google (só para contas já existentes)
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { credential } = req.body;
@@ -224,7 +224,7 @@ app.post('/api/auth/google', async (req, res) => {
     }
 
     if (!googleClient) {
-      return res.status(500).json({ error: 'Google OAuth não configurado. Defina GOOGLE_CLIENT_ID no .env' });
+      return res.status(500).json({ error: 'Google OAuth não configurado' });
     }
 
     const ticket = await googleClient.verifyIdToken({
@@ -233,30 +233,18 @@ app.post('/api/auth/google', async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    const { sub: googleId, email, name, picture } = payload;
+    const { email, name, picture } = payload;
 
     const users = loadUsers();
-    let user = users.find(u => u.email === email);
+    const user = users.find(u => u.email === email);
 
     if (!user) {
-      user = {
-        id: Date.now(),
-        nome: name || email.split('@')[0],
-        email,
-        googleId,
-        avatar: picture || null,
-        telefone: '',
-        admin: false,
-        role: null,
-        createdAt: new Date().toISOString()
-      };
-      users.push(user);
-      saveUsers(users);
-    } else {
-      user.googleId = googleId;
-      user.avatar = picture || user.avatar;
-      saveUsers(users);
+      return res.status(404).json({ error: 'Conta não encontrada. Registre-se primeiro com Google na página de registro.' });
     }
+
+    user.googleId = payload.sub;
+    user.avatar = picture || user.avatar;
+    saveUsers(users);
 
     const isAdmin = user.admin === true;
     const role = user.role || null;
@@ -272,6 +260,78 @@ app.post('/api/auth/google', async (req, res) => {
   } catch (error) {
     console.error('Erro no login com Google:', error);
     res.status(500).json({ error: 'Erro ao autenticar com Google' });
+  }
+});
+
+// Registro com Google (cria conta nova + login automático)
+app.post('/api/auth/google-register', async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ error: 'Credencial do Google não fornecida' });
+    }
+
+    if (!googleClient) {
+      return res.status(500).json({ error: 'Google OAuth não configurado' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture } = payload;
+
+    const users = loadUsers();
+    let existing = users.find(u => u.email === email);
+
+    if (existing && existing.senha) {
+      return res.status(400).json({ error: 'Email já cadastrado. Faça login com email e senha ou use o login do Google.' });
+    }
+
+    if (existing) {
+      // Placeholder (ex: veio de cupom) — atualiza com dados do Google
+      existing.nome = name || existing.nome;
+      existing.googleId = googleId;
+      existing.avatar = picture || existing.avatar;
+      existing.telefone = existing.telefone || '';
+      existing.admin = existing.admin || false;
+      existing.role = existing.role || null;
+      saveUsers(users);
+      const isAdmin = existing.admin === true;
+      const role = existing.role || null;
+      const token = jwt.sign({ id: existing.id, email: existing.email, admin: isAdmin, role }, JWT_SECRET, { expiresIn: '7d' });
+      return res.json({ success: true, token, user: { id: existing.id, nome: existing.nome, email: existing.email, admin: isAdmin, role, avatar: existing.avatar } });
+    }
+
+    const newUser = {
+      id: Date.now(),
+      nome: name || email.split('@')[0],
+      email,
+      googleId,
+      avatar: picture || null,
+      telefone: '',
+      admin: false,
+      role: null,
+      createdAt: new Date().toISOString()
+    };
+    users.push(newUser);
+    saveUsers(users);
+
+    const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false, role: null }, JWT_SECRET, {
+      expiresIn: '7d'
+    });
+
+    res.json({
+      success: true,
+      token,
+      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false, role: null, avatar: newUser.avatar }
+    });
+  } catch (error) {
+    console.error('Erro no registro com Google:', error);
+    res.status(500).json({ error: 'Erro ao registrar com Google' });
   }
 });
 
