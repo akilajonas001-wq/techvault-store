@@ -1512,14 +1512,6 @@
         </ul>
       </div>
       <div class="footer-section">
-        <h3>Receba Novidades</h3>
-        <p style="font-size: 13px; color: var(--text-light); margin-bottom: 12px; line-height: 1.5;">Cadastre-se e receba ofertas exclusivas</p>
-        <div class="newsletter-form">
-          <input type="email" id="newsletterEmail" placeholder="Seu melhor email" required>
-          <button onclick="handleNewsletter()"><i class="fas fa-paper-plane"></i></button>
-        </div>
-      </div>
-      <div class="footer-section">
         <h3>Redes Sociais</h3>
         <div class="social-links">
           <a href="#"><i class="fab fa-instagram"></i></a>
@@ -1576,22 +1568,6 @@
   </script>
   <script src="/js/main.js"></script>
   <script src="/js/home.js"></script>
-  <script>
-    function handleNewsletter() {
-      const email = document.getElementById('newsletterEmail').value;
-      if (!email || !email.includes('@')) {
-        showNotification('Digite um email válido', 'error');
-        return;
-      }
-      subscribeNewsletter(email).then(success => {
-        if (success) document.getElementById('newsletterEmail').value = '';
-      });
-    }
-
-    document.getElementById('newsletterEmail')?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleNewsletter();
-    });
-  </script>
   <script>
     // Search function
     function searchProducts() {

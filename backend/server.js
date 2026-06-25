@@ -703,7 +703,7 @@ app.post('/api/notifications/read/:id', (req, res) => {
   } catch { res.status(500).json({ error: 'Erro' }); }
 });
 
-app.post('/api/admin/coupons/create', adminAuth, (req, res) => {
+app.post('/api/admin/coupons/create', adminAuth, async (req, res) => {
   try {
     if (req.adminUser.role === 'funcionario') {
       return res.status(403).json({ error: 'Apenas administradores podem criar cupons' });
@@ -714,25 +714,8 @@ app.post('/api/admin/coupons/create', adminAuth, (req, res) => {
     }
     const users = loadUsers();
     let user = users.find(u => u.email === email);
-
-    // Se o email não for um usuário registrado, verifica se está na newsletter
     if (!user) {
-      const subscribers = JSON.parse(fs.readFileSync(NEWSLETTER_FILE, 'utf8'));
-      const subscriber = subscribers.find(s => s.email === email);
-      if (!subscriber) {
-        return res.status(404).json({ error: 'Email não encontrado na newsletter nem entre os usuários cadastrados' });
-      }
-      // Cria um usuário placeholder para vincular o cupom
-      user = {
-        id: Date.now(),
-        nome: email.split('@')[0],
-        email,
-        admin: false,
-        role: null,
-        createdAt: new Date().toISOString()
-      };
-      users.push(user);
-      saveUsers(users);
+      return res.status(404).json({ error: 'Email não encontrado entre os usuários cadastrados' });
     }
 
     const coupons = JSON.parse(fs.readFileSync(COUPONS_FILE, 'utf8'));
@@ -767,7 +750,37 @@ app.post('/api/admin/coupons/create', adminAuth, (req, res) => {
     });
     fs.writeFileSync(NOTIFICATIONS_FILE, JSON.stringify(notifications, null, 2));
 
-    res.json({ success: true, coupon });
+    // Enviar email com o cupom
+    try {
+      await transporter.sendMail({
+        from: '"TechVault" <' + (process.env.EMAIL_USER || 'akilajonas001@gmail.com') + '>',
+        to: email,
+        subject: '🎉 Você ganhou um cupom de desconto na TechVault!',
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+            <div style="text-align:center;padding:24px 0;background:linear-gradient(135deg,#1a73e8,#4285f4);border-radius:12px 12px 0 0;">
+              <h1 style="color:white;margin:0;font-size:24px;">🎉 Cupom de Desconto</h1>
+            </div>
+            <div style="padding:24px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;">
+              <p style="font-size:16px;color:#1e293b;">Olá, <strong>${user.nome || email.split('@')[0]}</strong>!</p>
+              <p style="font-size:14px;color:#475569;line-height:1.6;">Você ganhou um cupom de <strong style="color:#1a73e8;">${discount}% de desconto</strong> na TechVault!</p>
+              <div style="text-align:center;padding:20px;margin:20px 0;background:#fefce8;border:2px dashed #f59e0b;border-radius:8px;">
+                <p style="font-size:12px;color:#92400e;margin:0 0 6px;">Seu código de cupom:</p>
+                <p style="font-size:28px;font-weight:800;color:#d97706;letter-spacing:4px;margin:0;font-family:monospace;">${code.toUpperCase()}</p>
+              </div>
+              <p style="font-size:13px;color:#64748b;">Use o código no checkout para ganhar ${discount}% de desconto no seu pedido!</p>
+              <a href="${process.env.STORE_URL || 'http://localhost:3000'}" style="display:inline-block;padding:12px 24px;background:linear-gradient(135deg,#1a73e8,#4285f4);color:white;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;margin-top:8px;">Ir para a Loja</a>
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0;">
+              <p style="font-size:12px;color:#94a3b8;">Se você não solicitou este cupom, ignore este email.</p>
+            </div>
+          </div>
+        `
+      });
+    } catch (emailErr) {
+      console.error('Erro ao enviar email do cupom:', emailErr.message);
+    }
+
+    res.json({ success: true, coupon, emailSent: true });
   } catch (error) {
     console.error('Erro ao criar cupom:', error);
     res.status(500).json({ error: 'Erro ao criar cupom' });
@@ -1161,14 +1174,19 @@ app.get('/api/admin/products', adminAuth, (req, res) => {
   }
 });
 
-// Listar inscritos da newsletter
+// Listar todos os emails cadastrados (newsletter = todos os usuarios registrados)
 app.get('/api/admin/newsletter', adminAuth, (req, res) => {
   try {
-    const subscribers = JSON.parse(fs.readFileSync(NEWSLETTER_FILE, 'utf8'));
-    res.json(subscribers);
+    const users = loadUsers();
+    const emails = users.map(u => ({
+      email: u.email,
+      nome: u.nome || u.email.split('@')[0],
+      createdAt: u.createdAt || new Date().toISOString()
+    }));
+    res.json(emails);
   } catch (error) {
-    console.error('Erro ao carregar newsletter:', error);
-    res.status(500).json({ error: 'Erro ao carregar newsletter' });
+    console.error('Erro ao carregar emails:', error);
+    res.status(500).json({ error: 'Erro ao carregar emails' });
   }
 });
 

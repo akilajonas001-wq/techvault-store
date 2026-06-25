@@ -362,7 +362,7 @@
       <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
-      <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-envelope"></i> Newsletter</button>
+      <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-gift"></i> Cupons</button>
     </div>
 
     <div id="tab-pedidos" class="tab-content active">
@@ -447,10 +447,10 @@
     <div id="tab-newsletter" class="tab-content">
       <div class="card">
         <div class="card-header">
-          <h2><i class="fas fa-envelope"></i> Inscritos na Newsletter</h2>
+          <h2><i class="fas fa-gift"></i> Enviar Cupons</h2>
           <span id="newsletterCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
-        <div id="newsletterContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando inscritos...</div>
+        <div id="newsletterContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando usuários...</div>
       </div>
     </div>
   </div>
@@ -481,32 +481,6 @@
         <div style="display:flex;gap:10px;">
           <input type="text" id="chatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendChatMessage()" style="flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;outline:none;">
           <button class="btn btn-primary" onclick="sendChatMessage()" style="padding:12px 20px;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Coupon Modal -->
-    <div class="modal-overlay" id="couponModal" style="display:none;">
-      <div class="modal-content" style="max-width:420px;">
-        <div class="modal-header">
-          <h3><i class="fas fa-gift"></i> Dar Cupom</h3>
-          <button class="modal-close" onclick="closeCouponModal()"><i class="fas fa-times"></i></button>
-        </div>
-        <div style="padding:20px 0;">
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Email</label>
-            <input type="text" id="couponEmail" readonly style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg-cool);">
-          </div>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Código do Cupom</label>
-            <input type="text" id="couponCode" placeholder="Ex: DESCONTO10" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
-          </div>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Desconto (%)</label>
-            <input type="number" id="couponDiscount" placeholder="10" min="1" max="100" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:8px;font-size:14px;">
-          </div>
-          <div id="couponResult" style="font-size:13px;margin-bottom:12px;"></div>
-          <button class="btn btn-primary btn-block" onclick="giveCoupon()"><i class="fas fa-check"></i> Criar Cupom</button>
         </div>
       </div>
     </div>
@@ -945,54 +919,50 @@
 
     function renderNewsletter() {
       const container = document.getElementById('newsletterContainer');
-      document.getElementById('newsletterCount').textContent = allNewsletter.length + ' inscrito' + (allNewsletter.length !== 1 ? 's' : '');
+      document.getElementById('newsletterCount').textContent = allNewsletter.length + ' usuário' + (allNewsletter.length !== 1 ? 's' : '');
 
       if (!allNewsletter.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-envelope-open"></i><p>Nenhum inscrito na newsletter</p></div>';
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário cadastrado</p></div>';
         return;
       }
 
       const isAdmin = currentUserRole !== 'funcionario';
       container.innerHTML = '<div class="table-wrap"><table>' +
         '<thead><tr>' +
+          '<th>Nome</th>' +
           '<th>Email</th>' +
-          '<th>Data de Inscrição</th>' +
-          (isAdmin ? '<th style="width:120px">Cupom</th>' : '') +
+          '<th>Cadastro</th>' +
+          (isAdmin ? '<th style="width:280px">Criar Cupom</th>' : '') +
         '</tr></thead><tbody>' +
-        allNewsletter.map(s => {
+        allNewsletter.map((s, i) => {
           const date = s.createdAt ? new Date(s.createdAt).toLocaleString('pt-BR') : 'N/A';
+          const uid = 'cp_' + i;
           return '<tr>' +
+            '<td><strong>' + (s.nome || '—') + '</strong></td>' +
             '<td>' + s.email + '</td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + date + '</td>' +
-            (isAdmin ? '<td><button class="order-detail-btn" onclick="openCouponModal(\'' + s.email + '\')" style="border-color:var(--success);color:var(--success);font-size:11px;"><i class="fas fa-gift"></i> Dar Cupom</button></td>' : '') +
+            (isAdmin ? '<td><div style="display:flex;gap:4px;align-items:center;">' +
+              '<input id="' + uid + '_code" placeholder="Código" style="width:80px;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:\'Inter\',sans-serif;">' +
+              '<input id="' + uid + '_disc" placeholder="%" type="number" min="1" max="100" style="width:50px;padding:6px 8px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:\'Inter\',sans-serif;">' +
+              '<button onclick="sendCoupon(\'' + s.email + '\',\'' + uid + '\')" style="padding:6px 12px;border:none;border-radius:6px;background:var(--primary-gradient);color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;"><i class="fas fa-paper-plane"></i> Enviar</button>' +
+              '<span id="' + uid + '_result" style="font-size:11px;"></span>' +
+            '</div></td>' : '') +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
     }
 
-    // Coupon modal
-    function openCouponModal(email) {
-      document.getElementById('couponEmail').value = email;
-      document.getElementById('couponCode').value = '';
-      document.getElementById('couponDiscount').value = '';
-      document.getElementById('couponResult').innerHTML = '';
-      document.getElementById('couponModal').style.display = 'flex';
-    }
-
-    function closeCouponModal() {
-      document.getElementById('couponModal').style.display = 'none';
-    }
-
-    async function giveCoupon() {
-      const email = document.getElementById('couponEmail').value;
-      const code = document.getElementById('couponCode').value.trim();
-      const discount = document.getElementById('couponDiscount').value.trim();
-      const result = document.getElementById('couponResult');
+    async function sendCoupon(email, uid) {
+      const code = document.getElementById(uid + '_code').value.trim();
+      const discount = document.getElementById(uid + '_disc').value.trim();
+      const result = document.getElementById(uid + '_result');
 
       if (!code || !discount) {
-        result.innerHTML = '<span style="color:var(--error)">Preencha código e desconto</span>';
+        result.innerHTML = '<span style="color:var(--error)">Preencha código e %</span>';
         return;
       }
+
+      result.innerHTML = '<span style="color:var(--text-muted)"><i class="fas fa-spinner fa-spin"></i> Enviando...</span>';
 
       try {
         const res = await fetch('/api/admin/coupons/create', {
@@ -1002,15 +972,16 @@
         });
         const data = await res.json();
         if (data.success) {
-          result.innerHTML = '<span style="color:var(--success)">✓ Cupom ' + data.coupon.code + ' criado com ' + discount + '% de desconto!</span>';
-          document.getElementById('couponCode').value = '';
-          document.getElementById('couponDiscount').value = '';
+          result.innerHTML = '<span style="color:var(--success)">✓ Enviado!</span>';
+          document.getElementById(uid + '_code').value = '';
+          document.getElementById(uid + '_disc').value = '';
         } else {
-          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro ao criar cupom') + '</span>';
+          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro') + '</span>';
         }
       } catch {
         result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
       }
+      setTimeout(() => { result.innerHTML = ''; }, 3000);
     }
 
     function switchTab(tab, btn) {
