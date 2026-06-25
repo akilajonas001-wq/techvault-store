@@ -893,6 +893,7 @@
       container.innerHTML = '<div class="table-wrap"><table>' +
         '<thead><tr>' +
           '<th>Nome</th>' +
+          '<th>Username</th>' +
           '<th>Email</th>' +
           '<th>Telefone</th>' +
           '<th>Tipo</th>' +
@@ -907,6 +908,7 @@
           else roleHtml = '<span class="badge badge-gray">Cliente</span>';
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
+            '<td style="font-size:13px;color:var(--text-muted)">' + (u.username || '<span style="color:var(--error)">—</span>') + '</td>' +
             '<td>' + (u.email || '') + '</td>' +
             '<td>' + (u.telefone || '—') + '</td>' +
           '<td>' + roleHtml + '</td>' +

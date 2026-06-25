@@ -277,6 +277,12 @@
         </div>
         
         <div class="form-group">
+          <label for="username">Nome de Usuário</label>
+          <input type="text" id="username" name="username" required placeholder="apenas letras, números e _" minlength="3" pattern="[a-zA-Z0-9_]+" title="Apenas letras, números e underscore">
+          <p class="password-hint"><i class="fas fa-info-circle"></i> Mínimo 3 caracteres. Único — ninguém mais pode usar o mesmo.</p>
+        </div>
+        
+        <div class="form-group">
           <label for="email">Email</label>
           <input type="email" id="email" name="email" required placeholder="seu@email.com">
         </div>

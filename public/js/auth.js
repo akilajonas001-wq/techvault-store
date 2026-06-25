@@ -21,8 +21,13 @@ async function sendGoogleCredentialToBackend(credential) {
     const data = await res.json();
     if (res.ok && data.success) {
       localStorage.setItem('techvault-token', data.token);
-      showNotification(isRegister ? 'Conta criada com Google!' : 'Login com Google realizado!', 'success');
-      setTimeout(() => { window.location.href = '/'; }, 1000);
+      if (isRegister && data.needsUsername) {
+        showNotification('Conta criada com Google! Agora escolha seu nome de usuário.', 'success');
+        setTimeout(() => { window.location.href = '/'; }, 1500);
+      } else {
+        showNotification(isRegister ? 'Conta criada com Google!' : 'Login com Google realizado!', 'success');
+        setTimeout(() => { window.location.href = '/'; }, 1000);
+      }
     } else {
       showNotification(data.error || 'Erro ao autenticar com Google', 'error');
     }
@@ -89,11 +94,18 @@ async function handleRegistro(event) {
   event.preventDefault();
 
   const nome = document.getElementById('nome').value;
+  const username = document.getElementById('username').value.trim();
   const email = document.getElementById('email').value;
   const senha = document.getElementById('senha').value;
   const confirmarSenha = document.getElementById('confirmarSenha').value;
   const telefone = document.getElementById('telefone').value;
   const errorMessage = document.getElementById('errorMessage');
+
+  if (!username || username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    errorMessage.textContent = 'Nome de usuário deve ter pelo menos 3 caracteres (apenas letras, números e _)';
+    errorMessage.style.display = 'block';
+    return;
+  }
 
   if (senha !== confirmarSenha) {
     errorMessage.textContent = 'As senhas não coincidem';
@@ -111,7 +123,7 @@ async function handleRegistro(event) {
     const response = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, email, senha, telefone })
+      body: JSON.stringify({ nome, username, email, senha, telefone })
     });
 
     const data = await response.json();

@@ -53,6 +53,9 @@ async function checkAuth() {
       showUserMenu();
       syncCartToServer();
       initUserChat();
+      if (!currentUser.username) {
+        showUsernamePrompt();
+      }
     } else {
       localStorage.removeItem('techvault-token');
       showAuthButtons();
@@ -95,7 +98,7 @@ function showUserMenu() {
       adminLink = `<a href="/painel" style="font-size:13px;font-weight:600;color:#1a73e8;text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(26,115,232,0.08);transition:all .2s;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
-      <span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;"><i class="far fa-user" style="margin-right:4px;"></i>${currentUser?.nome || ''}</span>
+      <span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;"><i class="far fa-user" style="margin-right:4px;"></i>${currentUser?.nome || ''}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + currentUser.username + ')</span>' : ''}</span>
       <a href="/conta" style="font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;">Minha Conta</a>
       <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
@@ -863,3 +866,64 @@ async function readNotif(notifId, couponCode) {
 
 // Poll notifications every 30s
 setInterval(checkNotifications, 30000);
+
+// Modal para escolher nome de usuário (quando Google não fornece)
+function showUsernamePrompt() {
+  if (document.getElementById('usernamePromptModal')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'usernamePromptModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'background:white;border-radius:16px;padding:32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:chatFadeIn .2s ease;text-align:center;';
+
+  modal.innerHTML = `
+    <div style="font-size:40px;margin-bottom:12px;">👤</div>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:4px;color:var(--text);">Escolha seu nome de usuário</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Você precisa de um nome de usuário único para continuar.</p>
+    <input type="text" id="usernamePromptInput" placeholder="Seu nome de usuário" autocomplete="off"
+      style="width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;outline:none;text-align:center;margin-bottom:12px;"
+      onkeypress="if(event.key==='Enter') submitUsername()">
+    <div id="usernamePromptError" style="font-size:13px;color:var(--error);margin-bottom:12px;display:none;"></div>
+    <button onclick="submitUsername()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--primary-gradient);color:white;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">
+      <i class="fas fa-check"></i> Confirmar
+    </button>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">Apenas letras, números e underscore (_). Mínimo 3 caracteres.</p>
+  `;
+
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('usernamePromptInput')?.focus(), 100);
+}
+
+async function submitUsername() {
+  const input = document.getElementById('usernamePromptInput');
+  const error = document.getElementById('usernamePromptError');
+  const username = input.value.trim();
+
+  if (!username || username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+    error.textContent = 'Mínimo 3 caracteres. Apenas letras, números e _.';
+    error.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/user/set-username', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify({ username })
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser.username = data.username;
+      document.getElementById('usernamePromptModal')?.remove();
+      showUserMenu();
+    } else {
+      error.textContent = data.error || 'Erro ao salvar nome de usuário';
+      error.style.display = 'block';
+    }
+  } catch {
+    error.textContent = 'Erro de conexão. Tente novamente.';
+    error.style.display = 'block';
+  }
+}

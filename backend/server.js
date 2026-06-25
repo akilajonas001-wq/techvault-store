@@ -128,10 +128,23 @@ const transporter = nodemailer.createTransport({
 // Registro de usuário
 app.post('/api/register', async (req, res) => {
   try {
-    const { nome, email, senha, telefone } = req.body;
+    const { nome, email, senha, telefone, username } = req.body;
+    
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Nome de usuário é obrigatório' });
+    }
+    const usernameClean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (usernameClean.length < 3) {
+      return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres (apenas letras, números e _)' });
+    }
     
     const users = loadUsers();
     const existing = users.find(u => u.email === email);
+    
+    // Verificar unicidade do username (excluindo o próprio usuário se for atualização)
+    if (users.find(u => u.username === usernameClean && (!existing || u.id !== existing.id))) {
+      return res.status(400).json({ error: 'Este nome de usuário já está em uso' });
+    }
     
     // Se ja existe um usuario com senha (registro completo), rejeita
     if (existing && existing.senha) {
@@ -146,6 +159,7 @@ app.post('/api/register', async (req, res) => {
       existing.nome = nome;
       existing.senha = senhaHash;
       existing.telefone = telefone || existing.telefone || '';
+      existing.username = usernameClean;
       if (!existing.admin) existing.admin = false;
       if (!existing.role) existing.role = null;
       user = existing;
@@ -154,6 +168,7 @@ app.post('/api/register', async (req, res) => {
         id: Date.now(),
         nome,
         email,
+        username: usernameClean,
         senha: senhaHash,
         telefone: telefone || '',
         admin: false,
@@ -171,7 +186,7 @@ app.post('/api/register', async (req, res) => {
     res.json({ 
       success: true, 
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, admin: user.admin === true, role: user.role || null }
+      user: { id: user.id, nome: user.nome, email: user.email, username: user.username, admin: user.admin === true, role: user.role || null }
     });
   } catch (error) {
     console.error('Erro no registro:', error);
@@ -203,10 +218,10 @@ app.post('/api/login', async (req, res) => {
       expiresIn: '7d'
     });
     
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role }
+      user: { id: user.id, nome: user.nome, email: user.email, username: user.username || null, admin: isAdmin, role }
     });
   } catch (error) {
     console.error('Erro no login:', error);
@@ -255,7 +270,7 @@ app.post('/api/auth/google', async (req, res) => {
     res.json({
       success: true,
       token,
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role, avatar: user.avatar }
+      user: { id: user.id, nome: user.nome, email: user.email, username: user.username || null, admin: isAdmin, role, avatar: user.avatar }
     });
   } catch (error) {
     console.error('Erro no login com Google:', error);
@@ -302,8 +317,9 @@ app.post('/api/auth/google-register', async (req, res) => {
       saveUsers(users);
       const isAdmin = existing.admin === true;
       const role = existing.role || null;
+      const needsUsername = !existing.username;
       const token = jwt.sign({ id: existing.id, email: existing.email, admin: isAdmin, role }, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ success: true, token, user: { id: existing.id, nome: existing.nome, email: existing.email, admin: isAdmin, role, avatar: existing.avatar } });
+      return res.json({ success: true, token, needsUsername, user: { id: existing.id, nome: existing.nome, email: existing.email, username: existing.username || null, admin: isAdmin, role, avatar: existing.avatar } });
     }
 
     const newUser = {
@@ -312,6 +328,7 @@ app.post('/api/auth/google-register', async (req, res) => {
       email,
       googleId,
       avatar: picture || null,
+      username: null,
       telefone: '',
       admin: false,
       role: null,
@@ -320,6 +337,7 @@ app.post('/api/auth/google-register', async (req, res) => {
     users.push(newUser);
     saveUsers(users);
 
+    const needsUsername = true;
     const token = jwt.sign({ id: newUser.id, email: newUser.email, admin: false, role: null }, JWT_SECRET, {
       expiresIn: '7d'
     });
@@ -327,7 +345,8 @@ app.post('/api/auth/google-register', async (req, res) => {
     res.json({
       success: true,
       token,
-      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, admin: false, role: null, avatar: newUser.avatar }
+      needsUsername,
+      user: { id: newUser.id, nome: newUser.nome, email: newUser.email, username: null, admin: false, role: null, avatar: newUser.avatar }
     });
   } catch (error) {
     console.error('Erro no registro com Google:', error);
@@ -501,10 +520,49 @@ app.get('/api/auth/check', (req, res) => {
     const role = user.role || null;
     res.json({ 
       authenticated: true, 
-      user: { id: user.id, nome: user.nome, email: user.email, admin: isAdmin, role }
+      user: { id: user.id, nome: user.nome, email: user.email, username: user.username || null, admin: isAdmin, role }
     });
   } catch (error) {
     res.json({ authenticated: false });
+  }
+});
+
+// Usuário define/altera nome de usuário
+app.post('/api/user/set-username', (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const { username } = req.body;
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Nome de usuário é obrigatório' });
+    }
+
+    const usernameClean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (usernameClean.length < 3) {
+      return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres (apenas letras, números e _)' });
+    }
+
+    const users = loadUsers();
+    // Verificar unicidade (excluindo o próprio usuário)
+    if (users.find(u => u.username === usernameClean && u.id !== decoded.id)) {
+      return res.status(400).json({ error: 'Este nome de usuário já está em uso' });
+    }
+
+    const user = users.find(u => u.id === decoded.id);
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    user.username = usernameClean;
+    saveUsers(users);
+    res.json({ success: true, username: usernameClean });
+  } catch (error) {
+    console.error('Erro ao definir username:', error);
+    res.status(500).json({ error: 'Erro ao definir nome de usuário' });
   }
 });
 
@@ -1112,6 +1170,7 @@ app.get('/api/admin/users', adminAuth, (req, res) => {
       id: u.id,
       nome: u.nome,
       email: u.email,
+      username: u.username || null,
       telefone: u.telefone || '',
       admin: u.admin === true,
       role: u.role || null,
