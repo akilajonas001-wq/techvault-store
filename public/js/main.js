@@ -618,7 +618,8 @@ async function loadConversations() {
     userConversations = await res.json();
     renderConversationTabs();
     // Load active tab messages
-    if (activeAdminUserId) {
+    const activeStillExists = activeAdminUserId && userConversations.some(c => String(c.adminUserId || 'general') === String(activeAdminUserId));
+    if (activeAdminUserId && activeStillExists) {
       loadUserMessages(activeAdminUserId);
     } else if (userConversations.length > 0) {
       selectTab(userConversations[0].adminUserId || 'general');

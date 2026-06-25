@@ -1369,7 +1369,18 @@ app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
   try {
     const chats = loadChats();
     const adminUserId = req.adminUser.id;
-    const messages = getChatMessages(chats, adminUserId, req.params.userId);
+    const userId = req.params.userId;
+    let key = adminUserId + ':' + userId;
+    const generalKey = 'general:' + userId;
+
+    // Auto-claim: se a conversa ainda está em "general", migra para este admin
+    if (!chats[key] && chats[generalKey]) {
+      chats[key] = chats[generalKey];
+      delete chats[generalKey];
+      saveChats(chats);
+    }
+
+    const messages = getChatMessages(chats, adminUserId, userId);
     // Backfill adminName if missing in old messages
     messages.forEach(m => {
       if (m.from === 'admin' && !m.adminName) {
@@ -1571,18 +1582,26 @@ app.post('/api/chat/send/:adminUserId', (req, res) => {
       key = adminUserId + ':' + decoded.id;
     }
 
-    // Reply-only: client can only send if an admin has already messaged in this conversation
-    const existing = chats[key];
-    const hasAdminMessage = existing && existing.some(m => m.from === 'admin');
-    // Also check general key for existing admin messages
-    let hasAdminMessageGeneral = false;
-    if (adminUserId !== 'general') {
-      const generalKey = 'general:' + decoded.id;
-      const existingGeneral = chats[generalKey];
-      hasAdminMessageGeneral = existingGeneral && existingGeneral.some(m => m.from === 'admin');
-    }
-    if (!hasAdminMessage && !hasAdminMessageGeneral) {
-      return res.status(403).json({ error: 'Você só pode responder a conversas iniciadas por um atendente. Aguarde nosso contato!' });
+    // Se enviar para "general", verifica se já foi atendido por algum admin
+    if (adminUserId === 'general') {
+      // Check if any admin has already claimed this user (migrated from general:userId to adminUserId:userId)
+      const users = loadUsers();
+      for (const [convKey] of Object.entries(chats)) {
+        const [ka, ku] = convKey.split(':');
+        if (ku && parseInt(ku) === decoded.id && ka !== 'general' && !isNaN(parseInt(ka))) {
+          const adminUser = users.find(u => u.id === parseInt(ka));
+          const adminName = adminUser ? adminUser.nome : 'atendente #' + ka;
+          return res.status(403).json({ error: 'Você já está sendo atendido por ' + adminName + '. Continue a conversa pela janela de chat.' });
+        }
+      }
+      // Always allowed for first contact
+    } else {
+      // Enviar para um admin específico só se esse admin já respondeu
+      const existing = chats[key];
+      const hasAdminMessage = existing && existing.some(m => m.from === 'admin');
+      if (!hasAdminMessage) {
+        return res.status(403).json({ error: 'Você só pode responder a conversas iniciadas por um atendente. Aguarde nosso contato!' });
+      }
     }
 
     if (!chats[key]) chats[key] = [];
