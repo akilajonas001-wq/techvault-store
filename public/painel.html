@@ -282,6 +282,10 @@
       .table-wrap table { font-size: 12px; }
       .table-wrap th,
       .table-wrap td { padding: 8px 10px; }
+      .modal-content .cpFormGrid { grid-template-columns: 1fr !important; }
+      .modal-content .cpFormGrid .cpFull { grid-column:1/-1 !important; }
+      .variant-card-inner { grid-template-columns: 1fr !important; }
+      .upload-btn-label { width:100%; justify-content:center; }
     }
     @media (max-width: 480px) {
       .container { padding: 10px; }
@@ -441,13 +445,13 @@
           <h3><i class="fas fa-plus-circle"></i> Criar Novo Produto</h3>
           <button class="modal-close" onclick="closeCreateProductModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div id="createProductContent" style="padding:20px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="grid-column:1/-1;">
+          <div id="createProductContent" style="padding:20px;">
+          <div class="cpFormGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Nome do Produto *</label>
               <input type="text" id="cpNome" placeholder="Ex: iPhone 16 Pro Max 512GB" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
             </div>
-            <div style="grid-column:1/-1;">
+            <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Descrição</label>
               <textarea id="cpDescricao" placeholder="Descrição detalhada do produto..." rows="3" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
             </div>
@@ -467,15 +471,23 @@
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Estoque</label>
               <input type="text" id="cpEstoque" placeholder="45 ou N/A" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
             </div>
-            <div style="grid-column:1/-1;">
-              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">URL da Imagem Principal</label>
-              <input type="url" id="cpImagem" placeholder="/images/products/produto-xxx.svg" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            <div class="cpFull" style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagem Principal</label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="url" id="cpImagem" placeholder="/images/products/produto-xxx.svg" style="flex:1;min-width:150px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+                <span style="color:var(--text-muted);font-size:12px;">ou</span>
+                <label class="upload-btn upload-btn-label" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:2px dashed var(--primary);border-radius:10px;color:var(--primary);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all 0.2s;" onmouseenter="this.style.background='rgba(26,115,232,0.05)'" onmouseleave="this.style.background=''">
+                  <i class="fas fa-cloud-upload-alt"></i> Enviar arquivo
+                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none;" onchange="uploadImage(this, 'cpImagem')">
+                </label>
+              </div>
+              <div id="cpImagemPreview" style="margin-top:6px;display:none;"><img style="max-height:80px;border-radius:8px;border:1px solid var(--border);"></div>
             </div>
-            <div style="grid-column:1/-1;">
+            <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagens Adicionais (URLs, uma por linha)</label>
               <textarea id="cpImagens" placeholder="/images/products/produto-xxx-1.svg&#10;/images/products/produto-xxx-2.svg" rows="2" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
             </div>
-            <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
+            <div class="cpFull" style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
               <input type="checkbox" id="cpDestaque" style="width:18px;height:18px;">
               <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
             </div>
@@ -488,12 +500,12 @@
             <button class="order-detail-btn" onclick="addVariant()" style="border-color:var(--primary);color:var(--primary);font-size:12px;"><i class="fas fa-plus"></i> Adicionar Variante</button>
           </div>
           <div id="variantsContainer" style="display:flex;flex-direction:column;gap:16px;">
-            <div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <strong style="font-size:14px;">Variante 1</strong>
-                <button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <strong style="font-size:14px;">Variante 1</strong>
+                  <button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="variant-card-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                 <div>
                   <label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label>
                   <input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
@@ -1037,6 +1049,38 @@
       container.appendChild(row);
     }
 
+    async function uploadImage(input, targetId) {
+      const file = input.files[0];
+      if (!file) return;
+      const preview = document.getElementById(targetId + 'Preview');
+      const previewImg = preview ? preview.querySelector('img') : null;
+      if (previewImg) {
+        preview.style.display = 'block';
+        previewImg.src = URL.createObjectURL(file);
+      }
+      const formData = new FormData();
+      formData.append('image', file);
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken() },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById(targetId).value = data.url;
+          if (previewImg) previewImg.src = data.url;
+        } else {
+          alert(data.error || 'Erro ao enviar imagem');
+          if (preview) preview.style.display = 'none';
+        }
+      } catch (err) {
+        alert('Erro de conexão ao enviar imagem');
+        if (preview) preview.style.display = 'none';
+      }
+      input.value = '';
+    }
+
     async function submitCreateProduct() {
       const nome = document.getElementById('cpNome').value.trim();
       const preco = parseFloat(document.getElementById('cpPreco').value);
@@ -1115,7 +1159,7 @@
                 '<strong style="font-size:14px;">Variante 1</strong>' +
                 '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
               '</div>' +
-              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+        '<div class="variant-card-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
                 '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
                 '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
               '</div>' +
