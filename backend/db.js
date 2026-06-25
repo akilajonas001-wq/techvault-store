@@ -121,6 +121,14 @@ async function initDb() {
       productId BIGINT NOT NULL,
       PRIMARY KEY (userId, productId)
     );
+    CREATE TABLE IF NOT EXISTS product_images (
+      id SERIAL PRIMARY KEY,
+      product_id BIGINT,
+      filename TEXT NOT NULL,
+      mimetype TEXT NOT NULL,
+      data BYTEA NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
   `);
 }
 
@@ -633,6 +641,27 @@ async function initDefaultData() {
   }
 }
 
+async function saveImage(productId, filename, mimetype, buffer) {
+  const result = await query(
+    `INSERT INTO product_images (product_id, filename, mimetype, data) VALUES ($1, $2, $3, $4) RETURNING id`,
+    [productId || null, filename, mimetype, buffer]
+  );
+  return result.rows[0];
+}
+
+async function getImage(id) {
+  const result = await query(`SELECT * FROM product_images WHERE id = $1`, [id]);
+  return result.rows[0] || null;
+}
+
+async function deleteImage(id) {
+  await query(`DELETE FROM product_images WHERE id = $1`, [id]);
+}
+
+async function deleteProductImages(productId) {
+  await query(`DELETE FROM product_images WHERE product_id = $1`, [productId]);
+}
+
 async function closeDb() {
   await pool.end();
 }
@@ -650,5 +679,6 @@ module.exports = {
   allNewsletters, subscribeNewsletter, isNewsletterSubscribed,
   getWishlist, toggleWishlist,
   getCategories, searchProducts, productsByCategory, featuredProducts, offerProducts,
-  adminProducts, adminStaff
+  adminProducts, adminStaff,
+  saveImage, getImage, deleteImage, deleteProductImages
 };

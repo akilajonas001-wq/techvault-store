@@ -299,6 +299,18 @@ app.delete('/api/admin/chat/:userId', adminAuth, (req, res) => {
   } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });
 
+// ===================== IMAGE SERVING =====================
+
+app.get('/api/images/:id', async (req, res) => {
+  try {
+    const img = await db.getImage(req.params.id);
+    if (!img) return res.status(404).send('Imagem não encontrada');
+    res.set('Content-Type', img.mimetype);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.end(img.data);
+  } catch { res.status(500).send('Erro ao carregar imagem'); }
+});
+
 // ===================== STATIC PAGE ROUTES =====================
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
