@@ -75,32 +75,37 @@ function showAuthButtons() {
   if (mobileLogout) mobileLogout.remove();
   const mobileMyAccount = document.querySelector('.mobile-nav .mobile-myaccount');
   if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
+  const mobileAdminLink = document.querySelector('.mobile-admin-link');
+  if (mobileAdminLink) mobileAdminLink.remove();
+  const mobileNotif = document.querySelector('.mobile-notifications');
+  if (mobileNotif) mobileNotif.remove();
+  const mobileUserName = document.querySelector('.mobile-user-name');
+  if (mobileUserName) mobileUserName.remove();
 }
 
 function showUserMenu() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
-  const userName = document.getElementById('userName');
 
   if (authButtons) authButtons.style.display = 'none';
   if (userMenu) {
     userMenu.style.display = 'flex';
     let adminLink = '';
     if (currentUser && currentUser.admin) {
-      adminLink = `<a href="/painel" style="font-size: 14px; font-weight: 600; color: #1a73e8; text-decoration: none; transition: color 0.2s; display: flex; align-items: center; gap: 4px;"><i class="fas fa-shield-alt"></i> Painel</a>`;
+      adminLink = `<a href="/painel" style="font-size:13px;font-weight:600;color:#1a73e8;text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(26,115,232,0.08);transition:all .2s;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
-      <a href="/conta" style="font-size:14px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;">Minha Conta</a>
-      <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);" onclick="toggleNotifs()" title="Notificações">
+      <span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;"><i class="far fa-user" style="margin-right:4px;"></i>${currentUser?.nome || ''}</span>
+      <a href="/conta" style="font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;">Minha Conta</a>
+      <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
-        <span id="notifCount" style="display:none;position:absolute;top:-6px;right:-8px;background:#ef4444;color:white;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
+        <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ef4444;color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
       </div>
       ${adminLink}
-      <a href="#" onclick="logout()" style="font-size:14px;color:var(--text-light);text-decoration:none;">Sair</a>
+      <a href="#" onclick="logout()" style="font-size:13px;color:var(--text-light);text-decoration:none;padding:5px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;"><i class="fas fa-sign-out-alt"></i> Sair</a>
     `;
     checkNotifications();
   }
-  if (userName && currentUser) userName.textContent = `Olá, ${currentUser.nome}`;
 
   // Update mobile nav
   const mobileNav = document.getElementById('mobileNav');
@@ -110,28 +115,54 @@ function showUserMenu() {
     const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
     const existingLogout = mobileNav.querySelector('.mobile-logout');
     const existingAdminLink = mobileNav.querySelector('.mobile-admin-link');
+    const existingNotif = mobileNav.querySelector('.mobile-notifications');
+    const existingUserName = mobileNav.querySelector('.mobile-user-name');
     if (loginLink) loginLink.style.display = 'none';
     if (registerLink) registerLink.style.display = 'none';
     if (myAccountLink) myAccountLink.style.display = 'flex';
-    if (!existingLogout) {
-      const logoutLink = document.createElement('a');
-      logoutLink.href = '#';
-      logoutLink.className = 'mobile-logout';
-      logoutLink.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sair';
-      logoutLink.onclick = (e) => { e.preventDefault(); logout(); };
-      myAccountLink?.after(logoutLink);
+
+    // Add user greeting at top of mobile nav
+    if (!existingUserName) {
+      const userDiv = document.createElement('div');
+      userDiv.className = 'mobile-user-name';
+      userDiv.innerHTML = '<div style="padding:12px 16px;background:var(--bg-cool);border-radius:10px;margin-bottom:4px;font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;"><i class="fas fa-user-circle" style="color:var(--primary);font-size:20px;"></i> Olá, ' + (currentUser?.nome || '') + '</div>';
+      const logo = mobileNav.querySelector('.mobile-logo');
+      if (logo) logo.after(userDiv);
     }
+
+    // Add notification bell to mobile nav
+    if (!existingNotif) {
+      const notifLink = document.createElement('a');
+      notifLink.href = '#';
+      notifLink.className = 'mobile-notifications';
+      notifLink.innerHTML = '<i class="far fa-bell"></i> Notificações <span id="mobileNotifBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:auto;">0</span>';
+      notifLink.onclick = (e) => { e.preventDefault(); toggleNotifs(); toggleMobileMenu(); };
+      myAccountLink?.after(notifLink);
+    }
+
     if (currentUser && currentUser.admin && !existingAdminLink) {
       const adminLink = document.createElement('a');
       adminLink.href = '/painel';
       adminLink.className = 'mobile-admin-link';
       adminLink.innerHTML = '<i class="fas fa-shield-alt" style="color:#1a73e8"></i> Painel Admin';
       adminLink.onclick = () => { toggleMobileMenu(); };
-      myAccountLink?.after(adminLink);
+      const notifLinkMobile = mobileNav.querySelector('.mobile-notifications');
+      (notifLinkMobile || myAccountLink)?.after(adminLink);
+    } else if (!currentUser || !currentUser.admin) {
+      if (existingAdminLink) existingAdminLink.remove();
     }
-    if (existingAdminLink && (!currentUser || !currentUser.admin)) {
-      existingAdminLink.remove();
+
+    if (!existingLogout) {
+      const logoutLink = document.createElement('a');
+      logoutLink.href = '#';
+      logoutLink.className = 'mobile-logout';
+      logoutLink.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sair';
+      logoutLink.onclick = (e) => { e.preventDefault(); logout(); };
+      const adminLinkMobile = mobileNav.querySelector('.mobile-admin-link');
+      const notifLinkMobile = mobileNav.querySelector('.mobile-notifications');
+      (adminLinkMobile || notifLinkMobile || myAccountLink)?.after(logoutLink);
     }
+
   }
 }
 
@@ -139,17 +170,6 @@ function logout() {
   localStorage.removeItem('techvault-token');
   currentUser = null;
   showAuthButtons();
-  const mobileNav = document.getElementById('mobileNav');
-  if (mobileNav) {
-    const loginLink = mobileNav.querySelector('a[href="/login"]');
-    const registerLink = mobileNav.querySelector('a[href="/registro"]');
-    const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
-    const logoutLink = mobileNav.querySelector('.mobile-logout');
-    if (loginLink) loginLink.style.display = 'flex';
-    if (registerLink) registerLink.style.display = 'flex';
-    if (myAccountLink) myAccountLink.style.display = 'none';
-    if (logoutLink) logoutLink.remove();
-  }
   window.location.href = '/';
 }
 
@@ -704,6 +724,12 @@ async function sendUserMessage() {
       activeAdminUserId = targetAdminId;
       loadConversations();
       loadUserMessages(targetAdminId);
+    } else if (res.status === 403) {
+      const container = document.getElementById('userChatMessages');
+      if (container) {
+        container.innerHTML += '<div style="text-align:center;padding:12px;background:#fef3c7;color:#92400e;border-radius:10px;font-size:12px;margin-top:8px;"><i class="fas fa-info-circle"></i> ' + (data.error || 'Você só pode responder após um atendente entrar em contato.') + '</div>';
+        container.scrollTop = container.scrollHeight;
+      }
     }
   } catch {}
 }
@@ -746,6 +772,7 @@ async function checkNotifications() {
     notifCount = notifs.length;
     const badge = document.getElementById('notifCount');
     const bell = document.getElementById('notifBell');
+    const mobileBadge = document.getElementById('mobileNotifBadge');
     if (badge) {
       if (notifCount > 0) {
         badge.style.display = 'flex';
@@ -753,6 +780,14 @@ async function checkNotifications() {
         if (bell) bell.style.color = '#f59e0b';
       } else {
         hideNotifBadge();
+      }
+    }
+    if (mobileBadge) {
+      if (notifCount > 0) {
+        mobileBadge.style.display = 'inline';
+        mobileBadge.textContent = notifCount > 99 ? '99+' : notifCount;
+      } else {
+        mobileBadge.style.display = 'none';
       }
     }
   } catch { hideNotifBadge(); }
@@ -763,6 +798,8 @@ function hideNotifBadge() {
   const bell = document.getElementById('notifBell');
   if (badge) { badge.style.display = 'none'; }
   if (bell) { bell.style.color = ''; }
+  const mobileBadge = document.getElementById('mobileNotifBadge');
+  if (mobileBadge) { mobileBadge.style.display = 'none'; }
 }
 
 function toggleNotifs() {

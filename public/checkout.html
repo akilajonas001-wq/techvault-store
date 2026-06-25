@@ -505,7 +505,7 @@
     <header class="header">
     <div class="header-top">
       <a href="/" class="logo">
-        <img src="/images/logo.png" alt="TechVault" style="height:40px;width:auto">
+        <img src="/images/logo.png" alt="TechVault">
       </a>
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Buscar produtos...">
@@ -513,16 +513,16 @@
       </div>
       <div class="header-menu">
         <div class="cart-icon" onclick="viewCart()">
-          <i class="fas fa-shopping-cart" style="font-size:22px;color:var(--primary)"></i>
+          <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" id="cartCount">0</span>
         </div>
         <div id="authButtons" class="auth-buttons-desktop">
           <a href="/login" class="login-link">Login</a>
           <a href="/registro" class="register-link">Criar conta</a>
         </div>
-        <div id="userMenu" style="display:none;gap:10px;align-items:center">
-          <span class="user-name" id="userName" style="font-size:14px;font-weight:500"></span>
-          <a href="#" onclick="logout()" style="font-size:14px">Sair</a>
+        <div id="userMenu">
+          <span id="userName"></span>
+          <a href="#" onclick="logout()">Sair</a>
         </div>
         <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
           <span></span><span></span><span></span>
@@ -538,8 +538,8 @@
         <input type="text" id="mobileSearchInput" placeholder="Buscar produtos...">
         <button onclick="mobileSearch()"><i class="fas fa-search"></i></button>
       </div>
-      <a href="/login" onclick="toggleMobileMenu()" class="mobile-login-link"><i class="fas fa-sign-in-alt"></i> Login</a>
-      <a href="/registro" class="mobile-register" onclick="toggleMobileMenu()"><i class="fas fa-user-plus"></i> Criar Conta</a>
+      <a href="/login" onclick="toggleMobileMenu()"><i class="fas fa-sign-in-alt"></i> Login</a>
+      <a href="/registro" onclick="toggleMobileMenu()"><i class="fas fa-user-plus"></i> Criar Conta</a>
       <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount"><i class="fas fa-user"></i> Minha Conta</a>
       <hr>
       <a href="/central-ajuda" onclick="toggleMobileMenu()"><i class="fas fa-question-circle"></i> Ajuda</a>

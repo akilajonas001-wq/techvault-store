@@ -1370,6 +1370,12 @@ app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
     const chats = loadChats();
     const adminUserId = req.adminUser.id;
     const messages = getChatMessages(chats, adminUserId, req.params.userId);
+    // Backfill adminName if missing in old messages
+    messages.forEach(m => {
+      if (m.from === 'admin' && !m.adminName) {
+        m.adminName = req.adminUser.nome;
+      }
+    });
     res.json(messages);
   } catch (error) {
     console.error('Erro ao carregar chat:', error);
@@ -1393,6 +1399,13 @@ app.get('/api/admin/my-chats', adminAuth, (req, res) => {
       if (!keyUserId) continue; // formato inválido
 
       if (keyAdminId !== String(adminUserId) && keyAdminId !== 'general') continue;
+
+      // Backfill adminName in messages
+      messages.forEach(m => {
+        if (m.from === 'admin' && !m.adminName) {
+          m.adminName = req.adminUser.nome;
+        }
+      });
 
       const uid = parseInt(keyUserId);
       const unread = messages.filter(m => m.from === 'user' && !m.read).length;
@@ -1463,6 +1476,16 @@ app.get('/api/chat/conversations', (req, res) => {
       if (!keyUserId) continue;
       if (parseInt(keyUserId) !== decoded.id) continue;
 
+      // Backfill adminName from known admin users
+      messages.forEach(m => {
+        if (m.from === 'admin' && !m.adminName) {
+          if (m.adminUserId) {
+            const admin = users.find(u => u.id === m.adminUserId);
+            if (admin) m.adminName = admin.nome;
+          }
+        }
+      });
+
       // Encontrar admin desta conversa
       const [keyAdminId] = convKey.split(':');
       const adminMsgs = messages.filter(m => m.from === 'admin');
@@ -1503,6 +1526,18 @@ app.get('/api/chat/messages/:adminUserId', (req, res) => {
     const key = req.params.adminUserId + ':' + decoded.id;
     const generalKey = 'general:' + decoded.id;
     const messages = chats[key] || chats[generalKey] || [];
+
+    // Backfill adminName from known admin users
+    const users = loadUsers();
+    messages.forEach(m => {
+      if (m.from === 'admin' && !m.adminName) {
+        if (m.adminUserId) {
+          const admin = users.find(u => u.id === m.adminUserId);
+          if (admin) m.adminName = admin.nome;
+        }
+      }
+    });
+
     res.json(messages);
   } catch (error) {
     console.error('Erro ao carregar mensagens:', error);
@@ -1534,6 +1569,20 @@ app.post('/api/chat/send/:adminUserId', (req, res) => {
       key = 'general:' + decoded.id;
     } else {
       key = adminUserId + ':' + decoded.id;
+    }
+
+    // Reply-only: client can only send if an admin has already messaged in this conversation
+    const existing = chats[key];
+    const hasAdminMessage = existing && existing.some(m => m.from === 'admin');
+    // Also check general key for existing admin messages
+    let hasAdminMessageGeneral = false;
+    if (adminUserId !== 'general') {
+      const generalKey = 'general:' + decoded.id;
+      const existingGeneral = chats[generalKey];
+      hasAdminMessageGeneral = existingGeneral && existingGeneral.some(m => m.from === 'admin');
+    }
+    if (!hasAdminMessage && !hasAdminMessageGeneral) {
+      return res.status(403).json({ error: 'Você só pode responder a conversas iniciadas por um atendente. Aguarde nosso contato!' });
     }
 
     if (!chats[key]) chats[key] = [];
