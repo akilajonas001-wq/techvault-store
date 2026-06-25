@@ -31,11 +31,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres (apenas letras, números e _)' });
     }
 
-    const existing = db.userByEmail(email);
+    const existing = await db.userByEmail(email);
 
+    const allUsers = await db.allUsers();
     const usernameTaken = existing
-      ? db.allUsers().some(u => u.username === usernameClean && u.id !== existing.id)
-      : db.allUsers().some(u => u.username === usernameClean);
+      ? allUsers.some(u => u.username === usernameClean && u.id !== existing.id)
+      : allUsers.some(u => u.username === usernameClean);
     if (usernameTaken) {
       return res.status(400).json({ error: 'Este nome de usuário já está em uso' });
     }
@@ -48,7 +49,7 @@ router.post('/register', async (req, res) => {
 
     let user;
     if (existing) {
-      user = db.updateUser(existing.id, {
+      user = await db.updateUser(existing.id, {
         nome, senha: senhaHash,
         telefone: telefone || existing.telefone || '',
         username: usernameClean,
@@ -56,7 +57,7 @@ router.post('/register', async (req, res) => {
         role: existing.role || null
       });
     } else {
-      user = db.createUser({
+      user = await db.createUser({
         id: Date.now(), nome, email, username: usernameClean,
         senha: senhaHash, telefone: telefone || '',
         admin: false, role: null,
@@ -83,7 +84,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    const user = db.userByEmail(email);
+    const user = await db.userByEmail(email);
     if (!user || !user.senha) {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
@@ -115,13 +116,13 @@ router.post('/auth/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
 
-    const user = db.userByEmail(email);
+    const user = await db.userByEmail(email);
     if (!user) {
       return res.status(404).json({ error: 'Conta não encontrada. Registre-se primeiro com Google na página de registro.' });
     }
 
-    db.updateUser(user.id, { googleId: payload.sub, avatar: picture || user.avatar });
-    const updated = db.userById(user.id);
+    await db.updateUser(user.id, { googleId: payload.sub, avatar: picture || user.avatar });
+    const updated = await db.userById(user.id);
     const token = signToken(updated);
 
     res.json({
@@ -145,7 +146,7 @@ router.post('/auth/google-register', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
-    let existing = db.userByEmail(email);
+    let existing = await db.userByEmail(email);
 
     if (existing && existing.senha) {
       return res.status(400).json({ error: 'Email já cadastrado. Faça login com email e senha ou use o login do Google.' });
@@ -153,13 +154,13 @@ router.post('/auth/google-register', async (req, res) => {
 
     let user;
     if (existing) {
-      user = db.updateUser(existing.id, {
+      user = await db.updateUser(existing.id, {
         nome: name || existing.nome, googleId, avatar: picture || existing.avatar,
         telefone: existing.telefone || '', admin: existing.admin || false,
         role: existing.role || null
       });
     } else {
-      user = db.createUser({
+      user = await db.createUser({
         id: Date.now(), nome: name || email.split('@')[0], email, googleId,
         avatar: picture || null, username: null, telefone: '',
         admin: false, role: null, createdAt: new Date().toISOString()
@@ -180,7 +181,7 @@ router.post('/auth/google-register', async (req, res) => {
 });
 
 // Verificar autenticação
-router.get('/auth/check', (req, res) => {
+router.get('/auth/check', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.json({ authenticated: false });
 
@@ -188,7 +189,7 @@ router.get('/auth/check', (req, res) => {
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.userById(decoded.id);
+    const user = await db.userById(decoded.id);
     if (!user) return res.json({ authenticated: false });
 
     res.json({
@@ -201,7 +202,7 @@ router.get('/auth/check', (req, res) => {
 });
 
 // Definir username
-router.post('/user/set-username', (req, res) => {
+router.post('/user/set-username', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -223,15 +224,16 @@ router.post('/user/set-username', (req, res) => {
       return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres' });
     }
 
-    const user = db.userById(decoded.id);
+    const user = await db.userById(decoded.id);
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-    if (db.allUsers().some(u => u.username === usernameClean && u.id !== decoded.id)) {
+    const allUsers = await db.allUsers();
+    if (allUsers.some(u => u.username === usernameClean && u.id !== decoded.id)) {
       return res.status(400).json({ error: 'Este nome de usuário já está em uso' });
     }
 
-    db.updateUser(decoded.id, { username: usernameClean });
-    const updated = db.userById(decoded.id);
+    await db.updateUser(decoded.id, { username: usernameClean });
+    const updated = await db.userById(decoded.id);
     const newToken = signToken(updated);
 
     res.json({ success: true, username: usernameClean, token: newToken });
@@ -242,7 +244,7 @@ router.post('/user/set-username', (req, res) => {
 });
 
 // Dados do usuário
-router.get('/users/:id', (req, res) => {
+router.get('/users/:id', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -254,7 +256,7 @@ router.get('/users/:id', (req, res) => {
       return res.status(401).json({ error: 'Token inválido' });
     }
 
-    const user = db.userById(parseInt(req.params.id) || req.params.id);
+    const user = await db.userById(parseInt(req.params.id) || req.params.id);
     if (!user || user.id != decoded.id) {
       return res.status(403).json({ error: 'Acesso negado' });
     }

@@ -16,20 +16,20 @@ const transporter = nodemailer.createTransport({
 
 // ========== PRODUTOS ==========
 
-router.get('/products/featured', (req, res) => {
-  try { res.json(db.featuredProducts()); }
+router.get('/products/featured', async (req, res) => {
+  try { res.json(await db.featuredProducts()); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar destaques' }); }
 });
 
-router.get('/products/offers', (req, res) => {
-  try { res.json(db.offerProducts()); }
+router.get('/products/offers', async (req, res) => {
+  try { res.json(await db.offerProducts()); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar ofertas' }); }
 });
 
-router.get('/products/search', (req, res) => {
+router.get('/products/search', async (req, res) => {
   try {
     const { q, categoria, precoMin, precoMax, ordem, page, limit } = req.query;
-    let products = db.allProducts().filter(p => !p.paused);
+    let products = (await db.allProducts()).filter(p => !p.paused);
 
     if (q) {
       const termo = q.toLowerCase();
@@ -55,10 +55,10 @@ router.get('/products/search', (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao buscar produtos' }); }
 });
 
-router.get('/products/category/:categoria', (req, res) => {
+router.get('/products/category/:categoria', async (req, res) => {
   try {
     const { page, limit } = req.query;
-    let products = db.allProducts().filter(p => !p.paused && p.categoria === req.params.categoria);
+    let products = (await db.allProducts()).filter(p => !p.paused && p.categoria === req.params.categoria);
     const total = products.length;
     const p = parseInt(page) || 1;
     const l = parseInt(limit) || 30;
@@ -67,19 +67,19 @@ router.get('/products/category/:categoria', (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produtos' }); }
 });
 
-router.get('/categories', (req, res) => {
-  try { res.json(db.getCategories()); }
+router.get('/categories', async (req, res) => {
+  try { res.json(await db.getCategories()); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar categorias' }); }
 });
 
-router.get('/products', (req, res) => {
-  try { res.json(db.allProducts().filter(p => !p.paused)); }
+router.get('/products', async (req, res) => {
+  try { res.json((await db.allProducts()).filter(p => !p.paused)); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produtos' }); }
 });
 
-router.get('/products/:id', (req, res) => {
+router.get('/products/:id', async (req, res) => {
   try {
-    const p = db.productById(parseInt(req.params.id));
+    const p = await db.productById(parseInt(req.params.id));
     if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
     res.json(p);
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar produto' }); }
@@ -87,19 +87,19 @@ router.get('/products/:id', (req, res) => {
 
 // ========== COMENTÁRIOS ==========
 
-router.get('/products/:id/comments', (req, res) => {
-  try { res.json(db.allComments(parseInt(req.params.id))); }
+router.get('/products/:id/comments', async (req, res) => {
+  try { res.json(await db.allComments(parseInt(req.params.id))); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar comentários' }); }
 });
 
-router.post('/products/:id/comments', (req, res) => {
+router.post('/products/:id/comments', async (req, res) => {
   try {
     const productId = parseInt(req.params.id);
     const { userId, userName, rating, comment } = req.body;
     if (!comment || !comment.trim()) return res.status(400).json({ error: 'O comentário não pode estar vazio' });
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'A avaliação deve ser entre 1 e 5' });
 
-    const newComment = db.createComment({
+    const newComment = await db.createComment({
       id: Date.now(), productId, userId: userId || null,
       userName: userName || 'Anônimo', rating, comment: comment.trim(),
       createdAt: new Date().toISOString()
@@ -108,7 +108,7 @@ router.post('/products/:id/comments', (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao adicionar comentário' }); }
 });
 
-router.delete('/products/:id/comments/:commentId', (req, res) => {
+router.delete('/products/:id/comments/:commentId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -120,12 +120,12 @@ router.delete('/products/:id/comments/:commentId', (req, res) => {
     catch { return res.status(401).json({ error: 'Token inválido' }); }
 
     const commentId = parseInt(req.params.commentId);
-    const comments = db.allComments(parseInt(req.params.id));
+    const comments = await db.allComments(parseInt(req.params.id));
     const comment = comments.find(c => c.id === commentId);
     if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' });
     if (comment.userId !== userId) return res.status(403).json({ error: 'Você não tem permissão para deletar este comentário' });
 
-    db.deleteComment(commentId);
+    await db.deleteComment(commentId);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao deletar comentário' }); }
 });
@@ -135,14 +135,14 @@ router.delete('/products/:id/comments/:commentId', (req, res) => {
 router.post('/orders', async (req, res) => {
   try {
     const { userId, endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
-    const user = db.userById(userId);
+    const user = await db.userById(userId);
     if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
 
     const picpayFee = total * 0.0099;
     const tax = total * 0.06;
     const netAmount = total - picpayFee - tax;
 
-    const newOrder = db.createOrder({
+    const newOrder = await db.createOrder({
       id: Date.now(), userId,
       usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
       endereco, itens, total, totalOriginal: totalOriginal || total,
@@ -172,7 +172,7 @@ router.post('/orders', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao processar pedido' }); }
 });
 
-router.get('/orders/user/:userId', (req, res) => {
+router.get('/orders/user/:userId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -186,37 +186,37 @@ router.get('/orders/user/:userId', (req, res) => {
     const userId = parseInt(req.params.userId) || req.params.userId;
     if (decoded.id != userId) return res.status(403).json({ error: 'Acesso negado' });
 
-    res.json(db.ordersByUserId(userId));
+    res.json(await db.ordersByUserId(userId));
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar pedidos' }); }
 });
 
 // ========== NEWSLETTER ==========
 
-router.post('/newsletter', (req, res) => {
+router.post('/newsletter', async (req, res) => {
   try {
     const { email } = req.body;
     if (!email || !email.includes('@')) return res.status(400).json({ error: 'Email inválido' });
-    if (db.isNewsletterSubscribed(email)) return res.json({ success: true, message: 'Email já cadastrado' });
-    db.subscribeNewsletter(email);
+    if (await db.isNewsletterSubscribed(email)) return res.json({ success: true, message: 'Email já cadastrado' });
+    await db.subscribeNewsletter(email);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao cadastrar email' }); }
 });
 
 // ========== CUPONS (USUÁRIO) ==========
 
-router.get('/coupons/my', (req, res) => {
+router.get('/coupons/my', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.userById(decoded.id);
-    res.json(db.userCoupons(decoded.id, user?.email));
+    const user = await db.userById(decoded.id);
+    res.json(await db.userCoupons(decoded.id, user?.email));
   } catch { res.json([]); }
 });
 
-router.post('/coupons/apply', (req, res) => {
+router.post('/coupons/apply', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -226,22 +226,22 @@ router.post('/coupons/apply', (req, res) => {
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
 
-    const user = db.userById(decoded.id);
-    const coupons = db.userCoupons(decoded.id, user?.email);
+    const user = await db.userById(decoded.id);
+    const coupons = await db.userCoupons(decoded.id, user?.email);
     const coupon = coupons.find(c => c.code.toUpperCase() === code.toUpperCase() && !c.used);
     if (!coupon) return res.status(404).json({ error: 'Cupom não encontrado ou já utilizado' });
 
-    db.useCoupon(coupon.code, decoded.id);
+    await db.useCoupon(coupon.code, decoded.id);
     res.json({ success: true, coupon: { code: coupon.code, discount: coupon.discount, type: coupon.type } });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao aplicar cupom' }); }
 });
 
-router.post('/coupons/validate', (req, res) => {
+router.post('/coupons/validate', async (req, res) => {
   try {
     const { code, total } = req.body;
     if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
 
-    const coupon = db.couponByCode(code.toUpperCase());
+    const coupon = await db.couponByCode(code.toUpperCase());
     if (!coupon || !coupon.valid) return res.status(404).json({ error: 'Cupom não encontrado ou expirado' });
     if (total < coupon.minValue) {
       return res.status(400).json({ error: 'Valor mínimo de R$ ' + coupon.minValue.toFixed(2).replace('.', ',') + ' para usar este cupom' });
@@ -257,57 +257,57 @@ router.post('/coupons/validate', (req, res) => {
 
 // ========== CARRINHO ==========
 
-router.post('/cart/sync', requireAuth, (req, res) => {
+router.post('/cart/sync', requireAuth, async (req, res) => {
   try {
-    db.saveCart(req.user.id, req.body.items || []);
+    await db.saveCart(req.user.id, req.body.items || []);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao salvar carrinho' }); }
 });
 
-router.post('/cart/clear', requireAuth, (req, res) => {
+router.post('/cart/clear', requireAuth, async (req, res) => {
   try {
-    db.clearCart(req.user.id);
+    await db.clearCart(req.user.id);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao limpar carrinho' }); }
 });
 
 // ========== LISTA DE DESEJOS ==========
 
-router.get('/wishlist/:userId', (req, res) => {
-  try { res.json(db.getWishlist(parseInt(req.params.userId) || req.params.userId)); }
+router.get('/wishlist/:userId', async (req, res) => {
+  try { res.json(await db.getWishlist(parseInt(req.params.userId) || req.params.userId)); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar favoritos' }); }
 });
 
-router.post('/wishlist/:userId', (req, res) => {
+router.post('/wishlist/:userId', async (req, res) => {
   try {
     const userId = parseInt(req.params.userId) || req.params.userId;
     const { productId } = req.body;
-    const added = db.toggleWishlist(userId, productId);
-    res.json({ success: true, items: db.getWishlist(userId), added });
+    const added = await db.toggleWishlist(userId, productId);
+    res.json({ success: true, items: await db.getWishlist(userId), added });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar favoritos' }); }
 });
 
 // ========== NOTIFICAÇÕES ==========
 
-router.get('/notifications/my', (req, res) => {
+router.get('/notifications/my', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
-    res.json(db.userNotifications(decoded.id));
+    res.json(await db.userNotifications(decoded.id));
   } catch { res.json([]); }
 });
 
-router.post('/notifications/read/:id', (req, res) => {
+router.post('/notifications/read/:id', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     jwt.verify(token, JWT_SECRET);
-    db.markNotificationRead(req.params.id);
+    await db.markNotificationRead(req.params.id);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro' }); }
 });

@@ -29,10 +29,18 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static('public', { maxAge: '1h' }));
 app.use(session({ secret: JWT_SECRET, resave: false, saveUninitialized: true, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' } }));
 
-// Initialize database on startup
-db.initDb();
-db.migrateFromJson();
-db.initDefaultData();
+// Initialize database before starting server
+async function startServer() {
+  try {
+    await db.initDb();
+    await db.migrateFromJson();
+    await db.initDefaultData();
+    console.log('Banco de dados PostgreSQL inicializado');
+  } catch (err) {
+    console.error('Erro ao inicializar banco:', err);
+    process.exit(1);
+  }
+}
 
 app.use('/api', authenticate);
 
@@ -309,6 +317,8 @@ app.get('/frete-entrega', (req, res) => res.sendFile(path.join(__dirname, '..', 
 app.get('/devolucoes', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'devolucoes.html')));
 app.get('/painel', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'painel.html')));
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`TechVault Store rodando em http://localhost:${PORT}`);
+startServer().then(() => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`TechVault Store rodando em http://localhost:${PORT}`);
+  });
 });

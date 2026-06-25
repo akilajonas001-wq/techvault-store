@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) {
     req.user = null;
@@ -10,7 +10,7 @@ function authenticate(req, res, next) {
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.userById(decoded.id);
+    const user = await db.userById(decoded.id);
     req.user = user || null;
     next();
   } catch {
@@ -26,13 +26,13 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function adminAuth(req, res, next) {
+async function adminAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = db.userById(decoded.id);
+    const user = await db.userById(decoded.id);
     if (!user || !user.admin) {
       return res.status(403).json({ error: 'Acesso restrito a administradores' });
     }
