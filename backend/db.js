@@ -545,7 +545,7 @@ async function markNotificationRead(id) {
 }
 
 async function allNewsletters() {
-  const result = await query(`SELECT * FROM newsletter`);
+  const result = await query(`SELECT u.id, u.nome, u.email, u.createdAt FROM users u ORDER BY u.createdAt DESC`);
   return result.rows;
 }
 

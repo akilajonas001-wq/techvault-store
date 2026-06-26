@@ -432,7 +432,7 @@
               <option value="active">Ativos</option>
               <option value="paused">Pausados</option>
             </select>
-            <button class="order-detail-btn" onclick="openCreateProductModal()" style="border-color:var(--success);color:var(--success);font-weight:600;"><i class="fas fa-plus-circle"></i> Novo Produto</button>
+            <button id="newProductBtn" class="order-detail-btn" onclick="openCreateProductModal()" style="border-color:var(--success);color:var(--success);font-weight:600;"><i class="fas fa-plus-circle"></i> Novo Produto</button>
           </div>
         </div>
         <div id="productsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando produtos...</div>
@@ -558,6 +558,9 @@
           <span id="newsletterCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="newsletterContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando usuários...</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);padding:0 14px 14px;">
+          <i class="fas fa-info-circle"></i> Todos os usuários registrados (email e Google) aparecem aqui. Crie cupons personalizados para cada um.
+        </div>
       </div>
     </div>
   </div>
@@ -620,6 +623,7 @@
         if (currentUserRole === 'funcionario') {
           document.getElementById('addStaffForm').style.display = 'none';
           document.getElementById('revenueCard').style.display = 'none';
+          document.getElementById('newProductBtn').style.display = 'none';
           const nlBtn = document.querySelector('.tab-btn[data-tab="newsletter"]');
           if (nlBtn) nlBtn.style.display = 'none';
         }
