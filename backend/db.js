@@ -54,6 +54,7 @@ async function initDb() {
       reviews INTEGER DEFAULT 0,
       specs TEXT DEFAULT '{}',
       variants TEXT DEFAULT '[]',
+      frete TEXT DEFAULT '',
       createdAt TEXT DEFAULT (NOW())
     );
     CREATE TABLE IF NOT EXISTS orders (
@@ -153,7 +154,8 @@ async function migrateFromJson() {
       paused: row.paused ? 1 : 0, precoAlterado: row.precoAlterado ? 1 : 0,
       avaliacao: row.avaliacao || 0, reviews: row.reviews || 0,
       specs: JSON.stringify(row.specs || {}),
-      variants: JSON.stringify(row.variants || []),
+      variants: JSON.stringify(row.variants || row.variantes || []),
+      frete: row.frete || '',
       createdAt: row.createdAt || new Date().toISOString()
     })},
     { file: 'orders.json', table: 'orders', migrate: (row) => ({
@@ -313,6 +315,7 @@ const parseProduct = (p) => p ? {
   variants: JSON.parse(p.variants || '[]'),
   especificacoes: JSON.parse(p.specs || '{}'),
   variantes: JSON.parse(p.variants || '[]'),
+  frete: p.frete || '',
   paused: p.paused === 1 || p.paused === true,
   precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
   destaque: p.destaque === 1 || p.destaque === true

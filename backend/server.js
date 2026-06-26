@@ -311,6 +311,31 @@ app.get('/api/images/:id', async (req, res) => {
   } catch { res.status(500).send('Erro ao carregar imagem'); }
 });
 
+// ===================== INFINITEPAY WEBHOOK =====================
+
+app.post('/api/webhooks/infinitepay', async (req, res) => {
+  try {
+    const body = req.body;
+    console.log('InfinitePay webhook received:', JSON.stringify(body));
+
+    const orderId = body.external_id || body.externalId;
+    const status = body.status;
+
+    if (orderId && status === 'paid') {
+      await db.updateOrderStatus(parseInt(orderId), 'aprovado');
+      console.log(`Pedido #${orderId} aprovado via webhook`);
+    } else if (orderId && (status === 'canceled' || status === 'refunded')) {
+      await db.updateOrderStatus(parseInt(orderId), status === 'canceled' ? 'cancelado' : 'reembolsado');
+      console.log(`Pedido #${orderId} atualizado para ${status}`);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (e) {
+    console.error('Erro no webhook InfinitePay:', e);
+    res.status(200).json({ received: true });
+  }
+});
+
 // ===================== STATIC PAGE ROUTES =====================
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
@@ -328,6 +353,8 @@ app.get('/como-comprar', (req, res) => res.sendFile(path.join(__dirname, '..', '
 app.get('/frete-entrega', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'frete-entrega.html')));
 app.get('/devolucoes', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'devolucoes.html')));
 app.get('/painel', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'painel.html')));
+app.get('/pedido-sucesso', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-sucesso.html')));
+app.get('/pedido-cancelado', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-cancelado.html')));
 
 startServer().then(() => {
   app.listen(PORT, '0.0.0.0', () => {

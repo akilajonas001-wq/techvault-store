@@ -428,6 +428,10 @@
       }
     }
 
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 768px) {
       .checkout-page {
         padding: 24px 0;
@@ -609,7 +613,7 @@
             
             <div class="order-summary">
               <h3><i class="fas fa-shopping-cart"></i> Resumo do Pedido</h3>
-              <div id="cartItems">
+              <div id="orderCartItems">
                 <!-- Itens do carrinho serão carregados aqui -->
               </div>
               <div class="order-total">
@@ -639,37 +643,13 @@
               <strong>Frete:</strong> Calculado baseado no CEP
             </p>
             <p style="margin-bottom: 16px;">
-              <i class="fas fa-qrcode" style="color: var(--primary); margin-right: 8px;"></i>
-              <strong>Pagamento:</strong> PicPay PIX (aprovação imediata)
+              <i class="fas fa-credit-card" style="color: var(--primary); margin-right: 8px;"></i>
+              <strong>Pagamento:</strong> InfinitePay (cartão de crédito/débito, PIX)
             </p>
             <p style="margin-bottom: 16px;">
               <i class="fas fa-undo" style="color: var(--primary); margin-right: 8px;"></i>
               <strong>Devolução:</strong> 7 dias para devolução grátis
             </p>
-            <div style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(52, 211, 153, 0.05)); border-radius: 12px; margin-top: 20px; border: 1px solid rgba(16, 185, 129, 0.2);">
-              <p style="color: var(--success); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
-                <i class="fas fa-percentage"></i> Detalhamento de Custos
-              </p>
-              <div id="priceBreakdown" style="font-size: 12px; color: var(--text-light); line-height: 2;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Subtotal dos produtos:</span>
-                  <span id="bdSubtotal">R$ 0,00</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Taxa PicPay PIX (0,99%):</span>
-                  <span id="bdPicpayFee" style="color: var(--error);">R$ 0,00</span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span>Imposto Simples Nacional (6%):</span>
-                  <span id="bdTax" style="color: var(--error);">R$ 0,00</span>
-                </div>
-                <hr style="border: none; border-top: 1px dashed var(--border); margin: 4px 0;">
-                <div style="display: flex; justify-content: space-between; font-weight: 700; color: var(--text); font-size: 14px;">
-                  <span>Você recebe limpo:</span>
-                  <span id="bdNet" style="color: var(--success);">R$ 0,00</span>
-                </div>
-              </div>
-            </div>
             <div style="padding: 16px; background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05)); border-radius: 12px; margin-top: 12px;">
               <p style="color: var(--primary); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
                 <i class="fas fa-gift"></i> Cupom de desconto
@@ -685,9 +665,17 @@
       </div>
       
       <div id="errorMessage" class="error-message" style="display: none;"></div>
-      <div id="successMessage" class="success-message" style="display: none;"></div>
     </div>
   </main>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(30,41,59,0.8);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center;flex-direction:column;">
+    <div style="background:white;padding:40px;border-radius:16px;text-align:center;max-width:400px;">
+      <div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#1a73e8;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px;"></div>
+      <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px;">Redirecionando para pagamento...</h3>
+      <p style="font-size:14px;color:#64748b;">Você será redirecionado para o ambiente seguro da InfinitePay para concluir o pagamento.</p>
+    </div>
+  </div>
 
   <footer class="footer">
     <div class="container">
@@ -706,7 +694,7 @@
         <h2><i class="fas fa-shopping-cart"></i> Seu Carrinho</h2>
         <button class="close-cart" onclick="closeCart()"><i class="fas fa-times"></i></button>
       </div>
-      <div class="cart-items" id="cartItems"></div>
+      <div class="cart-items" id="cartModalItems"></div>
       <div class="order-total"><span>Total:</span><span id="cartTotal">R$ 0,00</span></div>
       <button class="btn btn-primary btn-block" style="margin-top:20px" onclick="proceedToCheckout()">
         <i class="fas fa-check-circle"></i> Finalizar Compra

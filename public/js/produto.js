@@ -336,7 +336,7 @@ async function loadProduct(productId) {
           '</div>' +
           '<div class="price-section">' +
             '<div class="price" id="productPrice">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
-            (product.frete === 'Grátis' ? '<div class="shipping-info"><i class="fas fa-truck"></i> Frete grátis</div>' : '<div class="shipping-info">' + product.frete + '</div>') +
+            (product.frete === 'Grátis' ? '<div class="shipping-info"><i class="fas fa-truck"></i> Frete grátis</div>' : (product.frete ? '<div class="shipping-info">' + product.frete + '</div>' : '')) +
             '<div class="stock-info"><i class="fas fa-check-circle" style="color: #00a650;"></i> ' + (product.estoque > 0 ? 'Em estoque (' + product.estoque + ' disponíveis)' : 'Produto esgotado') + '</div>' +
           '</div>' +
           variantHtml +
@@ -422,18 +422,20 @@ function getSelectedVariantData() {
     return {
       id: selectedVariant.id || currentProduct.id,
       nome: selectedVariant.nome || currentProduct.nome,
-      preco: selectedVariant.preco || currentProduct.preco,
+      preco: selectedVariant.preco ?? currentProduct.preco,
       imagem: currentProduct.imagem,
       quantidade: 1,
+      categoria: currentProduct.categoria,
       variantSpecs: selectedVariant.especificacoes || null
     };
   }
   return {
     id: currentProduct.id,
     nome: currentProduct.nome,
-    preco: currentProduct.preco,
+    preco: currentProduct.preco ?? 0,
     imagem: currentProduct.imagem,
-    quantidade: 1
+    quantidade: 1,
+    categoria: currentProduct.categoria
   };
 }
 

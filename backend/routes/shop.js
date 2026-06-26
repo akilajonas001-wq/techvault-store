@@ -132,23 +132,21 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 // ========== PEDIDOS ==========
 
+const INFINITE_PAY_CHECKOUT_URL = 'https://checkout.infinitepay.io/akila-jonas/JlFvnPXXzd';
+
 router.post('/orders', async (req, res) => {
   try {
     const { userId, endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
     const user = await db.userById(userId);
     if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
 
-    const picpayFee = total * 0.0099;
-    const tax = total * 0.06;
-    const netAmount = total - picpayFee - tax;
-
     const newOrder = await db.createOrder({
       id: Date.now(), userId,
       usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
       endereco, itens, total, totalOriginal: totalOriginal || total,
       cupom: cupom || null, cliente: cliente || {},
-      taxas: { picpayFee: parseFloat(picpayFee.toFixed(2)), impostos: parseFloat(tax.toFixed(2)), netAmount: parseFloat(netAmount.toFixed(2)) },
-      pagamento: 'PicPay PIX', status: 'aprovado',
+      taxas: {},
+      pagamento: 'InfinitePay', status: 'pendente',
       createdAt: new Date().toISOString()
     });
 
@@ -157,17 +155,20 @@ router.post('/orders', async (req, res) => {
         from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
         to: 'akilajonas001@gmail.com',
         subject: `Novo Pedido #${newOrder.id} - TechVault`,
-        html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome}</p>`
+        html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
       });
     } catch (emailError) {
       console.error('Erro ao enviar email:', emailError.message);
     }
 
+    const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
+    const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
+    const checkoutUrl = `${INFINITE_PAY_CHECKOUT_URL}?external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+
     res.json({
       success: true, orderId: newOrder.id,
-      message: 'Pedido realizado com sucesso!',
-      pixKey: PIX_KEY,
-      taxas: newOrder.taxas
+      message: 'Pedido criado! Redirecionando para o pagamento...',
+      checkout_url: checkoutUrl
     });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao processar pedido' }); }
 });
