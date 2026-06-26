@@ -930,7 +930,7 @@
               (isAdmin ? '<br><button class="order-detail-btn" onclick="editPrice(' + p.id + ', ' + (p.preco || 0) + ')" style="margin-top:4px;font-size:11px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-edit"></i> Alterar</button>' : '') +
             '</td>' +
             '<td>' + statusBadge + '</td>' +
-            '<td>' + (isAdmin ? '<button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + '"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button>' : '') + '</td>' +
+            '<td style="white-space:nowrap;">' + (isAdmin ? '<button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + ';margin-right:6px;"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button><button class="order-detail-btn" onclick="deleteProduct(' + p.id + ',\'' + (p.nome || '').replace(/'/g, "\\'") + '\')" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash-alt"></i> Excluir</button>' : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>' +
@@ -989,6 +989,32 @@
         }
       } catch (err) {
         console.error('Erro ao pausar/reativar:', err);
+      }
+    }
+
+    function notify(msg, type) {
+      if (typeof showNotification === 'function') { showNotification(msg, type); return; }
+      alert(msg);
+    }
+
+    async function deleteProduct(productId, productName) {
+      if (!confirm('Tem certeza que deseja excluir "' + productName + '"? Esta ação não pode ser desfeita.')) return;
+      try {
+        const res = await fetch('/api/admin/products/' + productId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          allProducts = allProducts.filter(p => p.id !== productId);
+          renderProducts();
+          notify('Produto "' + productName + '" excluído com sucesso!', 'success');
+        } else {
+          notify(data.error || 'Erro ao excluir produto', 'error');
+        }
+      } catch (err) {
+        console.error('Erro ao excluir produto:', err);
+        notify('Erro de conexão ao excluir produto', 'error');
       }
     }
 
