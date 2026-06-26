@@ -26,7 +26,7 @@ app.use('/api/', apiLimiter);
 app.use(cors());
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
-app.use(express.static('public', { maxAge: '1h', setHeaders: (res, path) => { if (path.endsWith('.js') || path.endsWith('.css')) res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+app.use(express.static('public', { maxAge: 0, etag: false, lastModified: false, setHeaders: (res, path) => { res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
 app.use(session({ secret: JWT_SECRET, resave: false, saveUninitialized: true, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' } }));
 
 // Initialize database before starting server
