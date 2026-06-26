@@ -422,7 +422,7 @@ function getSelectedVariantData() {
     return {
       id: selectedVariant.id || currentProduct.id,
       nome: selectedVariant.nome || currentProduct.nome,
-      preco: selectedVariant.preco ?? currentProduct.preco,
+      preco: selectedVariant.preco || currentProduct.preco,
       imagem: currentProduct.imagem,
       quantidade: 1,
       categoria: currentProduct.categoria,
@@ -432,7 +432,7 @@ function getSelectedVariantData() {
   return {
     id: currentProduct.id,
     nome: currentProduct.nome,
-    preco: currentProduct.preco ?? 0,
+    preco: currentProduct.preco,
     imagem: currentProduct.imagem,
     quantidade: 1,
     categoria: currentProduct.categoria
