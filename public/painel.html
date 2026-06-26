@@ -721,7 +721,9 @@
             '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
             '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
             '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-            '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')"><i class="fas fa-eye"></i></button></td>' +
+            '<td>' + (o.status === 'aprovado'
+              ? '<button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>'
+              : '<button class="order-detail-btn" style="opacity:0.4;cursor:not-allowed;text-decoration:line-through;" onclick="notify(\'Detalhes disponíveis apenas após a confirmação do pagamento\',\'info\')" title="Aguardando pagamento — detalhes liberados após aprovação"><i class="fas fa-eye"></i></button>') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
@@ -730,6 +732,10 @@
     function showOrderDetail(orderId) {
       const order = allOrders.find(o => o.id === orderId);
       if (!order) return;
+      if (order.status !== 'aprovado') {
+        notify('Detalhes disponíveis apenas para pedidos aprovados.', 'info');
+        return;
+      }
 
       const content = document.getElementById('orderDetailContent');
       const itemsHtml = order.itens.map(i => {
