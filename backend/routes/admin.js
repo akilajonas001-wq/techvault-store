@@ -39,8 +39,9 @@ router.post('/upload', (req, res) => {
 router.get('/dashboard', async (req, res) => {
   try {
     const [orders, users] = await Promise.all([db.allOrders(), db.allUsers()]);
+    const completedOrders = orders.filter(o => o.status === 'aprovado');
     res.json({
-      totalVendas: orders.reduce((s, o) => s + (o.total || 0), 0),
+      totalVendas: completedOrders.reduce((s, o) => s + (o.total || 0), 0),
       totalPedidos: orders.length,
       totalUsuarios: users.length,
       pedidosRecentes: orders.slice(-10).reverse()
@@ -53,6 +54,16 @@ router.get('/dashboard', async (req, res) => {
 router.get('/orders', async (req, res) => {
   try { res.json(await db.allOrders()); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar pedidos' }); }
+});
+
+router.delete('/orders', async (req, res) => {
+  try {
+    if (req.adminUser.role !== 'admin') {
+      return res.status(403).json({ error: 'Apenas administradores podem zerar pedidos' });
+    }
+    await db.clearAllOrders();
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao zerar pedidos' }); }
 });
 
 router.put('/orders/:id/status', async (req, res) => {

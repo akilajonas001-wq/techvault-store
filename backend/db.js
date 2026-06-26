@@ -381,6 +381,11 @@ async function allOrders() {
   return result.rows.map(parseOrder);
 }
 
+async function orderById(id) {
+  const result = await query(`SELECT * FROM orders WHERE id = $1`, [id]);
+  return result.rows.length ? parseOrder(result.rows[0]) : null;
+}
+
 async function ordersByUserId(userId) {
   const result = await query(`SELECT * FROM orders WHERE userId = $1 ORDER BY createdAt DESC`, [userId]);
   return result.rows.map(parseOrder);
@@ -403,6 +408,10 @@ async function createOrder(data) {
 
 async function updateOrderStatus(id, status) {
   await query(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
+}
+
+async function clearAllOrders() {
+  await query(`DELETE FROM orders`);
 }
 
 async function allComments(productId) {
@@ -673,7 +682,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, ordersByUserId, createOrder, updateOrderStatus,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, clearAllOrders,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, deleteChat, allChats,

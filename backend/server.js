@@ -44,6 +44,15 @@ async function startServer() {
 
 app.use('/api', authenticate);
 
+// Public order status check (no auth required)
+app.get('/api/check-order-status/:id', async (req, res) => {
+  try {
+    const order = await db.orderById(parseInt(req.params.id));
+    if (!order) return res.json({ status: 'not_found' });
+    res.json({ status: order.status });
+  } catch { res.json({ status: 'error' }); }
+});
+
 // Route modules
 app.use('/api', require('./routes/auth'));
 app.use('/api', require('./routes/shop'));

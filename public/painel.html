@@ -373,7 +373,10 @@
       <div class="card">
         <div class="card-header">
           <h2><i class="fas fa-box"></i> Todos os Pedidos</h2>
-          <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
+            <button id="clearOrdersBtn" class="order-detail-btn" onclick="clearAllOrders()" style="border-color:var(--error);color:var(--error);font-size:11px;display:none;" title="Zerar todos os pedidos"><i class="fas fa-trash-alt"></i> Zerar</button>
+          </div>
         </div>
         <div id="ordersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando pedidos...</div>
       </div>
@@ -666,6 +669,7 @@
         allProducts = await productsRes.json();
         allNewsletter = await newsletterRes.json();
 
+        if (currentUserRole === 'admin') document.getElementById('clearOrdersBtn').style.display = 'inline-flex';
         updateStats();
         renderOrders();
         renderCarts();
@@ -679,8 +683,9 @@
     }
 
     function updateStats() {
+      const completedOrders = allOrders.filter(o => o.status === 'aprovado');
       document.getElementById('statOrders').textContent = allOrders.length;
-      const revenue = allOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const revenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
       document.getElementById('statRevenue').textContent = 'R$ ' + revenue.toFixed(2).replace('.', ',');
       document.getElementById('statUsers').textContent = allUsers.length;
       document.getElementById('statCarts').textContent = allCarts.length;
@@ -736,10 +741,13 @@
         return '<div class="cart-item-row"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + specs + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
       }).join('');
 
+      const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', cancelado: 'badge-red', reembolsado: 'badge-gray' };
+      const statusBadge = '<span class="badge ' + (statusColors[order.status] || 'badge-orange') + '">' + (order.status || 'pendente') + '</span>';
+
       content.innerHTML = `
         <div class="detail-section">
           <div class="label">Pedido</div>
-          <strong>#${order.id}</strong> - <span class="badge badge-green">${order.status || 'Aprovado'}</span>
+          <strong>#${order.id}</strong> - ${statusBadge}
           <br><span style="font-size:12px;color:var(--text-muted)">${new Date(order.createdAt).toLocaleString('pt-BR')}</span>
         </div>
         <div class="detail-section">
@@ -763,19 +771,72 @@
           <div class="cart-item-row"><span>Total Original</span><span>R$ ${(order.totalOriginal || order.total || 0).toFixed(2).replace('.', ',')}</span></div>
           ${order.cupom ? '<div class="cart-item-row"><span>Cupom: ' + order.cupom.code + '</span><span style="color:var(--success)">-R$ ' + (order.cupom.desconto || 0).toFixed(2).replace('.', ',') + '</span></div>' : ''}
           <div class="cart-item-row"><span><strong>Total Pago</strong></span><span><strong>R$ ${(order.total || 0).toFixed(2).replace('.', ',')}</strong></span></div>
-          ${order.taxas ? `
-            <div class="cart-item-row" style="font-size:11px;color:var(--text-muted)"><span>Taxa PicPay (0,99%)</span><span>-R$ ${(order.taxas.picpayFee || 0).toFixed(2).replace('.', ',')}</span></div>
-            <div class="cart-item-row" style="font-size:11px;color:var(--text-muted)"><span>Imposto (6%)</span><span>-R$ ${(order.taxas.impostos || 0).toFixed(2).replace('.', ',')}</span></div>
-            <div class="cart-item-row" style="font-size:11px;color:var(--text-muted)"><span>Valor Líquido</span><span>R$ ${(order.taxas.netAmount || 0).toFixed(2).replace('.', ',')}</span></div>
-          ` : ''}
         </div>
         <div class="detail-section">
           <div class="label">Pagamento</div>
-          ${order.pagamento || 'PicPay PIX'} - ${order.cupom ? 'Cupom: ' + order.cupom.code : 'À vista'}
+          ${order.pagamento || 'InfinitePay'}${order.cupom ? ' | Cupom: ' + order.cupom.code : ''}
         </div>
+        <div class="detail-section">
+          <div class="label">Status</div>
+          <select id="orderStatusSelect" style="padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;">
+            <option value="pendente" ${order.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+            <option value="aprovado" ${order.status === 'aprovado' ? 'selected' : ''}>Aprovado</option>
+            <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+            <option value="reembolsado" ${order.status === 'reembolsado' ? 'selected' : ''}>Reembolsado</option>
+          </select>
+          <button class="order-detail-btn" onclick="updateOrderStatus(${order.id})" style="margin-left:8px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-save"></i> Salvar</button>
+        </div>
+        <div id="orderStatusResult" style="font-size:12px;margin-top:4px;"></div>
       `;
 
       document.getElementById('orderModal').classList.add('active');
+    }
+
+    async function updateOrderStatus(orderId) {
+      const status = document.getElementById('orderStatusSelect').value;
+      const result = document.getElementById('orderStatusResult');
+      try {
+        const res = await fetch('/api/admin/orders/' + orderId + '/status', {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const order = allOrders.find(o => o.id === orderId);
+          if (order) order.status = status;
+          result.innerHTML = '<span style="color:var(--success)">✓ Status atualizado!</span>';
+          renderOrders();
+          updateStats();
+        } else {
+          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro') + '</span>';
+        }
+      } catch (err) {
+        result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
+      }
+    }
+
+    async function clearAllOrders() {
+      if (currentUserRole !== 'admin') { alert('Apenas administradores podem zerar pedidos'); return; }
+      if (!confirm('Tem certeza? Todos os pedidos serão excluídos permanentemente.')) return;
+      if (!confirm('Esta ação não pode ser desfeita. Deseja realmente continuar?')) return;
+      try {
+        const res = await fetch('/api/admin/orders', {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          allOrders = [];
+          renderOrders();
+          updateStats();
+          notify('Todos os pedidos foram zerados!', 'success');
+        } else {
+          notify(data.error || 'Erro ao zerar pedidos', 'error');
+        }
+      } catch (err) {
+        notify('Erro de conexão ao zerar pedidos', 'error');
+      }
     }
 
     function closeOrderModal() {

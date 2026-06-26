@@ -13,30 +13,77 @@
     body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .card { background: white; border-radius: 24px; padding: 48px; text-align: center; max-width: 480px; width: 90%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     .icon { font-size: 64px; color: #10b981; margin-bottom: 16px; }
+    .loading-icon { font-size: 48px; color: #f59e0b; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
     p { color: #64748b; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
     .order-id { background: #f1f5f9; padding: 12px 20px; border-radius: 12px; font-size: 14px; color: #1e293b; margin-bottom: 24px; display: inline-block; font-weight: 600; }
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color: white; transition: all 0.3s; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,115,232,0.4); }
     .info { font-size: 13px; color: #94a3b8; margin-top: 16px; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon"><i class="fas fa-check-circle"></i></div>
-    <h1>Pedido Confirmado!</h1>
-    <p>Seu pagamento foi aprovado com sucesso. Em breve você receberá atualizações sobre o envio.</p>
-    <div class="order-id" id="orderIdDisplay">Pedido #---</div>
-    <br>
-    <a href="/conta" class="btn"><i class="fas fa-user"></i> Meus Pedidos</a>
-    <p class="info"><i class="fas fa-envelope"></i> Enviamos um comprovante para seu email</p>
+    <div id="statusPending">
+      <div class="loading-icon"><i class="fas fa-clock"></i></div>
+      <h1>Aguardando confirmação...</h1>
+      <p>Seu pedido foi registrado e estamos aguardando a confirmação do pagamento pela InfinitePay. Esta página será atualizada automaticamente.</p>
+      <div class="order-id" id="orderIdDisplay">Pedido #---</div>
+    </div>
+    <div id="statusConfirmed" class="hidden">
+      <div class="icon"><i class="fas fa-check-circle"></i></div>
+      <h1>Pedido Confirmado!</h1>
+      <p>Seu pagamento foi aprovado com sucesso. Em breve você receberá atualizações sobre o envio.</p>
+      <div class="order-id">Pedido #<span id="confirmedOrderId">---</span></div>
+      <br>
+      <a href="/conta" class="btn"><i class="fas fa-user"></i> Meus Pedidos</a>
+      <p class="info"><i class="fas fa-envelope"></i> Enviamos um comprovante para seu email</p>
+    </div>
+    <p id="errorText" class="hidden" style="color:var(--error);"></p>
   </div>
 
   <script>
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('id');
+    const statusParam = params.get('status');
+
     if (orderId) {
       document.getElementById('orderIdDisplay').textContent = 'Pedido #' + orderId;
+      document.getElementById('confirmedOrderId').textContent = orderId;
+    }
+
+    if (statusParam === 'paid' || statusParam === 'approved') {
+      document.getElementById('statusPending').classList.add('hidden');
+      document.getElementById('statusConfirmed').classList.remove('hidden');
+    } else if (orderId) {
+      // Poll for status confirmation (webhook may arrive after redirect)
+      let attempts = 0;
+      const maxAttempts = 20;
+      const checkStatus = async () => {
+        attempts++;
+        try {
+          const res = await fetch('/api/check-order-status/' + orderId);
+          const data = await res.json();
+          if (data.status === 'aprovado') {
+            document.getElementById('statusPending').classList.add('hidden');
+            document.getElementById('statusConfirmed').classList.remove('hidden');
+            return;
+          }
+        } catch (e) {}
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 3000);
+        } else {
+          // After timeout, show "Meus Pedidos" link
+          document.getElementById('statusPending').innerHTML =
+            '<div class="loading-icon"><i class="fas fa-check-circle" style="color:#10b981;"></i></div>' +
+            '<h1>Pedido Registrado!</h1>' +
+            '<p>Seu pedido #' + orderId + ' foi registrado. Verifique o status em Meus Pedidos.</p>' +
+            '<br><a href="/conta" class="btn"><i class="fas fa-user"></i> Meus Pedidos</a>';
+        }
+      };
+      setTimeout(checkStatus, 2000);
     }
   </script>
 </body>
