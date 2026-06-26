@@ -36,17 +36,54 @@ async function checkAuth() {
   }
 }
 
-// Carregar dados do usuário
+// Carregar dados do usuário (perfil completo)
 async function loadUserData() {
   if (!currentUser) return;
   
   try {
-    const nomeCompletoElement = document.getElementById('nomeCompleto');
-    if (nomeCompletoElement && currentUser.nome) {
-      nomeCompletoElement.value = currentUser.nome;
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/profile', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const profile = await res.json();
+    
+    const fields = {
+      nomeCompleto: profile.nome,
+      telefone: profile.telefone,
+      cep: profile.cep,
+      logradouro: profile.logradouro,
+      numero: profile.numero,
+      complemento: profile.complemento,
+      bairro: profile.bairro,
+      cidade: profile.cidade,
+      estado: profile.estado
+    };
+    
+    for (const [id, value] of Object.entries(fields)) {
+      const el = document.getElementById(id);
+      if (el && value) el.value = value;
+    }
+    
+    // Se tinha CEP salvo, buscar dados do ViaCEP
+    const cepEl = document.getElementById('cep');
+    if (cepEl && profile.cep) {
+      const cep = profile.cep.replace(/\D/g, '');
+      if (cep.length === 8) {
+        try {
+          const viaRes = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          const data = await viaRes.json();
+          if (!data.erro) {
+            if (!document.getElementById('logradouro').value) document.getElementById('logradouro').value = data.logradouro || '';
+            if (!document.getElementById('bairro').value) document.getElementById('bairro').value = data.bairro || '';
+            if (!document.getElementById('cidade').value) document.getElementById('cidade').value = data.localidade || '';
+            if (!document.getElementById('estado').value) document.getElementById('estado').value = data.uf || '';
+          }
+        } catch {}
+      }
     }
   } catch (error) {
-    console.error('Erro ao carregar dados:', error);
+    console.error('Erro ao carregar perfil:', error);
   }
 }
 

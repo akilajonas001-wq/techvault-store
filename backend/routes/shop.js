@@ -134,11 +134,10 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 const INFINITE_PAY_CHECKOUT_URL = 'https://checkout.infinitepay.io/akila-jonas/JlFvnPXXzd';
 
-router.post('/orders', async (req, res) => {
+router.post('/orders', requireAuth, async (req, res) => {
   try {
-    const { userId, endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
-    const user = await db.userById(userId);
-    if (!user) return res.status(401).json({ error: 'Usuário não encontrado' });
+    const { endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
+    const user = req.user;
 
     const newOrder = await db.createOrder({
       id: Date.now(), userId,
@@ -149,6 +148,22 @@ router.post('/orders', async (req, res) => {
       pagamento: 'InfinitePay', status: 'pendente',
       createdAt: new Date().toISOString()
     });
+
+    try {
+      await db.updateUserProfile(user.id, {
+        nome: cliente?.nome || user.nome,
+        telefone: cliente?.telefone || user.telefone,
+        cep: endereco?.cep || '',
+        logradouro: endereco?.logradouro || '',
+        numero: endereco?.numero || '',
+        complemento: endereco?.complemento || '',
+        bairro: endereco?.bairro || '',
+        cidade: endereco?.cidade || '',
+        estado: endereco?.estado || ''
+      });
+    } catch (profileError) {
+      console.error('Erro ao salvar perfil:', profileError.message);
+    }
 
     try {
       await transporter.sendMail({

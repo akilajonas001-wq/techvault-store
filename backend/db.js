@@ -35,6 +35,13 @@ async function initDb() {
       role TEXT,
       googleId TEXT,
       avatar TEXT,
+      cep TEXT DEFAULT '',
+      logradouro TEXT DEFAULT '',
+      numero TEXT DEFAULT '',
+      complemento TEXT DEFAULT '',
+      bairro TEXT DEFAULT '',
+      cidade TEXT DEFAULT '',
+      estado TEXT DEFAULT '',
       createdAt TEXT DEFAULT (NOW())
     );
     CREATE TABLE IF NOT EXISTS products (
@@ -131,6 +138,18 @@ async function initDb() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  await migrateUserProfileColumns();
+}
+
+async function migrateUserProfileColumns() {
+  const missingColumns = ['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado'];
+  for (const col of missingColumns) {
+    try {
+      await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} TEXT DEFAULT ''`);
+    } catch (e) {
+      // column might already exist
+    }
+  }
 }
 
 async function migrateFromJson() {
@@ -302,6 +321,34 @@ async function updateUser(id, data) {
   values.push(id);
   await query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`, values);
   return userById(id);
+}
+
+async function getUserProfile(id) {
+  const result = await query(
+    `SELECT id, nome, email, username, telefone, role, admin, cep, logradouro, numero, complemento, bairro, cidade, estado, createdAt FROM users WHERE id = $1`,
+    [id]
+  );
+  return result.rows.length ? {
+    ...result.rows[0],
+    admin: result.rows[0].admin === 1 || result.rows[0].admin === true
+  } : null;
+}
+
+async function updateUserProfile(id, data) {
+  const fields = [];
+  const values = [];
+  let idx = 1;
+  const allowed = ['nome', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado'];
+  for (const [key, val] of Object.entries(data)) {
+    if (allowed.includes(key)) {
+      fields.push(`${key} = $${idx++}`);
+      values.push(val === undefined || val === null ? '' : val);
+    }
+  }
+  if (fields.length === 0) return getUserProfile(id);
+  values.push(id);
+  await query(`UPDATE users SET ${fields.join(', ')} WHERE id = $${idx}`, values);
+  return getUserProfile(id);
 }
 
 async function deleteUser(id) {
@@ -680,7 +727,7 @@ async function closeDb() {
 
 module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
-  allUsers, userByEmail, userById, createUser, updateUser, deleteUser,
+  allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
   allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, clearAllOrders,
   allComments, createComment, deleteComment,
