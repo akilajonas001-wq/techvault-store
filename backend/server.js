@@ -44,12 +44,21 @@ async function startServer() {
 
 app.use('/api', authenticate);
 
-// Public order status check (no auth required)
+// Public order info (no auth required)
 app.get('/api/check-order-status/:id', async (req, res) => {
   try {
     const order = await db.orderById(parseInt(req.params.id));
     if (!order) return res.json({ status: 'not_found' });
-    res.json({ status: order.status });
+    res.json({
+      id: order.id,
+      status: order.status,
+      total: order.total,
+      itens: order.itens,
+      endereco: order.endereco,
+      cliente: order.cliente,
+      pagamento: order.pagamento,
+      createdAt: order.createdAt
+    });
   } catch { res.json({ status: 'error' }); }
 });
 

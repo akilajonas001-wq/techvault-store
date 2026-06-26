@@ -3,45 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pedido Confirmado - TechVault</title>
+  <title>Pedido - TechVault</title>
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .card { background: white; border-radius: 24px; padding: 48px; text-align: center; max-width: 480px; width: 90%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-    .icon { font-size: 64px; color: #10b981; margin-bottom: 16px; }
-    .loading-icon { font-size: 48px; color: #f59e0b; margin-bottom: 16px; animation: pulse 1.5s ease-in-out infinite; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: white; border-radius: 24px; padding: 48px; text-align: center; max-width: 520px; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .icon-big { font-size: 64px; margin-bottom: 16px; }
+    .icon-pending { color: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+    .icon-confirmed { color: #10b981; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-    p { color: #64748b; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
-    .order-id { background: #f1f5f9; padding: 12px 20px; border-radius: 12px; font-size: 14px; color: #1e293b; margin-bottom: 24px; display: inline-block; font-weight: 600; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+    p { color: #64748b; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+    .order-id { background: #f1f5f9; padding: 10px 20px; border-radius: 12px; font-size: 14px; color: #1e293b; margin-bottom: 24px; display: inline-block; font-weight: 600; }
+    .order-info { text-align: left; margin: 20px 0; padding: 20px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; }
+    .order-info .row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+    .order-info .row:last-child { border-bottom: none; }
+    .order-info .label { color: #94a3b8; }
+    .order-info .value { font-weight: 600; color: #1e293b; }
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color: white; transition: all 0.3s; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,115,232,0.4); }
+    .btn-secondary { background: #f1f5f9; color: #1e293b; }
     .info { font-size: 13px; color: #94a3b8; margin-top: 16px; }
     .hidden { display: none; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-pendente { background: #fef3c7; color: #92400e; }
+    .status-aprovado { background: #d1fae5; color: #065f46; }
+    .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #f59e0b; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
   </style>
 </head>
 <body>
-  <div class="card">
+  <div class="card" id="mainCard">
+    <!-- Pending state -->
     <div id="statusPending">
-      <div class="loading-icon"><i class="fas fa-clock"></i></div>
-      <h1>Aguardando confirmação...</h1>
-      <p>Seu pedido foi registrado e estamos aguardando a confirmação do pagamento pela InfinitePay. Esta página será atualizada automaticamente.</p>
+      <div class="icon-big icon-pending"><i class="fas fa-clock"></i></div>
+      <h1>Aguardando pagamento</h1>
+      <p id="pendingText">Seu pedido foi registrado. Estamos aguardando a confirmação da InfinitePay.</p>
       <div class="order-id" id="orderIdDisplay">Pedido #---</div>
+      <div id="orderDetailsPending" class="order-info">
+        <div class="row"><span class="label">Total</span><span class="value" id="pendingTotal">---</span></div>
+        <div class="row"><span class="label">Pagamento</span><span class="value" id="pendingPayment">---</span></div>
+        <div class="row"><span class="label">Status</span><span class="value"><span class="status-badge status-pendente" id="pendingStatus">Pendente</span> <span class="loader"></span></span></div>
+        <div id="pendingItems"></div>
+        <div id="pendingAddress" style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;"></div>
+      </div>
+      <p class="info" id="autoUpdateMsg"><i class="fas fa-sync-alt"></i> Atualizando automaticamente...</p>
     </div>
+
+    <!-- Confirmed state -->
     <div id="statusConfirmed" class="hidden">
-      <div class="icon"><i class="fas fa-check-circle"></i></div>
-      <h1>Pedido Confirmado!</h1>
+      <div class="icon-big icon-confirmed"><i class="fas fa-check-circle"></i></div>
+      <h1>Pagamento Confirmado!</h1>
       <p>Seu pagamento foi aprovado com sucesso. Em breve você receberá atualizações sobre o envio.</p>
       <div class="order-id">Pedido #<span id="confirmedOrderId">---</span></div>
-      <br>
-      <a href="/conta" class="btn"><i class="fas fa-user"></i> Meus Pedidos</a>
-      <p class="info"><i class="fas fa-envelope"></i> Enviamos um comprovante para seu email</p>
+      <div id="orderDetailsConfirmed" class="order-info">
+        <div class="row"><span class="label">Total pago</span><span class="value" id="confirmedTotal">---</span></div>
+        <div class="row"><span class="label">Status</span><span class="value"><span class="status-badge status-aprovado">Aprovado</span></span></div>
+        <div id="confirmedItems"></div>
+      </div>
+      <a href="/conta" class="btn" id="myOrdersBtn"><i class="fas fa-user"></i> Meus Pedidos</a>
     </div>
-    <p id="errorText" class="hidden" style="color:var(--error);"></p>
+
+    <p id="errorText" class="hidden" style="color:var(--error);margin-top:12px;"></p>
+    <div style="margin-top:16px;">
+      <a href="/" class="btn btn-secondary" id="continueShoppingBtn"><i class="fas fa-store"></i> Continuar comprando</a>
+    </div>
   </div>
 
   <script>
@@ -49,38 +79,86 @@
     const orderId = params.get('id');
     const statusParam = params.get('status');
 
+    function showConfirmed(data) {
+      document.getElementById('statusPending').classList.add('hidden');
+      document.getElementById('statusConfirmed').classList.remove('hidden');
+      if (data) {
+        document.getElementById('confirmedOrderId').textContent = data.id || orderId;
+        document.getElementById('confirmedTotal').textContent = 'R$ ' + (data.total || 0).toFixed(2).replace('.', ',');
+        if (data.itens) {
+          document.getElementById('confirmedItems').innerHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;">' +
+            data.itens.map(i => '<div style="display:flex;justify-content:space-between;padding:4px 0;">' +
+              '<span>' + (i.quantidade || 1) + 'x ' + i.nome + '</span>' +
+              '<span>R$ ' + ((i.preco || 0) * (i.quantidade || 1)).toFixed(2).replace('.', ',') + '</span>' +
+            '</div>').join('') + '</div>';
+        }
+      }
+    }
+
+    function showPending(data) {
+      if (!data) return;
+      document.getElementById('pendingTotal').textContent = 'R$ ' + (data.total || 0).toFixed(2).replace('.', ',');
+      document.getElementById('pendingPayment').textContent = data.pagamento || 'InfinitePay';
+      if (data.itens) {
+        document.getElementById('pendingItems').innerHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;">' +
+          data.itens.map(i => '<div style="display:flex;justify-content:space-between;padding:4px 0;">' +
+            '<span>' + (i.quantidade || 1) + 'x ' + i.nome + '</span>' +
+            '<span>R$ ' + ((i.preco || 0) * (i.quantidade || 1)).toFixed(2).replace('.', ',') + '</span>' +
+          '</div>').join('') + '</div>';
+      }
+      if (data.endereco) {
+        const e = data.endereco;
+        let addr = '';
+        if (e.logradouro) addr += e.logradouro + (e.numero ? ', ' + e.numero : '');
+        if (e.complemento) addr += ' - ' + e.complemento;
+        if (e.bairro) addr += '<br>' + e.bairro;
+        if (e.cidade) addr += ' - ' + e.cidade + (e.estado ? '/' + e.estado : '');
+        if (e.cep) addr += '<br>CEP: ' + e.cep;
+        if (addr) document.getElementById('pendingAddress').innerHTML = '<strong>Endereço de entrega:</strong><br>' + addr;
+      }
+    }
+
     if (orderId) {
       document.getElementById('orderIdDisplay').textContent = 'Pedido #' + orderId;
       document.getElementById('confirmedOrderId').textContent = orderId;
     }
 
     if (statusParam === 'paid' || statusParam === 'approved') {
-      document.getElementById('statusPending').classList.add('hidden');
-      document.getElementById('statusConfirmed').classList.remove('hidden');
+      // Already confirmed via URL param
+      fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(showConfirmed).catch(() => showConfirmed(null));
     } else if (orderId) {
-      // Poll for status confirmation (webhook may arrive after redirect)
+      // Fetch order info immediately and poll for confirmation
       let attempts = 0;
-      const maxAttempts = 20;
+      const maxAttempts = 30;
+
+      // Initial fetch to show order details right away
+      fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(data => {
+        if (data.status !== 'not_found' && data.status !== 'error') {
+          if (data.status === 'aprovado') {
+            showConfirmed(data);
+          } else {
+            showPending(data);
+          }
+        }
+      }).catch(() => {});
+
       const checkStatus = async () => {
         attempts++;
         try {
           const res = await fetch('/api/check-order-status/' + orderId);
           const data = await res.json();
-          if (data.status === 'aprovado') {
-            document.getElementById('statusPending').classList.add('hidden');
-            document.getElementById('statusConfirmed').classList.remove('hidden');
+          if (data.status === 'aprovado' || data.status === 'paid') {
+            showConfirmed(data);
             return;
+          }
+          if (data.status !== 'not_found' && data.status !== 'error') {
+            showPending(data);
           }
         } catch (e) {}
         if (attempts < maxAttempts) {
           setTimeout(checkStatus, 3000);
         } else {
-          // After timeout, show "Meus Pedidos" link
-          document.getElementById('statusPending').innerHTML =
-            '<div class="loading-icon"><i class="fas fa-check-circle" style="color:#10b981;"></i></div>' +
-            '<h1>Pedido Registrado!</h1>' +
-            '<p>Seu pedido #' + orderId + ' foi registrado. Verifique o status em Meus Pedidos.</p>' +
-            '<br><a href="/conta" class="btn"><i class="fas fa-user"></i> Meus Pedidos</a>';
+          document.getElementById('autoUpdateMsg').innerHTML = '<i class="fas fa-info-circle"></i> Você pode verificar o status em <a href="/conta" style="color:var(--primary);">Meus Pedidos</a>.';
         }
       };
       setTimeout(checkStatus, 2000);
