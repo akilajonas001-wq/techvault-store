@@ -730,7 +730,7 @@
     }
 
     function showOrderDetail(orderId) {
-      const order = allOrders.find(o => o.id === orderId);
+      const order = allOrders.find(o => o.id == orderId);
       if (!order) return;
       if (order.status !== 'aprovado') {
         notify('Detalhes disponíveis apenas para pedidos aprovados.', 'info');
@@ -754,7 +754,7 @@
         <div class="detail-section">
           <div class="label">Pedido</div>
           <strong>#${order.id}</strong> - ${statusBadge}
-          <br><span style="font-size:12px;color:var(--text-muted)">${new Date(order.createdAt).toLocaleString('pt-BR')}</span>
+          <br><span style="font-size:12px;color:var(--text-muted)">${order.createdAt ? new Date(order.createdAt).toLocaleString('pt-BR') : '—'}</span>
         </div>
         <div class="detail-section">
           <div class="label">Cliente</div>
@@ -809,7 +809,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          const order = allOrders.find(o => o.id === orderId);
+          const order = allOrders.find(o => o.id == orderId);
           if (order) order.status = status;
           result.innerHTML = '<span style="color:var(--success)">✓ Status atualizado!</span>';
           renderOrders();
