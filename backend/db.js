@@ -148,12 +148,19 @@ async function migrateUserProfileColumns() {
     try {
       await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col} TEXT DEFAULT ''`);
     } catch (e) {
-      // column might already exist
+      console.error(`Erro ao adicionar coluna ${col}:`, e.message);
     }
   }
   try {
     await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS checkoutLink TEXT DEFAULT ''`);
-  } catch (e) {}
+  } catch (e) {
+    console.error('Erro ao adicionar checkoutLink:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS frete TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar frete:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -404,15 +411,33 @@ async function updateProduct(id, data) {
 }
 
 async function createProduct(data) {
-  await query(
-    `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
-    [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
-     data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
-     data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
-     data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
-     data.frete || '', data.checkoutLink || '',
-     data.createdAt || new Date().toISOString()]
-  );
+  try {
+    await query(
+      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+      [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
+       data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
+       data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
+       data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+       data.frete || '', data.checkoutLink || '',
+       data.createdAt || new Date().toISOString()]
+    );
+  } catch (e) {
+    if (e.message && e.message.includes('checkoutlink')) {
+      // Column doesn't exist yet, try migration then retry
+      try { await query(`ALTER TABLE products ADD COLUMN checkoutLink TEXT DEFAULT ''`); } catch {}
+      await query(
+        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+        [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
+         data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
+         data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
+         data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+         data.frete || '', data.checkoutLink || '',
+         data.createdAt || new Date().toISOString()]
+      );
+    } else {
+      throw e;
+    }
+  }
   return productById(data.id);
 }
 
