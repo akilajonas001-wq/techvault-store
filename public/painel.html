@@ -494,6 +494,11 @@
               <input type="checkbox" id="cpDestaque" style="width:18px;height:18px;">
               <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
             </div>
+            <div class="cpFull" style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Checkout InfinitePay</label>
+              <input type="url" id="cpCheckoutLink" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Se deixar vazio, usará o link geral da loja.</span>
+            </div>
           </div>
 
           <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
@@ -1193,6 +1198,7 @@
       const imagem = document.getElementById('cpImagem').value.trim() || '';
       const imagens = document.getElementById('cpImagens').value.trim().split('\n').filter(Boolean);
       const destaque = document.getElementById('cpDestaque').checked;
+      const checkoutLink = document.getElementById('cpCheckoutLink').value.trim();
 
       const variantCards = document.getElementById('variantsContainer').querySelectorAll('.variant-card');
       const variants = [];
@@ -1225,7 +1231,8 @@
         avaliacao: 0,
         reviews: 0,
         specs: specs,
-        variants: variants
+        variants: variants,
+        checkoutLink: checkoutLink
       };
 
       try {

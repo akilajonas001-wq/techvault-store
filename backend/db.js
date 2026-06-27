@@ -62,6 +62,7 @@ async function initDb() {
       specs TEXT DEFAULT '{}',
       variants TEXT DEFAULT '[]',
       frete TEXT DEFAULT '',
+      checkoutLink TEXT DEFAULT '',
       createdAt TEXT DEFAULT (NOW())
     );
     CREATE TABLE IF NOT EXISTS orders (
@@ -150,6 +151,9 @@ async function migrateUserProfileColumns() {
       // column might already exist
     }
   }
+  try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS checkoutLink TEXT DEFAULT ''`);
+  } catch (e) {}
 }
 
 async function migrateFromJson() {
@@ -175,6 +179,7 @@ async function migrateFromJson() {
       specs: JSON.stringify(row.specs || {}),
       variants: JSON.stringify(row.variants || row.variantes || []),
       frete: row.frete || '',
+      checkoutLink: row.checkoutLink || '',
       createdAt: row.createdAt || new Date().toISOString()
     })},
     { file: 'orders.json', table: 'orders', migrate: (row) => ({
@@ -363,6 +368,7 @@ const parseProduct = (p) => p ? {
   especificacoes: JSON.parse(p.specs || '{}'),
   variantes: JSON.parse(p.variants || '[]'),
   frete: p.frete || '',
+  checkoutLink: p.checkoutlink || '',
   paused: p.paused === 1 || p.paused === true,
   precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
   destaque: p.destaque === 1 || p.destaque === true
@@ -399,11 +405,12 @@ async function updateProduct(id, data) {
 
 async function createProduct(data) {
   await query(
-    `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
     [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
      data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
      data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
      data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+     data.frete || '', data.checkoutLink || '',
      data.createdAt || new Date().toISOString()]
   );
   return productById(data.id);
