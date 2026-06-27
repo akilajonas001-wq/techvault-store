@@ -173,11 +173,15 @@ router.post('/orders', requireAuth, async (req, res) => {
     const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
     const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
 
-    const sep = INFINITE_PAY_CHECKOUT_URL.includes('?') ? '&' : '?';
-    const checkoutUrl = `${INFINITE_PAY_CHECKOUT_URL}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
-    db.productById(Number(itens?.[0]?.id) || itens?.[0]?.id).then(p => {
-      if (p && p.checkoutLink) console.log('Produto tem checkoutLink:', p.checkoutLink);
-    }).catch(() => {});
+    let checkoutBaseUrl = INFINITE_PAY_CHECKOUT_URL;
+    try {
+      if (itens && itens.length > 0) {
+        const p = await db.productById(Number(itens[0].id) || itens[0].id);
+        if (p && p.checkoutLink) checkoutBaseUrl = p.checkoutLink;
+      }
+    } catch (e) {}
+    const sep = checkoutBaseUrl.includes('?') ? '&' : '?';
+    const checkoutUrl = `${checkoutBaseUrl}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
 
     res.json({
       success: true, orderId: newOrder.id,
