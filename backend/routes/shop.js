@@ -151,21 +151,17 @@ router.post('/orders', requireAuth, async (req, res) => {
       createdAt: new Date().toISOString()
     });
 
-    try {
-      await db.updateUserProfile(user.id, {
-        nome: cliente?.nome || user.nome,
-        telefone: cliente?.telefone || user.telefone,
-        cep: endereco?.cep || '',
-        logradouro: endereco?.logradouro || '',
-        numero: endereco?.numero || '',
-        complemento: endereco?.complemento || '',
-        bairro: endereco?.bairro || '',
-        cidade: endereco?.cidade || '',
-        estado: endereco?.estado || ''
-      });
-    } catch (profileError) {
-      console.error('Erro ao salvar perfil:', profileError.message);
-    }
+    db.updateUserProfile(user.id, {
+      nome: cliente?.nome || user.nome,
+      telefone: cliente?.telefone || user.telefone,
+      cep: endereco?.cep || '',
+      logradouro: endereco?.logradouro || '',
+      numero: endereco?.numero || '',
+      complemento: endereco?.complemento || '',
+      bairro: endereco?.bairro || '',
+      cidade: endereco?.cidade || '',
+      estado: endereco?.estado || ''
+    }).catch(e => console.error('Erro perfil:', e.message));
 
     transporter.sendMail({
       from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
@@ -177,18 +173,11 @@ router.post('/orders', requireAuth, async (req, res) => {
     const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
     const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
 
-    // Try to use product-specific checkout link
-    let checkoutBaseUrl = INFINITE_PAY_CHECKOUT_URL;
-    try {
-      if (itens && itens.length > 0) {
-        const firstProduct = await db.productById(Number(itens[0].id) || itens[0].id);
-        if (firstProduct && firstProduct.checkoutLink) {
-          checkoutBaseUrl = firstProduct.checkoutLink;
-        }
-      }
-    } catch {}
-    const sep = checkoutBaseUrl.includes('?') ? '&' : '?';
-    const checkoutUrl = `${checkoutBaseUrl}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+    const sep = INFINITE_PAY_CHECKOUT_URL.includes('?') ? '&' : '?';
+    const checkoutUrl = `${INFINITE_PAY_CHECKOUT_URL}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+    db.productById(Number(itens?.[0]?.id) || itens?.[0]?.id).then(p => {
+      if (p && p.checkoutLink) console.log('Produto tem checkoutLink:', p.checkoutLink);
+    }).catch(() => {});
 
     res.json({
       success: true, orderId: newOrder.id,
