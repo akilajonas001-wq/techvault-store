@@ -167,19 +167,12 @@ router.post('/orders', requireAuth, async (req, res) => {
       console.error('Erro ao salvar perfil:', profileError.message);
     }
 
-    try {
-      await Promise.race([
-        transporter.sendMail({
-          from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
-          to: 'akilajonas001@gmail.com',
-          subject: `Novo Pedido #${newOrder.id} - TechVault`,
-          html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
-        }),
-        new Promise(r => setTimeout(r, 7000))
-      ]);
-    } catch (emailError) {
-      console.error('Erro ao enviar email:', emailError.message);
-    }
+    transporter.sendMail({
+      from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
+      to: 'akilajonas001@gmail.com',
+      subject: `Novo Pedido #${newOrder.id} - TechVault`,
+      html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
+    }).catch(e => console.error('Erro email:', e.message));
 
     const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
     const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
