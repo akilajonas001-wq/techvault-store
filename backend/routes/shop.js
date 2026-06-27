@@ -10,8 +10,10 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
-    pass: process.env.EMAIL_PASS || ''
-  }
+    pass: process.env.EMAIL_PASS
+  },
+  connectionTimeout: 5000,
+  greetingTimeout: 5000
 });
 
 // ========== PRODUTOS ==========
@@ -166,12 +168,15 @@ router.post('/orders', requireAuth, async (req, res) => {
     }
 
     try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
-        to: 'akilajonas001@gmail.com',
-        subject: `Novo Pedido #${newOrder.id} - TechVault`,
-        html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
-      });
+      await Promise.race([
+        transporter.sendMail({
+          from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
+          to: 'akilajonas001@gmail.com',
+          subject: `Novo Pedido #${newOrder.id} - TechVault`,
+          html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
+        }),
+        new Promise(r => setTimeout(r, 7000))
+      ]);
     } catch (emailError) {
       console.error('Erro ao enviar email:', emailError.message);
     }
