@@ -447,6 +447,10 @@ async function deleteProduct(id) {
 
 const parseOrder = (o) => o ? {
   ...o,
+  id: o.id,
+  userId: o.userid,
+  totalOriginal: o.totaloriginal,
+  createdAt: o.createdat || o.createdAt,
   usuario: JSON.parse(o.usuario || '{}'),
   endereco: JSON.parse(o.endereco || '{}'),
   itens: JSON.parse(o.itens || '[]'),

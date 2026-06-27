@@ -68,6 +68,11 @@ app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
 
+// Debug webhook test endpoint (GET)
+app.get('/api/webhooks/infinitepay', (req, res) => {
+  res.json({ message: 'Webhook endpoint ativo. Configure este URL no painel da InfinitePay.', url: req.protocol + '://' + req.get('host') + '/api/webhooks/infinitepay' });
+});
+
 // ===================== CHAT ROUTES (USER) =====================
 
 app.get('/api/chat/conversations', (req, res) => {
