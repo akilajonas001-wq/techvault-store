@@ -140,7 +140,7 @@ router.post('/orders', requireAuth, async (req, res) => {
     const user = req.user;
 
     const newOrder = await db.createOrder({
-      id: Date.now(), userId,
+      id: Date.now(), userId: user.id,
       usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
       endereco, itens, total, totalOriginal: totalOriginal || total,
       cupom: cupom || null, cliente: cliente || {},
@@ -183,13 +183,14 @@ router.post('/orders', requireAuth, async (req, res) => {
     let checkoutBaseUrl = INFINITE_PAY_CHECKOUT_URL;
     try {
       if (itens && itens.length > 0) {
-        const firstProduct = await db.productById(itens[0].id || itens[0].id);
+        const firstProduct = await db.productById(Number(itens[0].id) || itens[0].id);
         if (firstProduct && firstProduct.checkoutLink) {
           checkoutBaseUrl = firstProduct.checkoutLink;
         }
       }
     } catch {}
-    const checkoutUrl = `${checkoutBaseUrl}?external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+    const sep = checkoutBaseUrl.includes('?') ? '&' : '?';
+    const checkoutUrl = `${checkoutBaseUrl}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
 
     res.json({
       success: true, orderId: newOrder.id,
