@@ -309,9 +309,10 @@ async function loadProduct(productId) {
       variantHtml = '<div class="variant-section"><h3><i class="fas fa-layer-group"></i> Variantes do Produto</h3><div class="variant-list">';
       product.variantes.forEach(function(v, idx) {
         const selected = idx === 0 ? ' selected' : '';
+        const vPreco = v.preco || product.preco;
         variantHtml += '<div class="variant-item' + selected + '" data-variant="' + idx + '" onclick="selectVariant(' + idx + ')">' +
-          '<div class="variant-name">' + v.nome + '</div>' +
-          '<div class="variant-price">R$ ' + v.preco.toFixed(2).replace('.', ',') + '</div>' +
+          '<div class="variant-name">' + (v.nome || product.nome) + '</div>' +
+          '<div class="variant-price">R$ ' + vPreco.toFixed(2).replace('.', ',') + '</div>' +
           (v.especificacoes ? '<div class="variant-specs">' + Object.values(v.especificacoes).filter(Boolean).join(' | ') + '</div>' : '') +
         '</div>';
       });
@@ -392,10 +393,11 @@ function selectVariant(idx) {
   if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes[idx]) return;
   selectedVariant = currentProduct.variantes[idx];
   
-  // Update price
+  // Update price (use || to fallback to main price when variant preco is 0)
   const priceEl = document.getElementById('productPrice');
   if (priceEl) {
-    priceEl.textContent = 'R$ ' + selectedVariant.preco.toFixed(2).replace('.', ',');
+    const displayPrice = selectedVariant.preco || currentProduct.preco;
+    priceEl.textContent = 'R$ ' + displayPrice.toFixed(2).replace('.', ',');
   }
   
   // Highlight selected
