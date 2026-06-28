@@ -337,12 +337,17 @@ app.get('/api/images/:id', async (req, res) => {
 
 // ===================== INFINITEPAY WEBHOOK =====================
 
+const webhookLogs = [];
+
 app.post('/api/webhooks/infinitepay', async (req, res) => {
   try {
     const body = req.body;
+    const log = { timestamp: new Date().toISOString(), body: JSON.stringify(body), headers: req.headers };
+    webhookLogs.unshift(log);
+    if (webhookLogs.length > 20) webhookLogs.pop();
     console.log('InfinitePay webhook received:', JSON.stringify(body));
 
-    const orderId = body.external_id || body.externalId;
+    const orderId = body.external_id || body.externalId || body.id || body.reference || body.order_id;
     const status = body.status;
 
     if (orderId && status === 'paid') {
@@ -351,6 +356,8 @@ app.post('/api/webhooks/infinitepay', async (req, res) => {
     } else if (orderId && (status === 'canceled' || status === 'refunded')) {
       await db.updateOrderStatus(parseInt(orderId), status === 'canceled' ? 'cancelado' : 'reembolsado');
       console.log(`Pedido #${orderId} atualizado para ${status}`);
+    } else {
+      console.log('Webhook não processou: orderId=', orderId, 'status=', status);
     }
 
     res.status(200).json({ received: true });
@@ -358,6 +365,10 @@ app.post('/api/webhooks/infinitepay', async (req, res) => {
     console.error('Erro no webhook InfinitePay:', e);
     res.status(200).json({ received: true });
   }
+});
+
+app.get('/api/debug/webhook-logs', (req, res) => {
+  res.json(webhookLogs);
 });
 
 // ===================== STATIC PAGE ROUTES =====================
