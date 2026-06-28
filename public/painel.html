@@ -1034,6 +1034,7 @@
             p.modified = true;
           }
           renderProducts();
+          updateStats();
         } else {
           alert(data.error || 'Erro ao alterar preço');
         }
@@ -1056,6 +1057,7 @@
           const product = allProducts.find(p => p.id === productId);
           if (product) product.paused = data.paused;
           renderProducts();
+          updateStats();
         }
       } catch (err) {
         console.error('Erro ao pausar/reativar:', err);
@@ -1078,6 +1080,7 @@
         if (data.success) {
           allProducts = allProducts.filter(p => p.id !== productId);
           renderProducts();
+          updateStats();
           notify('Produto "' + productName + '" excluído com sucesso!', 'success');
         } else {
           notify(data.error || 'Erro ao excluir produto', 'error');
