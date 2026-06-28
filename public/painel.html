@@ -613,6 +613,7 @@
     let allStaff = [];
     let allNewsletter = [];
     let currentUserRole = null;
+    let currentUserId = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const token = localStorage.getItem('techvault-token');
@@ -629,6 +630,7 @@
           return;
         }
         currentUserRole = data.user.role;
+        currentUserId = data.user.id;
         if (currentUserRole === 'funcionario') {
           document.getElementById('addStaffForm').style.display = 'none';
           document.getElementById('revenueCard').style.display = 'none';
@@ -1367,8 +1369,8 @@
           if (u.role === 'admin') roleHtml = '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>';
           else if (u.role === 'funcionario') roleHtml = '<span class="badge badge-orange"><i class="fas fa-user-tie"></i> Funcionário</span>';
           else roleHtml = '<span class="badge badge-gray">Cliente</span>';
-          const isSelf = currentUser && currentUser.id === u.id;
-          const canDelete = currentUser && currentUser.role === 'admin' && !isSelf;
+          const isSelf = currentUserId && currentUserId === u.id;
+          const canDelete = currentUserRole === 'admin' && !isSelf;
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (u.username || '<span style="color:var(--error)">—</span>') + '</td>' +
