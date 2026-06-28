@@ -21,12 +21,12 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   crossOriginOpenerPolicy: false
 }));
-const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
+const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 600, standardHeaders: true, legacyHeaders: false });
 app.use('/api/', apiLimiter);
 app.use(cors());
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
-app.use(express.static('public', { maxAge: 0, etag: false, lastModified: false, setHeaders: (res, path) => { res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate'); } }));
+app.use(express.static('public', { maxAge: '1h', etag: true, lastModified: true, setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.use(session({ secret: JWT_SECRET, resave: false, saveUninitialized: true, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' } }));
 
 // Initialize database before starting server

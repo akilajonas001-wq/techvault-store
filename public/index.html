@@ -1653,7 +1653,14 @@
         dotsContainer.appendChild(dot);
       });
 
-      setInterval(nextBanner, 5000);
+      let bannerInterval = setInterval(nextBanner, 5000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          clearInterval(bannerInterval);
+        } else {
+          bannerInterval = setInterval(nextBanner, 5000);
+        }
+      });
     });
   </script>
 </body>

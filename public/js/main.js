@@ -364,11 +364,18 @@ function initBackToTop() {
   btn.setAttribute('aria-label', 'Voltar ao topo');
   document.body.appendChild(btn);
 
+  let ticking = false;
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 400) {
-      btn.classList.add('visible');
-    } else {
-      btn.classList.remove('visible');
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        if (window.scrollY > 400) {
+          btn.classList.add('visible');
+        } else {
+          btn.classList.remove('visible');
+        }
+        ticking = false;
+      });
+      ticking = true;
     }
   });
 
@@ -572,11 +579,10 @@ function initUserChat() {
 
   if (userChatInterval) clearInterval(userChatInterval);
   userChatInterval = setInterval(() => {
-    if (currentUser) {
-      loadUnreadCount();
-      if (userChatModalActive) loadConversations();
-    }
-  }, 5000);
+    if (!currentUser || document.hidden) return;
+    loadUnreadCount();
+    if (userChatModalActive) loadConversations();
+  }, 15000);
 }
 
 async function loadUnreadCount() {
@@ -864,8 +870,10 @@ async function readNotif(notifId, couponCode) {
   } catch {}
 }
 
-// Poll notifications every 30s
-setInterval(checkNotifications, 30000);
+// Check notifications when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkNotifications();
+});
 
 // Modal para escolher nome de usuário (quando Google não fornece)
 function showUsernamePrompt() {
