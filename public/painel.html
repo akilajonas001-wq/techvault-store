@@ -1026,14 +1026,7 @@
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          const p = allProducts.find(x => x.id === productId);
-          if (p) {
-            p.preco = data.preco;
-            p.precoOriginal = data.precoOriginal;
-            p.precoAlterado = data.precoAlterado;
-            p.modified = true;
-          }
-          renderProducts();
+          fetchProducts();
           updateStats();
         } else {
           alert(data.error || 'Erro ao alterar preço');
@@ -1054,9 +1047,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          const product = allProducts.find(p => p.id === productId);
-          if (product) product.paused = data.paused;
-          renderProducts();
+          fetchProducts();
           updateStats();
         }
       } catch (err) {
@@ -1078,10 +1069,9 @@
         });
         const data = await res.json();
         if (data.success) {
-          allProducts = allProducts.filter(p => p.id !== productId);
-          renderProducts();
-          updateStats();
           notify('Produto "' + productName + '" excluído com sucesso!', 'success');
+          fetchProducts();
+          updateStats();
         } else {
           notify(data.error || 'Erro ao excluir produto', 'error');
         }
@@ -1089,6 +1079,13 @@
         console.error('Erro ao excluir produto:', err);
         notify('Erro de conexão ao excluir produto', 'error');
       }
+    }
+    async function fetchProducts() {
+      try {
+        const res = await fetch('/api/admin/products', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+        allProducts = await res.json();
+        renderProducts();
+      } catch {}
     }
 
     // === CREATE PRODUCT MODAL ===
@@ -1246,8 +1243,7 @@
         if (data.success) {
           closeCreateProductModal();
           alert('Produto "' + nome + '" criado com sucesso!');
-          allProducts.push(data.product);
-          renderProducts();
+          fetchProducts();
           // Reset form
           document.getElementById('cpNome').value = '';
           document.getElementById('cpDescricao').value = '';
