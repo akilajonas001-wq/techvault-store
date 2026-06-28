@@ -161,6 +161,11 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar frete:', e.message);
   }
+  try {
+    await query(`ALTER TABLE chats ADD COLUMN IF NOT EXISTS resolved SMALLINT DEFAULT 0`);
+  } catch (e) {
+    console.error('Erro ao adicionar resolved:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -561,7 +566,7 @@ async function allCartsWithUsers() {
 
 async function getChatMessages(key) {
   const result = await query(`SELECT * FROM chats WHERE key = $1`, [key]);
-  return result.rows.length ? JSON.parse(result.rows[0].messages || '[]') : [];
+  return result.rows.length ? { messages: JSON.parse(result.rows[0].messages || '[]'), resolved: result.rows[0].resolved === 1 || result.rows[0].resolved === true } : null;
 }
 
 async function saveChatMessages(key, messages) {
@@ -569,6 +574,15 @@ async function saveChatMessages(key, messages) {
     `INSERT INTO chats (key, messages) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET messages = $2`,
     [key, JSON.stringify(messages)]
   );
+}
+
+async function resolveChat(key, resolved) {
+  await query(`UPDATE chats SET resolved = $1 WHERE key = $2`, [resolved ? 1 : 0, key]);
+}
+
+async function getChatResolved(key) {
+  const result = await query(`SELECT resolved FROM chats WHERE key = $1`, [key]);
+  return result.rows.length ? (result.rows[0].resolved === 1 || result.rows[0].resolved === true) : false;
 }
 
 async function deleteChat(key) {
@@ -579,7 +593,7 @@ async function allChats() {
   const result = await query(`SELECT * FROM chats`);
   const output = {};
   for (const r of result.rows) {
-    output[r.key] = JSON.parse(r.messages || '[]');
+    output[r.key] = { messages: JSON.parse(r.messages || '[]'), resolved: r.resolved === 1 || r.resolved === true };
   }
   return output;
 }
@@ -767,7 +781,7 @@ module.exports = {
   allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, clearAllOrders,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
-  getChatMessages, saveChatMessages, deleteChat, allChats,
+  getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,
   allCoupons, couponByCode, createCoupon, useCoupon, userCoupons,
   allNotifications, userNotifications, createNotification, markNotificationRead,
   allNewsletters, subscribeNewsletter, isNewsletterSubscribed,

@@ -68,7 +68,19 @@ app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
 
-// ===================== CHAT ROUTES (USER) =====================
+// ===================== CHAT ROUTES =====================
+// Chat key format:
+//   support:userId        → Support chat (user → any admin/funcionario)
+//   dm:userId:staffId     → Direct message (user ↔ specific staff)
+
+// --- USER-FACING ROUTES ---
+
+app.get('/api/chat/staff', (req, res) => {
+  try {
+    const staff = db.adminStaff();
+    res.json(staff.map(s => ({ id: s.id, nome: s.nome, role: s.role, admin: s.admin })));
+  } catch { res.json([]); }
+});
 
 app.get('/api/chat/conversations', (req, res) => {
   try {
@@ -79,27 +91,43 @@ app.get('/api/chat/conversations', (req, res) => {
 
     const chats = db.allChats();
     const result = [];
-    for (const [convKey, messages] of Object.entries(chats)) {
-      if (!messages?.length) continue;
-      const [, keyUserId] = convKey.split(':');
-      if (!keyUserId) continue;
-      if (parseInt(keyUserId) !== decoded.id) continue;
+    for (const [convKey, data] of Object.entries(chats)) {
+      const msgs = data.messages;
+      if (!msgs?.length) continue;
+      const parts = convKey.split(':');
+      const type = parts[0];
 
-      messages.forEach(m => {
-        if (m.from === 'admin' && !m.adminName && m.adminUserId) {
-          const adminUser = db.userById(m.adminUserId);
-          if (adminUser) m.adminName = adminUser.nome;
-        }
-      });
+      let belongs = false;
+      let targetName = 'Atendimento';
+      let targetId = null;
 
-      const [keyAdminId] = convKey.split(':');
-      const adminMsgs = messages.filter(m => m.from === 'admin');
-      const adminName = adminMsgs.length > 0 ? adminMsgs[adminMsgs.length - 1].adminName : 'Atendimento';
-      const unread = messages.filter(m => m.from === 'admin' && !m.read).length;
+      if (type === 'support') {
+        const uid = parseInt(parts[1]);
+        if (uid !== decoded.id) continue;
+        belongs = true;
+        const lastAdmin = msgs.slice().reverse().find(m => m.from === 'admin');
+        if (lastAdmin && lastAdmin.adminName) targetName = lastAdmin.adminName;
+      } else if (type === 'dm') {
+        const uid = parseInt(parts[1]);
+        const sid = parseInt(parts[2]);
+        if (uid !== decoded.id && sid !== decoded.id) continue;
+        belongs = true;
+        const otherId = uid === decoded.id ? sid : uid;
+        const other = db.userById(otherId);
+        targetName = other ? other.nome : 'Usuário #' + otherId;
+        targetId = otherId;
+      }
+
+      if (!belongs) continue;
+
+      const unread = msgs.filter(m => m.from !== 'user' && !m.read).length;
       result.push({
-        conversationKey: convKey, adminUserId: keyAdminId !== 'general' ? parseInt(keyAdminId) : null,
-        adminName, unreadCount: unread, totalMessages: messages.length,
-        lastMessage: messages[messages.length - 1], updatedAt: messages[messages.length - 1].createdAt
+        conversationKey: convKey, type,
+        targetId, targetName,
+        unreadCount: unread, totalMessages: msgs.length,
+        lastMessage: msgs[msgs.length - 1],
+        updatedAt: msgs[msgs.length - 1].createdAt,
+        resolved: data.resolved || false
       });
     }
     result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -107,28 +135,36 @@ app.get('/api/chat/conversations', (req, res) => {
   } catch { res.json([]); }
 });
 
-app.get('/api/chat/messages/:adminUserId', (req, res) => {
+app.get('/api/chat/messages/:convKey(*)', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
 
-    const chats = db.allChats();
-    const key = req.params.adminUserId + ':' + decoded.id;
-    const generalKey = 'general:' + decoded.id;
-    const messages = chats[key] || chats[generalKey] || [];
-    messages.forEach(m => {
+    const convKey = req.params.convKey;
+    const chatData = db.getChatMessages(convKey);
+    if (!chatData) return res.json([]);
+    const msgs = chatData.messages;
+
+    const parts = convKey.split(':');
+    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.json([]);
+    if (parts[0] === 'dm') {
+      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
+      if (uid !== decoded.id && sid !== decoded.id) return res.json([]);
+    }
+
+    msgs.forEach(m => {
       if (m.from === 'admin' && !m.adminName && m.adminUserId) {
         const adminUser = db.userById(m.adminUserId);
         if (adminUser) m.adminName = adminUser.nome;
       }
     });
-    res.json(messages);
+    res.json({ messages: msgs, resolved: chatData.resolved });
   } catch { res.json([]); }
 });
 
-app.post('/api/chat/send/:adminUserId', (req, res) => {
+app.post('/api/chat/send/:type/:target', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -140,162 +176,91 @@ app.post('/api/chat/send/:adminUserId', (req, res) => {
     const { message } = req.body;
     if (!message?.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
 
-    const adminUserId = req.params.adminUserId;
-    const chats = db.allChats();
+    const chatType = req.params.type; // 'support' or 'dm'
+    const target = req.params.target;  // for dm: staffId, for support: 'general'
     let key;
 
-    if (adminUserId === 'general') {
-      key = 'general:' + decoded.id;
+    if (chatType === 'dm') {
+      key = 'dm:' + decoded.id + ':' + target;
     } else {
-      key = adminUserId + ':' + decoded.id;
+      key = 'support:' + decoded.id;
     }
 
-    if (adminUserId === 'general') {
-      for (const [convKey] of Object.entries(chats)) {
-        const [ka, ku] = convKey.split(':');
-        if (ku && parseInt(ku) === decoded.id && ka !== 'general' && !isNaN(parseInt(ka))) {
-          const adminUser = db.userById(parseInt(ka));
-          const adminName = adminUser ? adminUser.nome : 'atendente #' + ka;
-          return res.status(403).json({ error: 'Você já está sendo atendido por ' + adminName + '. Continue a conversa pela janela de chat.' });
-        }
-      }
-    } else {
-      const existing = chats[key];
-      const hasAdminMessage = existing && existing.some(m => m.from === 'admin');
-      if (!hasAdminMessage) {
-        return res.status(403).json({ error: 'Você só pode responder a conversas iniciadas por um atendente. Aguarde nosso contato!' });
-      }
-    }
-
-    const messages = chats[key] || [];
-    messages.push({ from: 'user', message: message.trim(), createdAt: new Date().toISOString(), read: false });
-    db.saveChatMessages(key, messages);
+    const chatData = db.getChatMessages(key);
+    const msgs = chatData ? chatData.messages : [];
+    msgs.push({ from: 'user', message: message.trim(), createdAt: new Date().toISOString(), read: false });
+    db.saveChatMessages(key, msgs);
     res.json({ success: true, conversationKey: key });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
 });
 
-app.post('/api/chat/read', (req, res) => {
+app.post('/api/chat/read/:convKey(*)', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token inválido' }); }
 
-    const chats = db.allChats();
+    const convKey = req.params.convKey;
+    const chatData = db.getChatMessages(convKey);
+    if (!chatData) return res.json({ success: true });
+    const msgs = chatData.messages;
+
+    const parts = convKey.split(':');
+    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+    if (parts[0] === 'dm') {
+      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
+      if (uid !== decoded.id && sid !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+    }
+
     let modified = false;
-    for (const [convKey, messages] of Object.entries(chats)) {
-      const [, keyUserId] = convKey.split(':');
-      if (!keyUserId) continue;
-      if (parseInt(keyUserId) === decoded.id) {
-        messages.forEach(m => { if (m.from === 'admin') m.read = true; });
-        db.saveChatMessages(convKey, messages);
-        modified = true;
-      }
-    }
-    if (chats[decoded.id] && Array.isArray(chats[decoded.id])) {
-      chats[decoded.id].forEach(m => { if (m.from === 'admin') m.read = true; });
-      db.saveChatMessages(String(decoded.id), chats[decoded.id]);
-      modified = true;
-    }
+    msgs.forEach(m => {
+      if (m.from === 'admin' && !m.read) { m.read = true; modified = true; }
+    });
+    if (modified) db.saveChatMessages(convKey, msgs);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao marcar como lido' }); }
 });
 
-app.delete('/api/chat/conversation/:adminUserId', (req, res) => {
+app.delete('/api/chat/conversation/:convKey(*)', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token inválido' }); }
 
-    const chats = db.allChats();
-    const key = req.params.adminUserId + ':' + decoded.id;
-    const generalKey = 'general:' + decoded.id;
-    if (chats[key]) db.deleteChat(key);
-    else if (chats[generalKey]) db.deleteChat(generalKey);
+    const convKey = req.params.convKey;
+    const parts = convKey.split(':');
+    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+    if (parts[0] === 'dm') {
+      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
+      if (uid !== decoded.id && sid !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+    }
+    db.deleteChat(convKey);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });
 
-// ===================== CHAT ROUTES (ADMIN) =====================
+// --- ADMIN ROUTES ---
 
-app.post('/api/admin/chat/send', adminAuth, (req, res) => {
-  try {
-    const { userId, message } = req.body;
-    if (!userId || !message?.trim()) return res.status(400).json({ error: 'userId e mensagem são obrigatórios' });
-
-    const adminUserId = req.adminUser.id;
-    const chats = db.allChats();
-    const key = adminUserId + ':' + userId;
-    const generalKey = 'general:' + userId;
-
-    if (chats[generalKey]) {
-      if (!chats[key]) chats[key] = [];
-      if (chats[key].length === 0) chats[key] = chats[generalKey];
-      db.deleteChat(generalKey);
-    }
-
-    const legacyKey = String(userId);
-    if (chats[legacyKey] && !legacyKey.includes(':')) {
-      if (!chats[key]) chats[key] = [];
-      if (chats[key].length === 0) chats[key] = chats[legacyKey];
-      db.deleteChat(legacyKey);
-    }
-
-    const messages = chats[key] || [];
-    messages.push({ from: 'admin', adminUserId, adminName: req.adminUser.nome, message: message.trim(), createdAt: new Date().toISOString(), read: false });
-    db.saveChatMessages(key, messages);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
-});
-
-app.get('/api/admin/chat/:userId', adminAuth, (req, res) => {
+app.get('/api/admin/chat/support', adminAuth, (req, res) => {
   try {
     const chats = db.allChats();
-    const adminUserId = req.adminUser.id;
-    const userId = req.params.userId;
-    let key = adminUserId + ':' + userId;
-    const generalKey = 'general:' + userId;
-
-    if (!chats[key] && chats[generalKey]) {
-      chats[key] = chats[generalKey];
-      db.deleteChat(generalKey);
-      db.saveChatMessages(key, chats[key]);
-    }
-
-    const messages = chats[key] || chats[String(userId)] || [];
-    messages.forEach(m => {
-      if (m.from === 'admin' && !m.adminName) m.adminName = req.adminUser.nome;
-    });
-    res.json(messages);
-  } catch { res.status(500).json({ error: 'Erro ao carregar chat' }); }
-});
-
-app.get('/api/admin/my-chats', adminAuth, (req, res) => {
-  try {
-    const chats = db.allChats();
-    const adminUserId = req.adminUser.id;
     const result = [];
-
-    for (const [convKey, messages] of Object.entries(chats)) {
-      if (!messages?.length) continue;
-      const [keyAdminId, keyUserId] = convKey.split(':');
-      if (!keyUserId) continue;
-      if (keyAdminId !== String(adminUserId) && keyAdminId !== 'general') continue;
-
-      messages.forEach(m => {
-        if (m.from === 'admin' && !m.adminName) m.adminName = req.adminUser.nome;
-      });
-
-      const uid = parseInt(keyUserId);
+    for (const [convKey, data] of Object.entries(chats)) {
+      if (!convKey.startsWith('support:')) continue;
+      const msgs = data.messages;
+      if (!msgs?.length) continue;
+      const uid = parseInt(convKey.split(':')[1]);
       const user = db.userById(uid);
-      const unread = messages.filter(m => m.from === 'user' && !m.read).length;
+      const unread = msgs.filter(m => m.from === 'user' && !m.read).length;
       result.push({
         conversationKey: convKey, userId: uid,
         userName: user ? user.nome : 'Usuário #' + uid,
         userEmail: user ? user.email : '',
-        unreadCount: unread, totalMessages: messages.length,
-        lastMessage: messages[messages.length - 1], updatedAt: messages[messages.length - 1].createdAt
+        unreadCount: unread, totalMessages: msgs.length,
+        lastMessage: msgs[msgs.length - 1], updatedAt: msgs[msgs.length - 1].createdAt,
+        resolved: data.resolved || false
       });
     }
     result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
@@ -303,17 +268,79 @@ app.get('/api/admin/my-chats', adminAuth, (req, res) => {
   } catch { res.status(500).json([]); }
 });
 
-app.delete('/api/admin/chat/:userId', adminAuth, (req, res) => {
+app.get('/api/admin/chat/dm', adminAuth, (req, res) => {
   try {
     const chats = db.allChats();
-    const key = req.adminUser.id + ':' + req.params.userId;
-    const generalKey = 'general:' + req.params.userId;
-    if (chats[key]) db.deleteChat(key);
-    else if (chats[generalKey]) db.deleteChat(generalKey);
-    else {
-      const legacyKey = String(req.params.userId);
-      if (chats[legacyKey]) db.deleteChat(legacyKey);
+    const result = [];
+    for (const [convKey, data] of Object.entries(chats)) {
+      if (!convKey.startsWith('dm:')) continue;
+      const msgs = data.messages;
+      if (!msgs?.length) continue;
+      const [, uidStr, sidStr] = convKey.split(':');
+      const uid = parseInt(uidStr), sid = parseInt(sidStr);
+      const user = db.userById(uid);
+      const staff = db.userById(sid);
+      const unread = msgs.filter(m => m.from === 'user' && !m.read).length;
+      result.push({
+        conversationKey: convKey, userId: uid, staffId: sid,
+        userName: user ? user.nome : 'Usuário #' + uid,
+        userEmail: user ? user.email : '',
+        staffName: staff ? staff.nome : 'Staff #' + sid,
+        unreadCount: unread, totalMessages: msgs.length,
+        lastMessage: msgs[msgs.length - 1], updatedAt: msgs[msgs.length - 1].createdAt
+      });
     }
+    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    res.json(result);
+  } catch { res.status(500).json([]); }
+});
+
+app.post('/api/admin/chat/resolve', adminAuth, async (req, res) => {
+  try {
+    const { conversationKey, resolved } = req.body;
+    if (!conversationKey) return res.status(400).json({ error: 'conversationKey obrigatório' });
+    await db.resolveChat(conversationKey, resolved);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Erro ao alterar status' }); }
+});
+
+app.post('/api/admin/chat/send', adminAuth, (req, res) => {
+  try {
+    const { conversationKey, message, userId } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
+
+    let key = conversationKey;
+    if (!key && userId) {
+      key = 'support:' + userId;
+    }
+    if (!key) return res.status(400).json({ error: 'conversationKey ou userId obrigatório' });
+
+    const adminUserId = req.adminUser.id;
+    const chatData = db.getChatMessages(key);
+    const msgs = chatData ? chatData.messages : [];
+    msgs.push({ from: 'admin', adminUserId, adminName: req.adminUser.nome, message: message.trim(), createdAt: new Date().toISOString(), read: false });
+    db.saveChatMessages(key, msgs);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
+});
+
+app.get('/api/admin/chat/:convKey(*)', adminAuth, (req, res) => {
+  try {
+    const convKey = req.params.convKey;
+    const chatData = db.getChatMessages(convKey);
+    if (!chatData) return res.json([]);
+    const msgs = chatData.messages;
+    msgs.forEach(m => {
+      if (m.from === 'admin' && !m.adminName) m.adminName = req.adminUser.nome;
+    });
+    res.json(msgs);
+  } catch { res.status(500).json({ error: 'Erro ao carregar chat' }); }
+});
+
+app.delete('/api/admin/chat/:convKey(*)', adminAuth, (req, res) => {
+  try {
+    const convKey = req.params.convKey;
+    db.deleteChat(convKey);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });

@@ -362,7 +362,8 @@
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
       <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
-      <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-comments"></i> Chats <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
+      <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
+      <button class="tab-btn" data-tab="conversas" onclick="switchTab('conversas', this)"><i class="fas fa-comments"></i> Conversas</button>
       <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
@@ -395,10 +396,20 @@
     <div id="tab-chats" class="tab-content">
       <div class="card">
         <div class="card-header">
-          <h2><i class="fas fa-comments"></i> Conversas com Clientes</h2>
+          <h2><i class="fas fa-headset"></i> Atendimento</h2>
           <span id="chatsCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="allChatsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
+      </div>
+    </div>
+
+    <div id="tab-conversas" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-comments"></i> Conversas (Usuários x Staff)</h2>
+          <span id="dmCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div id="dmContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
       </div>
     </div>
 
@@ -587,8 +598,9 @@
     <div class="modal-overlay" id="chatModal">
       <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
-          <h3><i class="fas fa-comments"></i> Chat</h3>
+          <h3><i class="fas fa-comments"></i> <span id="chatModalTitle">Chat</span></h3>
           <div style="display:flex;gap:6px;">
+            <button id="resolveChatBtn" onclick="toggleResolved()" style="display:none;padding:4px 10px;border-radius:6px;border:2px solid #22c55e;background:transparent;color:#22c55e;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;"><i class="fas fa-check-circle"></i> <span id="resolveBtnText">Resolvido</span></button>
             <button class="modal-close" onclick="if(confirm('Deletar esta conversa?'))deleteCurrentChat()" id="deleteChatBtn" style="color:var(--error);" title="Deletar conversa"><i class="fas fa-trash-alt"></i></button>
             <button class="modal-close" onclick="closeChatModal()"><i class="fas fa-times"></i></button>
           </div>
@@ -1371,6 +1383,7 @@
           else roleHtml = '<span class="badge badge-gray">Cliente</span>';
           const isSelf = currentUserId && currentUserId === u.id;
           const canDelete = currentUserRole === 'admin' && !isSelf;
+          const isStaff = u.role === 'admin' || u.role === 'funcionario';
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (u.username || '<span style="color:var(--error)">—</span>') + '</td>' +
@@ -1379,12 +1392,20 @@
           '<td>' + roleHtml + '</td>' +
           '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
           '<td style="white-space:nowrap">' +
-            '<button onclick="openChat(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button>' +
+            (!isStaff ? '<button onclick="openChat(\'support:' + u.id + '\', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button>' : '') +
             (canDelete ? '<button onclick="deleteUser(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;padding:4px;margin-left:4px;" title="Excluir"><i class="fas fa-trash-alt"></i></button>' : '') +
           '</td>' +
         '</tr>';
         }).join('') +
         '</tbody></table></div>';
+    }
+
+    function showToast(msg, type) {
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;z-index:999999;font-size:14px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,0.15);animation:chatFadeIn .2s ease;color:white;background:' + (type === 'success' ? '#22c55e' : '#ef4444') + ';';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
     async function deleteUser(userId, userName) {
@@ -1490,79 +1511,86 @@
     }
 
     // === CHAT ===
-    let chatUserId = null;
-    let chatInterval = null;
-    let openChatTabs = [];
+    let activeChatConvKey = null;
+    let activeChatType = null; // 'support' or 'dm'
+    let chatPollInterval = null;
 
-    function openChat(userId, userName) {
-      // Add user to open tabs if not already
-      if (!openChatTabs.find(t => t.userId === userId)) {
-        openChatTabs.push({ userId, userName: userName || 'Usuário #' + userId });
-      }
-      chatUserId = userId;
-      renderAdminChatTabs();
+    function openChat(convKey, userName, type) {
+      type = type || (convKey.startsWith('dm:') ? 'dm' : 'support');
+      activeChatConvKey = convKey;
+      activeChatType = type;
       document.getElementById('chatModal').classList.add('active');
-      loadChatMessages(userId);
-      if (chatInterval) clearInterval(chatInterval);
-      chatInterval = setInterval(() => loadChatMessages(chatUserId), 5000);
-    }
+      document.getElementById('chatModalTitle').textContent = userName || 'Chat';
 
-    function renderAdminChatTabs() {
-      const container = document.getElementById('adminChatTabs');
-      if (!container) return;
-      if (!openChatTabs.length) {
-        container.innerHTML = '<span style="font-size:12px;color:var(--text-muted);padding:6px;">Nenhuma conversa aberta</span>';
-        return;
-      }
-      container.innerHTML = openChatTabs.map(t => {
-        const isActive = t.userId === chatUserId;
-        const label = t.userName.length > 14 ? t.userName.slice(0, 14) + '...' : t.userName;
-        return '<button class="user-chat-tab' + (isActive ? ' active' : '') + '" onclick="switchChatTab(' + t.userId + ')" style="padding:6px 10px;border:none;border-radius:8px 8px 0 0;font-size:11px;font-weight:600;cursor:pointer;background:' + (isActive ? 'white' : 'transparent') + ';color:' + (isActive ? 'var(--primary)' : 'var(--text-muted)') + ';white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:inherit;">' +
-          '<i class="fas fa-user"></i> ' + label +
-          '<span onclick="event.stopPropagation();closeChatTab(' + t.userId + ')" style="font-size:10px;color:var(--text-muted);margin-left:2px;padding:2px;border-radius:4px;cursor:pointer;">×</span>' +
-        '</button>';
-      }).join('');
-    }
-
-    function switchChatTab(userId) {
-      if (chatInterval) clearInterval(chatInterval);
-      chatUserId = userId;
-      const tab = openChatTabs.find(t => t.userId === userId);
-      renderAdminChatTabs();
-      loadChatMessages(userId);
-      chatInterval = setInterval(() => loadChatMessages(chatUserId), 5000);
-    }
-
-    function closeChatTab(userId) {
-      openChatTabs = openChatTabs.filter(t => t.userId !== userId);
-      if (openChatTabs.length > 0) {
-        switchChatTab(openChatTabs[0].userId);
+      const resolveBtn = document.getElementById('resolveChatBtn');
+      if (type === 'support') {
+        resolveBtn.style.display = 'inline-flex';
+        loadSupportChatMessages(convKey);
       } else {
-        chatUserId = null;
-        if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
-        document.getElementById('chatMessages').innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Selecione um chat para começar</p></div>';
-        renderAdminChatTabs();
+        resolveBtn.style.display = 'none';
+        loadDMChatMessages(convKey);
       }
+
+      if (chatPollInterval) clearInterval(chatPollInterval);
+      chatPollInterval = setInterval(() => {
+        if (activeChatConvKey) {
+          if (activeChatType === 'support') loadSupportChatMessages(activeChatConvKey, true);
+          else loadDMChatMessages(activeChatConvKey, true);
+        }
+      }, 8000);
     }
 
     function closeChatModal() {
       document.getElementById('chatModal').classList.remove('active');
-      // Keep tabs, don't clear them - so user can reopen and continue
+      activeChatConvKey = null;
+      activeChatType = null;
+      if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; }
     }
 
     document.getElementById('chatModal')?.addEventListener('click', function(e) {
       if (e.target === this) closeChatModal();
     });
 
-    async function loadChatMessages(userId) {
+    async function loadSupportChatMessages(convKey, silent) {
       try {
-        const res = await fetch('/api/admin/chat/' + userId, {
+        const res = await fetch('/api/admin/chat/' + encodeURIComponent(convKey), {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const messages = await res.json();
+        renderChatMessages(messages);
+
+        // Get and show resolved status
+        const chatData = await fetch('/api/chat/messages/' + encodeURIComponent(convKey), {
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        }).then(r => r.json());
+        const resolved = chatData.resolved || false;
+        const resolveBtn = document.getElementById('resolveChatBtn');
+        const resolveText = document.getElementById('resolveBtnText');
+        if (resolved) {
+          resolveBtn.style.borderColor = '#22c55e';
+          resolveBtn.style.background = '#22c55e';
+          resolveBtn.style.color = 'white';
+          resolveText.textContent = 'Resolvido ✓';
+        } else {
+          resolveBtn.style.borderColor = '#6b7280';
+          resolveBtn.style.background = 'transparent';
+          resolveBtn.style.color = '#6b7280';
+          resolveText.textContent = 'Marcar Resolvido';
+        }
+      } catch (err) {
+        if (!silent) console.error('Erro ao carregar chat:', err);
+      }
+    }
+
+    async function loadDMChatMessages(convKey, silent) {
+      try {
+        const res = await fetch('/api/admin/chat/' + encodeURIComponent(convKey), {
           headers: { 'Authorization': 'Bearer ' + getToken() }
         });
         const messages = await res.json();
         renderChatMessages(messages);
       } catch (err) {
-        console.error('Erro ao carregar chat:', err);
+        if (!silent) console.error('Erro ao carregar chat:', err);
       }
     }
 
@@ -1591,42 +1619,50 @@
     async function sendChatMessage() {
       const input = document.getElementById('chatInput');
       const message = input.value.trim();
-      if (!message || !chatUserId) return;
+      if (!message || !activeChatConvKey) return;
       input.value = '';
 
       try {
         const res = await fetch('/api/admin/chat/send', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: chatUserId, message })
+          body: JSON.stringify({ conversationKey: activeChatConvKey, message })
         });
         const data = await res.json();
         if (data.success) {
-          loadChatMessages(chatUserId);
+          if (activeChatType === 'support') loadSupportChatMessages(activeChatConvKey);
+          else loadDMChatMessages(activeChatConvKey);
         }
       } catch (err) {
         console.error('Erro ao enviar:', err);
       }
     }
 
-    // === CHAT TAB + UNREAD POLLING ===
-    let chatUnreadInterval = null;
-    let allConversations = [];
-
-    function initChatUnreadPolling() {
-      checkUnreadChats();
-      if (chatUnreadInterval) clearInterval(chatUnreadInterval);
-      chatUnreadInterval = setInterval(checkUnreadChats, 10000);
+    async function toggleResolved() {
+      if (!activeChatConvKey || activeChatType !== 'support') return;
+      const chatData = await fetch('/api/chat/messages/' + encodeURIComponent(activeChatConvKey), {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      }).then(r => r.json());
+      const newResolved = !(chatData.resolved || false);
+      try {
+        await fetch('/api/admin/chat/resolve', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationKey: activeChatConvKey, resolved: newResolved })
+        });
+        loadSupportChatMessages(activeChatConvKey);
+        loadSupportChatList();
+      } catch {}
     }
 
-    async function checkUnreadChats() {
-      try {
-        const res = await fetch('/api/admin/my-chats', {
-          headers: { 'Authorization': 'Bearer ' + getToken() }
-        });
-        const list = await res.json();
+    // Support chat list
+    function loadSupportChatList() {
+      fetch('/api/admin/chat/support', {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      })
+      .then(r => r.json())
+      .then(list => {
         allConversations = list;
-
         const totalUnread = list.reduce((sum, c) => sum + c.unreadCount, 0);
         const badge = document.getElementById('chatUnreadBadge');
         if (badge) {
@@ -1637,40 +1673,43 @@
             badge.style.display = 'none';
           }
         }
-        // If chats tab is active, update the list
-        const chatsTab = document.getElementById('tab-chats');
-        if (chatsTab && chatsTab.classList.contains('active')) {
-          renderAllChats(list);
-        }
-      } catch { return []; }
+        renderSupportChatList(list);
+      })
+      .catch(() => {});
     }
 
-    function renderAllChats(list) {
+    let allConversations = [];
+
+    function renderSupportChatList(list) {
       const container = document.getElementById('allChatsContainer');
       if (!list || !list.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa ainda</p><p style="font-size:12px;margin-top:8px;">Para iniciar, clique no ícone de chat nos Carrinhos ou Usuários</p></div>';
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-headset"></i><p>Nenhum atendimento pendente</p><p style="font-size:12px;margin-top:8px;">Clientes podem iniciar conversas pelo chat da loja.</p></div>';
         document.getElementById('chatsCount').textContent = '';
         return;
       }
       document.getElementById('chatsCount').textContent = list.length + ' conversa' + (list.length !== 1 ? 's' : '');
       container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
-        '<th>Cliente</th><th>Email</th><th>Última mensagem</th><th></th><th>Ações</th>' +
+        '<th>Cliente</th><th>Email</th><th>Status</th><th>Última mensagem</th><th></th><th>Ações</th>' +
         '</tr></thead><tbody>' +
         list.map(c => {
           const time = new Date(c.lastMessage.createdAt).toLocaleString('pt-BR');
           const preview = c.lastMessage.message.length > 55 ? c.lastMessage.message.slice(0, 55) + '...' : c.lastMessage.message;
           const fromLabel = c.lastMessage.from === 'admin' ? 'Admin' : 'Cliente';
-          const unreadBadge = c.unreadCount > 0
+          const resolvedBadge = c.resolved
+            ? '<span style="background:#22c55e;color:white;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:700;"><i class="fas fa-check-circle"></i> Resolvido</span>'
+            : '<span style="background:#f59e0b;color:white;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:700;">Aberto</span>';
+          const unreadBadge = c.unreadCount > 0 && !c.resolved
             ? '<span style="background:#ef4444;color:white;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:700;">' + c.unreadCount + '</span>'
             : '';
-          return '<tr>' +
+          return '<tr style="' + (c.resolved ? 'opacity:0.6;' : '') + '">' +
             '<td><strong>' + c.userName + '</strong></td>' +
-            '<td style="font-size:13px;color:var(--text-muted)">' + c.userEmail + '</td>' +
+            '<td style="font-size:13px;color:var(--text-muted)">' + (c.userEmail || '—') + '</td>' +
+            '<td>' + resolvedBadge + '</td>' +
             '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
             '<td style="text-align:center;">' + unreadBadge + '</td>' +
             '<td style="white-space:nowrap;">' +
-              '<button onclick="openChat(' + c.userId + ', \'' + (c.userName || '').replace(/'/g, "\\'") + '\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;margin-right:4px;"><i class="fas fa-reply"></i></button>' +
-              '<button onclick="deleteChat(' + c.userId + ')" class="btn" style="padding:5px 10px;font-size:11px;background:rgba(239,68,68,0.1);color:var(--error);"><i class="fas fa-trash-alt"></i></button>' +
+              '<button onclick="openChat(\'' + c.conversationKey + '\', \'' + (c.userName || '').replace(/'/g, "\\'") + '\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;margin-right:4px;"><i class="fas fa-reply"></i></button>' +
+              '<button onclick="deleteSupportChat(\'' + c.conversationKey + '\')" class="btn" style="padding:5px 10px;font-size:11px;background:rgba(239,68,68,0.1);color:var(--error);"><i class="fas fa-trash-alt"></i></button>' +
             '</td>' +
           '</tr>';
         }).join('') +
@@ -1680,28 +1719,58 @@
         '</div>';
     }
 
-    async function deleteChat(userId) {
-      const name = allConversations.find(c => c.userId === userId)?.userName || 'Usuário #' + userId;
-      if (!confirm('Deletar conversa com ' + name + '? Todas as mensagens serão perdidas.')) return;
+    async function deleteSupportChat(convKey) {
+      if (!confirm('Deletar esta conversa? Todas as mensagens serão perdidas.')) return;
       try {
-        const res = await fetch('/api/admin/chat/' + userId, {
+        const res = await fetch('/api/admin/chat/' + encodeURIComponent(convKey), {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + getToken() }
         });
         const data = await res.json();
         if (data.success) {
-          // If this chat is currently open, close it
-          if (chatUserId === userId) closeChatModal();
-          checkUnreadChats();
+          if (activeChatConvKey === convKey) closeChatModal();
+          loadSupportChatList();
         }
-      } catch (err) {
-        console.error('Erro ao deletar:', err);
-      }
+      } catch {}
     }
 
-    // Add delete from modal too (when modal is open, delete the current chat)
     async function deleteCurrentChat() {
-      if (chatUserId) await deleteChat(chatUserId);
+      if (activeChatConvKey) await deleteSupportChat(activeChatConvKey);
+    }
+
+    // DM list
+    function loadDMList() {
+      fetch('/api/admin/chat/dm', {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      })
+      .then(r => r.json())
+      .then(list => {
+        const container = document.getElementById('dmContainer');
+        if (!list || !list.length) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa entre usuários e staff</p></div>';
+          document.getElementById('dmCount').textContent = '';
+          return;
+        }
+        document.getElementById('dmCount').textContent = list.length + ' conversa' + (list.length !== 1 ? 's' : '');
+        container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+          '<th>Usuário</th><th>Staff</th><th>Última mensagem</th><th>Ações</th>' +
+          '</tr></thead><tbody>' +
+          list.map(c => {
+            const time = new Date(c.lastMessage.createdAt).toLocaleString('pt-BR');
+            const preview = c.lastMessage.message.length > 55 ? c.lastMessage.message.slice(0, 55) + '...' : c.lastMessage.message;
+            const fromLabel = c.lastMessage.from === 'admin' ? 'Staff' : 'Usuário';
+            return '<tr>' +
+              '<td><strong>' + c.userName + '</strong></td>' +
+              '<td><span class="badge badge-blue">' + c.staffName + '</span></td>' +
+              '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
+              '<td style="white-space:nowrap;">' +
+                '<button onclick="openChat(\'' + c.conversationKey + '\', \'' + (c.userName || '').replace(/'/g, "\\'") + ' &times ' + (c.staffName || '').replace(/'/g, "\\'") + '\', \'dm\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;"><i class="fas fa-eye"></i> Ver</button>' +
+              '</td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      })
+      .catch(() => {});
     }
 
     // Override switchTab to load chats when the tab is selected
@@ -1713,12 +1782,19 @@
       document.getElementById('tab-' + tab).classList.add('active');
       localStorage.setItem('painel-tab', tab);
       if (tab === 'chats') {
-        checkUnreadChats();
+        loadSupportChatList();
+      } else if (tab === 'conversas') {
+        loadDMList();
       }
     };
 
+    function initChatPolling() {
+      loadSupportChatList();
+      setInterval(loadSupportChatList, 15000);
+    }
+
     // Start polling
-    initChatUnreadPolling();
+    initChatPolling();
   </script>
 </body>
 </html>

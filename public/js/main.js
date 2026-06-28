@@ -100,6 +100,7 @@ function showUserMenu() {
     userMenu.innerHTML = `
       <span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;"><i class="far fa-user" style="margin-right:4px;"></i>${currentUser?.nome || ''}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + currentUser.username + ')</span>' : ''}</span>
       <a href="/conta" style="font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;">Minha Conta</a>
+      <a href="#" onclick="openConversas();return false" style="font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;"><i class="fas fa-comments"></i> Conversas</a>
       <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
         <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ef4444;color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
@@ -439,10 +440,11 @@ function isInWishlist(productId) {
 }
 
 // === CHAT DO USUÁRIO ===
+// Support chat (bubble) + Direct Messages (DM)
 let userChatInterval = null;
 let userChatModalActive = false;
-let userConversations = [];
-let activeAdminUserId = null;
+let activeConvKey = null;
+let chatMode = 'support'; // 'support' or 'dm'
 
 function initUserChat() {
   if (!currentUser) return;
@@ -464,21 +466,22 @@ function initUserChat() {
     modal.className = 'user-chat-modal';
     modal.innerHTML = `
       <div class="user-chat-header">
-        <span><i class="fas fa-headset"></i> Atendimento</span>
+        <span><i class="fas fa-headset"></i> <span id="userChatTitle">Atendimento</span></span>
         <button onclick="toggleUserChat()"><i class="fas fa-times"></i></button>
       </div>
-      <div class="user-chat-tabs" id="userChatTabs"></div>
-      <div class="user-chat-messages" id="userChatMessages">
-        <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
-      </div>
-      <div class="user-chat-input">
-        <input type="text" id="userChatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendUserMessage()">
-        <button onclick="sendUserMessage()"><i class="fas fa-paper-plane"></i></button>
+      <div id="userChatBody" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+        <div class="user-chat-tabs" id="userChatTabs"></div>
+        <div class="user-chat-messages" id="userChatMessages">
+          <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
+        </div>
+        <div class="user-chat-input">
+          <input type="text" id="userChatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendUserMessage()">
+          <button onclick="sendUserMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
 
-    // Styles
     const style = document.createElement('style');
     style.textContent = `
       #userChatBubble {
@@ -560,6 +563,28 @@ function initUserChat() {
         flex-shrink:0;
       }
       .user-chat-input button:active { transform:scale(0.95); }
+      .user-chat-dm-list { flex:1; overflow-y:auto; padding:8px; }
+      .user-chat-dm-item {
+        display:flex;align-items:center;gap:10px;
+        padding:10px 12px;border-radius:10px;
+        cursor:pointer;transition:background .15s;
+        border-bottom:1px solid var(--border);
+      }
+      .user-chat-dm-item:hover { background:#f1f5f9; }
+      .user-chat-dm-avatar {
+        width:40px;height:40px;border-radius:50%;
+        background:var(--primary-gradient);
+        color:white;display:flex;align-items:center;justify-content:center;
+        font-weight:700;font-size:16px;flex-shrink:0;
+      }
+      .user-chat-mode-btn {
+        padding:6px 10px;border:none;border-radius:6px;
+        font-size:11px;font-weight:600;cursor:pointer;
+        background:rgba(255,255,255,0.2);color:white;
+        font-family:inherit;transition:background .15s;
+      }
+      .user-chat-mode-btn:hover { background:rgba(255,255,255,0.3); }
+      .user-chat-mode-btn.active { background:rgba(255,255,255,0.35); }
       @media (max-width:768px) {
         #userChatBubble { bottom:80px; right:16px; width:50px; height:50px; font-size:19px; }
         .user-chat-modal { bottom:145px; right:16px; width:calc(100vw - 32px); max-height:60vh; }
@@ -581,7 +606,7 @@ function initUserChat() {
   userChatInterval = setInterval(() => {
     if (!currentUser || document.hidden) return;
     loadUnreadCount();
-    if (userChatModalActive) loadConversations();
+    if (userChatModalActive && chatMode === 'support') loadSupportMessages();
   }, 15000);
 }
 
@@ -593,11 +618,11 @@ async function loadUnreadCount() {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     const convs = await res.json();
-    const totalUnread = convs.reduce((sum, c) => sum + c.unreadCount, 0);
+    const supportUnread = convs.filter(c => c.type === 'support').reduce((s, c) => s + c.unreadCount, 0);
     const badge = document.getElementById('chatBadge');
     if (badge) {
-      if (totalUnread > 0) {
-        badge.textContent = totalUnread;
+      if (supportUnread > 0) {
+        badge.textContent = supportUnread;
         badge.style.display = 'flex';
       } else {
         badge.style.display = 'none';
@@ -612,73 +637,35 @@ function toggleUserChat() {
   userChatModalActive = !modal.classList.contains('active');
   modal.classList.toggle('active');
   if (userChatModalActive) {
-    loadConversations();
-    markMessagesRead();
+    chatMode = 'support';
+    activeConvKey = 'support:' + currentUser.id;
+    document.getElementById('userChatTitle').textContent = 'Atendimento';
+    loadSupportMessages();
+    markMessagesRead(activeConvKey);
   }
 }
 
-async function loadConversations() {
+async function loadSupportMessages() {
   if (!currentUser) return;
+  const key = 'support:' + currentUser.id;
+  activeConvKey = key;
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/conversations', {
+    const res = await fetch('/api/chat/messages/' + encodeURIComponent(key), {
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    userConversations = await res.json();
-    renderConversationTabs();
-    // Load active tab messages
-    const activeStillExists = activeAdminUserId && userConversations.some(c => String(c.adminUserId || 'general') === String(activeAdminUserId));
-    if (activeAdminUserId && activeStillExists) {
-      loadUserMessages(activeAdminUserId);
-    } else if (userConversations.length > 0) {
-      selectTab(userConversations[0].adminUserId || 'general');
-    } else {
-      renderEmptyChat();
-    }
-  } catch {}
+    const data = await res.json();
+    renderSupportMessages(data.messages || []);
+  } catch { renderSupportMessages([]); }
 }
 
-function renderConversationTabs() {
-  const tabsContainer = document.getElementById('userChatTabs');
-  if (!tabsContainer) return;
-  if (!userConversations.length) {
-    tabsContainer.innerHTML = '';
-    return;
-  }
-  tabsContainer.innerHTML = userConversations.map(c => {
-    const isActive = (c.adminUserId === activeAdminUserId) || (!activeAdminUserId && c.isGeneral);
-    const adminId = c.adminUserId || 'general';
-    const label = c.adminName.length > 12 ? c.adminName.slice(0, 12) + '...' : c.adminName;
-    return '<button class="user-chat-tab' + (isActive ? ' active' : '') + '" onclick="selectTab(\'' + adminId + '\')">' +
-      '<i class="fas fa-user"></i> ' + label +
-      '<span class="tab-close" onclick="event.stopPropagation();deleteConversation(\'' + adminId + '\')" title="Fechar conversa"><i class="fas fa-times"></i></span>' +
-    '</button>';
-  }).join('');
-}
-
-function selectTab(adminUserId) {
-  activeAdminUserId = adminUserId;
-  renderConversationTabs();
-  loadUserMessages(adminUserId);
-}
-
-async function loadUserMessages(adminUserId) {
-  if (!currentUser || !adminUserId) return;
-  try {
-    const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/messages/' + adminUserId, {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    const messages = await res.json();
-    renderUserMessages(messages, adminUserId);
-  } catch {}
-}
-
-function renderUserMessages(messages, adminUserId) {
+function renderSupportMessages(messages) {
   const container = document.getElementById('userChatMessages');
+  const tabs = document.getElementById('userChatTabs');
   if (!container) return;
+  if (tabs) tabs.innerHTML = '';
   if (!messages.length) {
-    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda.<br>Envie uma mensagem para entrar em contato!</p></div>';
+    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Envie uma mensagem para entrar em contato com nosso suporte!</p></div>';
     return;
   }
   container.innerHTML = messages.map(m => {
@@ -687,7 +674,7 @@ function renderUserMessages(messages, adminUserId) {
     const bg = isAdmin ? '#e8f0fe' : 'var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1))';
     const color = isAdmin ? 'var(--text, #1a1a2e)' : 'white';
     const time = new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const name = isAdmin ? (m.adminName || 'Admin') : 'Você';
+    const name = isAdmin ? (m.adminName || 'Atendente') : 'Você';
     return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:85%;align-self:' + align + ';">' +
       '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
       '<div style="background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:14px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);font-size:13px;">' +
@@ -697,69 +684,146 @@ function renderUserMessages(messages, adminUserId) {
   container.scrollTop = container.scrollHeight;
 }
 
-function renderEmptyChat() {
-  const container = document.getElementById('userChatMessages');
-  if (container) {
-    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma conversa ainda.<br>Envie uma mensagem para iniciar!</p></div>';
-  }
-}
-
-async function markMessagesRead() {
-  if (!currentUser) return;
-  try {
-    const token = localStorage.getItem('techvault-token');
-    await fetch('/api/chat/read', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-  } catch {}
-}
-
 async function sendUserMessage() {
   const input = document.getElementById('userChatInput');
   const message = input.value.trim();
   if (!message) return;
-  const targetAdminId = activeAdminUserId || 'general';
   input.value = '';
+
+  const type = chatMode;
+  const target = type === 'support' ? 'general' : (activeConvKey ? activeConvKey.split(':')[2] : '');
 
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/send/' + targetAdminId, {
+    const res = await fetch('/api/chat/send/' + type + '/' + target, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message })
     });
     const data = await res.json();
     if (data.success) {
-      activeAdminUserId = targetAdminId;
-      loadConversations();
-      loadUserMessages(targetAdminId);
-    } else if (res.status === 403) {
-      const container = document.getElementById('userChatMessages');
-      if (container) {
-        container.innerHTML += '<div style="text-align:center;padding:12px;background:#fef3c7;color:#92400e;border-radius:10px;font-size:12px;margin-top:8px;"><i class="fas fa-info-circle"></i> ' + (data.error || 'Você só pode responder após um atendente entrar em contato.') + '</div>';
-        container.scrollTop = container.scrollHeight;
-      }
+      if (type === 'support') loadSupportMessages();
+      else loadDMMessages();
     }
   } catch {}
 }
 
-async function deleteConversation(adminUserId) {
+async function markMessagesRead(convKey) {
+  if (!currentUser || !convKey) return;
+  try {
+    const token = localStorage.getItem('techvault-token');
+    await fetch('/api/chat/read/' + encodeURIComponent(convKey), {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+  } catch {}
+}
+
+async function deleteConversation(convKey) {
   if (!confirm('Deletar esta conversa?')) return;
   try {
     const token = localStorage.getItem('techvault-token');
-    const res = await fetch('/api/chat/conversation/' + adminUserId, {
+    const res = await fetch('/api/chat/conversation/' + encodeURIComponent(convKey), {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + token }
     });
     const data = await res.json();
     if (data.success) {
-      if (activeAdminUserId === adminUserId) {
-        activeAdminUserId = null;
-      }
-      loadConversations();
+      if (chatMode === 'support') loadSupportMessages();
+      else showDMList();
     }
   } catch {}
+}
+
+// === DIRECT MESSAGES ===
+
+function openConversas() {
+  chatMode = 'dm';
+  const modal = document.getElementById('userChatModal');
+  if (!modal) return;
+  modal.classList.add('active');
+  userChatModalActive = true;
+  document.getElementById('userChatTitle').textContent = 'Conversas';
+  document.getElementById('userChatTabs').innerHTML = '';
+  showDMList();
+}
+
+function showDMList() {
+  const container = document.getElementById('userChatMessages');
+  const input = document.querySelector('.user-chat-input');
+  if (!container) return;
+  if (input) input.style.display = 'none';
+  container.innerHTML = '<div style="padding:12px;text-align:center;font-size:13px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+
+  fetch('/api/chat/staff')
+    .then(r => r.json())
+    .then(staff => {
+      container.innerHTML = '<div style="padding:8px 12px;font-size:12px;font-weight:600;color:var(--text-muted);">Escolha um atendente para conversar:</div>' +
+        staff.map(s => {
+          const initials = s.nome.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+          const role = s.role === 'admin' ? 'Admin' : 'Funcionário';
+          return '<div class="user-chat-dm-item" onclick="openDM(' + s.id + ')">' +
+            '<div class="user-chat-dm-avatar">' + initials + '</div>' +
+            '<div><div style="font-weight:600;font-size:13px;color:var(--text);">' + s.nome + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);">' + role + '</div></div></div>';
+        }).join('') +
+        (staff.length === 0 ? '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Nenhum atendente disponível no momento.</div>' : '');
+    })
+    .catch(() => {
+      container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">Erro ao carregar atendentes.</div>';
+    });
+}
+
+function openDM(staffId) {
+  chatMode = 'dm';
+  activeConvKey = 'dm:' + currentUser.id + ':' + staffId;
+  loadDMMessages();
+}
+
+async function loadDMMessages() {
+  if (!currentUser || !activeConvKey) return;
+  const key = activeConvKey;
+  const input = document.querySelector('.user-chat-input');
+  if (input) input.style.display = 'flex';
+  try {
+    const token = localStorage.getItem('techvault-token');
+    const res = await fetch('/api/chat/messages/' + encodeURIComponent(key), {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    renderDMMessages(data.messages || [], key);
+    markMessagesRead(key);
+  } catch { renderDMMessages([], key); }
+}
+
+function renderDMMessages(messages, convKey) {
+  const container = document.getElementById('userChatMessages');
+  const tabs = document.getElementById('userChatTabs');
+  if (!container) return;
+  if (tabs) {
+    tabs.innerHTML = '<div style="display:flex;gap:4px;padding:4px 6px;width:100%;">' +
+      '<button onclick="showDMList()" style="border:none;background:transparent;color:var(--primary);font-size:13px;cursor:pointer;padding:2px 6px;"><i class="fas fa-arrow-left"></i> Voltar</button>' +
+    '</div>';
+  }
+  if (!messages.length) {
+    container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda.<br>Envie uma mensagem para iniciar a conversa!</p></div>';
+    return;
+  }
+  const staffId = convKey.split(':')[2];
+  container.innerHTML = messages.map(m => {
+    const isAdmin = m.from === 'admin';
+    const align = isAdmin ? 'flex-start' : 'flex-end';
+    const bg = isAdmin ? '#e8f0fe' : 'var(--primary-gradient, linear-gradient(135deg,#1a73e8,#0d47a1))';
+    const color = isAdmin ? 'var(--text, #1a1a2e)' : 'white';
+    const time = new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const name = isAdmin ? (m.adminName || 'Atendente') : 'Você';
+    return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:85%;align-self:' + align + ';">' +
+      '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
+      '<div style="background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:14px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);font-size:13px;">' +
+      m.message +
+      '</div></div>';
+  }).join('');
+  container.scrollTop = container.scrollHeight;
 }
 
 // Notificações
