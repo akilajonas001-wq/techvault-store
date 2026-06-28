@@ -1359,7 +1359,7 @@
           '<th>Telefone</th>' +
           '<th>Tipo</th>' +
           '<th>Membro desde</th>' +
-          '<th style="width:50px"></th>' +
+          '<th style="width:90px">Ações</th>' +
         '</tr></thead><tbody>' +
         allUsers.map(u => {
           const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : 'N/A';
@@ -1367,6 +1367,8 @@
           if (u.role === 'admin') roleHtml = '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>';
           else if (u.role === 'funcionario') roleHtml = '<span class="badge badge-orange"><i class="fas fa-user-tie"></i> Funcionário</span>';
           else roleHtml = '<span class="badge badge-gray">Cliente</span>';
+          const isSelf = currentUser && currentUser.id === u.id;
+          const canDelete = currentUser && currentUser.role === 'admin' && !isSelf;
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (u.username || '<span style="color:var(--error)">—</span>') + '</td>' +
@@ -1374,10 +1376,30 @@
             '<td>' + (u.telefone || '—') + '</td>' +
           '<td>' + roleHtml + '</td>' +
           '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-          '<td><button onclick="openChat(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button></td>' +
+          '<td style="white-space:nowrap">' +
+            '<button onclick="openChat(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button>' +
+            (canDelete ? '<button onclick="deleteUser(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;padding:4px;margin-left:4px;" title="Excluir"><i class="fas fa-trash-alt"></i></button>' : '') +
+          '</td>' +
         '</tr>';
         }).join('') +
         '</tbody></table></div>';
+    }
+
+    async function deleteUser(userId, userName) {
+      if (!confirm('Excluir usuário "' + userName + '"? Esta ação não pode ser desfeita.')) return;
+      try {
+        const res = await fetch('/api/admin/users/' + userId, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Usuário "' + userName + '" excluído!', 'success');
+          loadDashboard();
+        } else {
+          showToast('Erro ao excluir: ' + (data.error || 'desconhecido'), 'error');
+        }
+      } catch { showToast('Erro de conexão', 'error'); }
     }
 
     function renderNewsletter() {
