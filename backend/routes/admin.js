@@ -94,7 +94,6 @@ router.post('/products', async (req, res) => {
       destaque: p.destaque === true, avaliacao: parseFloat(p.avaliacao) || 0,
       reviews: parseInt(p.reviews) || 0,
       specs: p.specs || {}, variants: p.variants || [],
-      checkoutLink: p.checkoutLink || '',
       createdAt: new Date().toISOString()
     });
     res.json({ success: true, product: produto });

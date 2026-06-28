@@ -68,11 +68,6 @@ app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
 
-// Debug webhook test endpoint (GET)
-app.get('/api/webhooks/infinitepay', (req, res) => {
-  res.json({ message: 'Webhook endpoint ativo. Configure este URL no painel da InfinitePay.', url: req.protocol + '://' + req.get('host') + '/api/webhooks/infinitepay' });
-});
-
 // ===================== CHAT ROUTES (USER) =====================
 
 app.get('/api/chat/conversations', (req, res) => {
@@ -333,42 +328,6 @@ app.get('/api/images/:id', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
     res.end(img.data);
   } catch { res.status(500).send('Erro ao carregar imagem'); }
-});
-
-// ===================== INFINITEPAY WEBHOOK =====================
-
-const webhookLogs = [];
-
-app.post('/api/webhooks/infinitepay', async (req, res) => {
-  try {
-    const body = req.body;
-    const log = { timestamp: new Date().toISOString(), body: JSON.stringify(body), headers: req.headers };
-    webhookLogs.unshift(log);
-    if (webhookLogs.length > 20) webhookLogs.pop();
-    console.log('InfinitePay webhook received:', JSON.stringify(body));
-
-    const orderId = body.external_id || body.externalId || body.id || body.reference || body.order_id;
-    const status = body.status;
-
-    if (orderId && status === 'paid') {
-      await db.updateOrderStatus(parseInt(orderId), 'aprovado');
-      console.log(`Pedido #${orderId} aprovado via webhook`);
-    } else if (orderId && (status === 'canceled' || status === 'refunded')) {
-      await db.updateOrderStatus(parseInt(orderId), status === 'canceled' ? 'cancelado' : 'reembolsado');
-      console.log(`Pedido #${orderId} atualizado para ${status}`);
-    } else {
-      console.log('Webhook não processou: orderId=', orderId, 'status=', status);
-    }
-
-    res.status(200).json({ received: true });
-  } catch (e) {
-    console.error('Erro no webhook InfinitePay:', e);
-    res.status(200).json({ received: true });
-  }
-});
-
-app.get('/api/debug/webhook-logs', (req, res) => {
-  res.json(webhookLogs);
 });
 
 // ===================== STATIC PAGE ROUTES =====================

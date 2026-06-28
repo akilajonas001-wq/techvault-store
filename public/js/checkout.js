@@ -255,7 +255,7 @@ async function handleCheckout(event) {
     
     const data = await response.json();
     
-    if (response.ok && data.success && data.checkout_url) {
+    if (response.ok && data.success && data.orderId) {
       // Limpar carrinho
       localStorage.removeItem('techvault-cart');
       fetch('/api/cart/clear', {
@@ -263,8 +263,8 @@ async function handleCheckout(event) {
         headers: { 'Authorization': 'Bearer ' + token }
       }).catch(() => {});
       
-      // Redirecionar para o InfinitePay Checkout
-      window.location.href = data.checkout_url;
+      // Redirecionar para página do PIX
+      window.location.href = '/pedido-sucesso?id=' + data.orderId;
     } else {
       loadingOverlay.style.display = 'none';
       errorMessage.textContent = data.error || 'Erro ao processar pedido';
