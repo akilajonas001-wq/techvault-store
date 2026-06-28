@@ -403,17 +403,15 @@ async function updateProduct(id, data) {
 }
 
 async function createProduct(data) {
-  try {
-    await query(
-      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-      [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
-       data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
-       data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
-       data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
-       data.frete || '',
-       data.createdAt || new Date().toISOString()]
-    );
-  }
+  await query(
+    `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, avaliacao, reviews, specs, variants, frete, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+    [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
+     data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
+     data.estoque || 'N/A', data.destaque ? 1 : 0, data.avaliacao || 0,
+     data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+     data.frete || '',
+     data.createdAt || new Date().toISOString()]
+  );
   return productById(data.id);
 }
 
