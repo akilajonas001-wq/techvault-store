@@ -134,6 +134,8 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 // ========== PEDIDOS ==========
 
+const INFINITE_PAY_CHECKOUT_URL = 'https://checkout.infinitepay.io/akila-jonas/JlFvnPXXzd';
+
 router.post('/orders', requireAuth, async (req, res) => {
   try {
     const { endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
@@ -145,7 +147,7 @@ router.post('/orders', requireAuth, async (req, res) => {
       endereco, itens, total, totalOriginal: totalOriginal || total,
       cupom: cupom || null, cliente: cliente || {},
       taxas: {},
-      pagamento: 'PIX', status: 'pendente',
+      pagamento: 'InfinitePay', status: 'pendente',
       createdAt: new Date().toISOString()
     });
 
@@ -168,9 +170,23 @@ router.post('/orders', requireAuth, async (req, res) => {
       html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
     }).catch(e => console.error('Erro email:', e.message));
 
+    const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
+    const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
+
+    let checkoutBaseUrl = INFINITE_PAY_CHECKOUT_URL;
+    try {
+      if (itens && itens.length > 0) {
+        const p = await db.productById(Number(itens[0].id) || itens[0].id);
+        if (p && p.checkoutLink) checkoutBaseUrl = p.checkoutLink;
+      }
+    } catch (e) {}
+    const sep = checkoutBaseUrl.includes('?') ? '&' : '?';
+    const checkoutUrl = `${checkoutBaseUrl}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+
     res.json({
       success: true, orderId: newOrder.id,
-      message: 'Pedido criado! Faça o pagamento via PIX.'
+      message: 'Pedido criado! Redirecionando para o pagamento...',
+      checkout_url: checkoutUrl
     });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao processar pedido' }); }
 });

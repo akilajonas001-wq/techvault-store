@@ -445,9 +445,10 @@
     <div class="modal-overlay" id="createProductModal" style="z-index:2000;">
       <div class="modal-content" style="max-width:800px;max-height:90vh;overflow-y:auto;">
         <div class="modal-header">
-          <h3><i class="fas fa-plus-circle"></i> Criar Novo Produto</h3>
+          <h2 id="productModalTitle"><i class="fas fa-plus-circle" style="color:var(--success)"></i> Novo Produto</h2>
           <button class="modal-close" onclick="closeCreateProductModal()"><i class="fas fa-times"></i></button>
         </div>
+        <input type="hidden" id="cpEditId" value="">
           <div id="createProductContent" style="padding:20px;">
           <div class="cpFormGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div class="cpFull" style="grid-column:1/-1;">
@@ -493,6 +494,11 @@
             <div class="cpFull" style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
               <input type="checkbox" id="cpDestaque" style="width:18px;height:18px;">
               <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
+            </div>
+            <div class="cpFull" style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Checkout InfinitePay</label>
+              <input type="url" id="cpCheckoutLink" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Se deixar vazio, usará o link geral da loja.</span>
             </div>
           </div>
 
@@ -991,11 +997,13 @@
           return '<tr' + rowBg + '>' +
             '<td><strong>' + (p.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (p.categoria || '') + '</td>' +
-            '<td>' + priceDisplay +
-              (isAdmin ? '<br><button class="order-detail-btn" onclick="editPrice(' + p.id + ', ' + (p.preco || 0) + ')" style="margin-top:4px;font-size:11px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-edit"></i> Alterar</button>' : '') +
-            '</td>' +
+            '<td>' + priceDisplay + '</td>' +
             '<td>' + statusBadge + '</td>' +
-            '<td style="white-space:nowrap;">' + (isAdmin ? '<button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + ';margin-right:6px;"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button><button class="order-detail-btn" onclick="deleteProduct(' + p.id + ',\'' + (p.nome || '').replace(/'/g, "\\'") + '\')" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash-alt"></i> Excluir</button>' : '') + '</td>' +
+            '<td style="white-space:nowrap;">' + (isAdmin ?
+              '<button class="order-detail-btn" onclick="openEditProductModal(' + p.id + ')" style="border-color:var(--primary);color:var(--primary);margin-right:6px;"><i class="fas fa-edit"></i> Editar</button>' +
+              '<button class="order-detail-btn" onclick="togglePause(' + p.id + ')" style="border-color:' + btnColor + ';color:' + btnColor + ';margin-right:6px;"><i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i> ' + btnText + '</button>' +
+              '<button class="order-detail-btn" onclick="deleteProduct(' + p.id + ',\'' + (p.nome || '').replace(/'/g, "\\'") + '\')" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash-alt"></i> Excluir</button>'
+            : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>' +
@@ -1003,31 +1011,6 @@
           'Mostrando ' + filtered.length + ' de ' + allProducts.length + ' produtos | ' +
           '<span style="color:var(--error)">🔴 Modificados</span> aparecem no topo' +
         '</div>';
-    }
-
-    function editPrice(productId, currentPrice) {
-      const newPrice = prompt('Novo preço (R$):', currentPrice.toFixed(2).replace('.', ','));
-      if (!newPrice) return;
-      const price = parseFloat(newPrice.replace(',', '.'));
-      if (isNaN(price) || price <= 0) {
-        alert('Preço inválido');
-        return;
-      }
-      fetch('/api/admin/products/' + productId + '/update-price', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preco: price })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          fetchProducts();
-          updateStats();
-        } else {
-          alert(data.error || 'Erro ao alterar preço');
-        }
-      })
-      .catch(() => alert('Erro de conexão'));
     }
 
     function filterProducts() {
@@ -1083,8 +1066,76 @@
       } catch {}
     }
 
-    // === CREATE PRODUCT MODAL ===
+    // === CREATE / EDIT PRODUCT MODAL ===
     function openCreateProductModal() {
+      document.getElementById('cpEditId').value = '';
+      document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> Novo Produto';
+      document.getElementById('createProductModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function openEditProductModal(productId) {
+      const p = allProducts.find(x => x.id == productId);
+      if (!p) return;
+      document.getElementById('cpEditId').value = p.id;
+      document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--primary)"></i> Editar Produto';
+      document.getElementById('cpNome').value = p.nome || '';
+      document.getElementById('cpDescricao').value = p.descricao || '';
+      document.getElementById('cpPreco').value = p.preco || '';
+      document.getElementById('cpPrecoOriginal').value = p.precoOriginal || '';
+      document.getElementById('cpCategoria').value = p.categoria || '';
+      document.getElementById('cpEstoque').value = p.estoque || '';
+      document.getElementById('cpImagem').value = p.imagem || '';
+      document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
+      document.getElementById('cpDestaque').checked = p.destaque;
+      document.getElementById('cpCheckoutLink').value = p.checkoutLink || '';
+
+      // Rebuild variants
+      const vc = document.getElementById('variantsContainer');
+      const variants = p.variants || [p].map(v => v.variants || []);
+      if (p.variants && p.variants.length > 0) {
+        vc.innerHTML = '';
+        p.variants.forEach((v, i) => {
+          if (i === 0) {
+            const first = vc.querySelector('.variant-card');
+            if (first) {
+              first.querySelector('.vpNome').value = v.nome || '';
+              first.querySelector('.vpPreco').value = v.preco || '';
+              vc.innerHTML = '';
+            }
+          }
+          const idx = vc.querySelectorAll('.variant-card').length;
+          const card = document.createElement('div');
+          card.className = 'variant-card';
+          card.dataset.index = idx;
+          card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;';
+          let specHtml = '';
+          if (v.especificacoes) {
+            Object.entries(v.especificacoes).forEach(([k, val]) => {
+              specHtml += '<div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">' +
+                '<input type="text" class="vpSpecKey" value="' + k.replace(/"/g, '&quot;') + '" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+                '<input type="text" class="vpSpecValue" value="' + (val || '').replace(/"/g, '&quot;') + '" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+                '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button></div>';
+            });
+          }
+          card.innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+              '<strong style="font-size:14px;">Variante ' + (idx+1) + '</strong>' +
+              '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+              '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" value="' + (v.nome || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+              '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" value="' + (v.preco || '') + '" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+            '</div>' +
+            '<div>' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
+                '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
+              '</div>' +
+              '<div class="vpSpecs">' + specHtml + '</div>' +
+            '</div>';
+          vc.appendChild(card);
+        });
+      }
       document.getElementById('createProductModal').classList.add('active');
       document.body.style.overflow = 'hidden';
     }
@@ -1209,6 +1260,9 @@
         Object.assign(specs, vSpecs);
       });
 
+      const checkoutLink = document.getElementById('cpCheckoutLink').value.trim();
+      const editId = document.getElementById('cpEditId').value;
+
       const productData = {
         nome: nome,
         descricao: descricao,
@@ -1222,19 +1276,27 @@
         avaliacao: 0,
         reviews: 0,
         specs: specs,
-        variants: variants
+        variants: variants,
+        checkoutLink: checkoutLink
       };
 
       try {
-        const res = await fetch('/api/admin/products', {
-          method: 'POST',
+        let url = '/api/admin/products';
+        let method = 'POST';
+        if (editId) {
+          url = '/api/admin/products/' + editId;
+          method = 'PUT';
+          productData.id = parseInt(editId);
+        }
+        const res = await fetch(url, {
+          method: method,
           headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
           body: JSON.stringify(productData)
         });
         const data = await res.json();
         if (data.success) {
           closeCreateProductModal();
-          alert('Produto "' + nome + '" criado com sucesso!');
+          alert(editId ? 'Produto atualizado com sucesso!' : 'Produto "' + nome + '" criado com sucesso!');
           fetchProducts();
           // Reset form
           document.getElementById('cpNome').value = '';
@@ -1246,6 +1308,8 @@
           document.getElementById('cpImagem').value = '';
           document.getElementById('cpImagens').value = '';
           document.getElementById('cpDestaque').checked = false;
+          document.getElementById('cpCheckoutLink').value = '';
+          document.getElementById('cpEditId').value = '';
           document.getElementById('variantsContainer').innerHTML =
             '<div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">' +
               '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +

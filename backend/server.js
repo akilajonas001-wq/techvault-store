@@ -330,6 +330,54 @@ app.get('/api/images/:id', async (req, res) => {
   } catch { res.status(500).send('Erro ao carregar imagem'); }
 });
 
+// ===================== INFINITEPAY WEBHOOK =====================
+
+const webhookLogs = [];
+
+app.post('/api/webhooks/infinitepay', async (req, res) => {
+  try {
+    const body = req.body;
+    webhookLogs.unshift({ timestamp: new Date().toISOString(), body: JSON.stringify(body), headers: req.headers });
+    if (webhookLogs.length > 50) webhookLogs.pop();
+    console.log('InfinitePay webhook received:', JSON.stringify(body));
+
+    const orderId = body.external_id || body.externalId || body.id || body.reference || body.order_id || body.transaction_id;
+    const status = body.status;
+    console.log('Parsed: orderId=', orderId, 'status=', status);
+
+    if (orderId && status === 'paid') {
+      await db.updateOrderStatus(parseInt(orderId), 'aprovado');
+      console.log(`Pedido #${orderId} aprovado via webhook`);
+    } else if (orderId && (status === 'canceled' || status === 'refunded' || status === 'cancelled')) {
+      await db.updateOrderStatus(parseInt(orderId), status === 'canceled' || status === 'cancelled' ? 'cancelado' : 'reembolsado');
+      console.log(`Pedido #${orderId} atualizado para ${status}`);
+    } else {
+      console.log('Webhook não processou: tente outros nomes de campo para orderId');
+      // Try to match by amount if we can't find orderId
+      if (body.amount || body.valor) {
+        const amount = parseFloat(body.amount || body.valor);
+        if (amount) {
+          const allOrders = await db.allOrders();
+          const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
+          if (pending.length === 1) {
+            await db.updateOrderStatus(pending[0].id, 'aprovado');
+            console.log(`Pedido #${pending[0].id} aprovado via match de valor R$${amount}`);
+          }
+        }
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (e) {
+    console.error('Erro no webhook InfinitePay:', e);
+    res.status(200).json({ received: true });
+  }
+});
+
+app.get('/api/debug/webhook-logs', (req, res) => {
+  res.json(webhookLogs);
+});
+
 // ===================== STATIC PAGE ROUTES =====================
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));

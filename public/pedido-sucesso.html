@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagamento - TechVault</title>
+  <title>Pedido - TechVault</title>
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
-    .card { background: white; border-radius: 24px; padding: 48px; text-align: center; max-width: 560px; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .card { background: white; border-radius: 24px; padding: 48px; text-align: center; max-width: 520px; width: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     .icon-big { font-size: 64px; margin-bottom: 16px; }
     .icon-pending { color: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
     .icon-confirmed { color: #10b981; }
@@ -25,17 +25,6 @@
     .order-info .row:last-child { border-bottom: none; }
     .order-info .label { color: #94a3b8; }
     .order-info .value { font-weight: 600; color: #1e293b; }
-    .pix-section { margin: 24px 0; padding: 24px; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 16px; border: 2px dashed #86efac; }
-    .pix-section h2 { font-size: 18px; color: #166534; margin-bottom: 16px; }
-    .pix-section img { max-width: 220px; margin: 0 auto 16px; display: block; border-radius: 12px; }
-    .pix-key { background: white; border: 1px solid #86efac; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-    .pix-key input { flex: 1; border: none; font-size: 12px; color: #166534; font-family: monospace; outline: none; background: transparent; }
-    .pix-key button { padding: 8px 16px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-    .pix-key button:hover { background: #15803d; }
-    .pix-key button.copied { background: #22c55e; }
-    .steps { text-align: left; margin: 16px 0; font-size: 13px; color: #475569; }
-    .steps li { padding: 6px 0; list-style: none; }
-    .steps li::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: #16a34a; margin-right: 8px; }
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%); color: white; transition: all 0.3s; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(26,115,232,0.4); }
     .btn-secondary { background: #f1f5f9; color: #1e293b; }
@@ -45,6 +34,7 @@
     .status-pendente { background: #fef3c7; color: #92400e; }
     .status-aprovado { background: #d1fae5; color: #065f46; }
     .loader { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #f59e0b; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    .redirect-countdown { font-size: 13px; color: #94a3b8; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -53,28 +43,8 @@
     <div id="statusPending">
       <div class="icon-big icon-pending"><i class="fas fa-clock"></i></div>
       <h1>Aguardando pagamento</h1>
-      <p id="pendingText">Seu pedido foi registrado. Faça o pagamento via PIX para confirmar.</p>
+      <p id="pendingText">Seu pedido foi registrado. Estamos aguardando a confirmação da InfinitePay.</p>
       <div class="order-id" id="orderIdDisplay">Pedido #---</div>
-
-      <!-- PIX payment section -->
-      <div class="pix-section">
-        <h2><i class="fas fa-qrcode"></i> Pagamento via PIX</h2>
-        <img src="/images/qrcode-pix.jpeg" alt="QR Code PIX" id="pixQrCode">
-        <p style="font-size:13px;color:#166534;margin-bottom:4px;">Ou copie o código PIX abaixo:</p>
-        <div class="pix-key">
-          <input type="text" id="pixKeyInput" value="cb3233cf-fdfb-4488-b493-a817f108305b" readonly>
-          <button id="copyPixBtn" onclick="copyPixKey()"><i class="fas fa-copy"></i> Copiar</button>
-        </div>
-      </div>
-
-      <div class="steps">
-        <li>Abra o app do seu banco</li>
-        <li>Escolha a opção PIX (QR Code ou Copia e Cola)</li>
-        <li>Escaneie o QR Code ou cole o código</li>
-        <li>Confirme o pagamento</li>
-        <li>Assim que confirmado, seu pedido será processado</li>
-      </div>
-
       <div id="orderDetailsPending" class="order-info">
         <div class="row"><span class="label">Total</span><span class="value" id="pendingTotal">---</span></div>
         <div class="row"><span class="label">Pagamento</span><span class="value" id="pendingPayment">---</span></div>
@@ -82,7 +52,7 @@
         <div id="pendingItems"></div>
         <div id="pendingAddress" style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;"></div>
       </div>
-      <p class="info" id="autoUpdateMsg"><i class="fas fa-sync-alt"></i> Verificando pagamento automaticamente...</p>
+      <p class="info" id="autoUpdateMsg"><i class="fas fa-sync-alt"></i> Atualizando automaticamente...</p>
     </div>
 
     <!-- Confirmed state -->
@@ -96,7 +66,7 @@
         <div class="row"><span class="label">Status</span><span class="value"><span class="status-badge status-aprovado">Aprovado</span></span></div>
         <div id="confirmedItems"></div>
       </div>
-      <a href="/conta" class="btn" id="myOrdersBtn"><i class="fas fa-user"></i> Meus Pedidos</a>
+      <div id="redirectCountdown" class="redirect-countdown">Redirecionando para a loja em 5 segundos...</div>
     </div>
 
     <p id="errorText" class="hidden" style="color:var(--error);margin-top:12px;"></p>
@@ -108,22 +78,7 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const orderId = params.get('id');
-    const PIX_KEY = 'cb3233cf-fdfb-4488-b493-a817f108305b';
-
-    function copyPixKey() {
-      const input = document.getElementById('pixKeyInput');
-      const btn = document.getElementById('copyPixBtn');
-      input.select();
-      input.setSelectionRange(0, 99999);
-      navigator.clipboard.writeText(PIX_KEY).then(() => {
-        btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
-          btn.classList.remove('copied');
-        }, 2000);
-      });
-    }
+    const statusParam = params.get('status');
 
     function showConfirmed(data) {
       document.getElementById('statusPending').classList.add('hidden');
@@ -139,12 +94,23 @@
             '</div>').join('') + '</div>';
         }
       }
+      // Redirect to homepage after 5s
+      let count = 5;
+      const el = document.getElementById('redirectCountdown');
+      const timer = setInterval(() => {
+        count--;
+        if (count > 0) el.textContent = 'Redirecionando para a loja em ' + count + ' segundos...';
+        else {
+          clearInterval(timer);
+          window.location.href = '/';
+        }
+      }, 1000);
     }
 
     function showPending(data) {
       if (!data) return;
       document.getElementById('pendingTotal').textContent = 'R$ ' + (data.total || 0).toFixed(2).replace('.', ',');
-      document.getElementById('pendingPayment').textContent = data.pagamento || 'PIX';
+      document.getElementById('pendingPayment').textContent = data.pagamento || 'InfinitePay';
       if (data.itens) {
         document.getElementById('pendingItems').innerHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;">' +
           data.itens.map(i => '<div style="display:flex;justify-content:space-between;padding:4px 0;">' +
@@ -169,9 +135,11 @@
       document.getElementById('confirmedOrderId').textContent = orderId;
     }
 
-    if (orderId) {
+    if (statusParam === 'paid' || statusParam === 'approved') {
+      fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(showConfirmed).catch(() => showConfirmed(null));
+    } else if (orderId) {
       let attempts = 0;
-      const maxAttempts = 60;
+      const maxAttempts = 30;
 
       fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(data => {
         if (data.status !== 'not_found' && data.status !== 'error') {
