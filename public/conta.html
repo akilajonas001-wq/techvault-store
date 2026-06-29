@@ -601,7 +601,7 @@
     async function loadComprovantes(token) {
       try {
         const container = document.getElementById('comprovantesList');
-        const res = await fetch('/api/orders', {
+        const res = await fetch('/api/orders/my', {
           headers: { 'Authorization': 'Bearer ' + token }
         });
         if (!res.ok) throw new Error();

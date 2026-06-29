@@ -243,27 +243,53 @@ app.post('/api/webhooks/infinitepay', async (req, res) => {
     if (webhookLogs.length > 50) webhookLogs.pop();
     console.log('InfinitePay webhook received:', JSON.stringify(body));
 
-    const orderId = body.external_id || body.externalId || body.id || body.reference || body.order_id || body.transaction_id;
-    const status = body.status;
+    // Try many possible field names for order ID
+    const orderId = body.external_id || body.externalId || body.id || body.reference ||
+                    body.order_id || body.transaction_id || body.transactionId ||
+                    body.orderId || body.pedido_id || body.pedidoId ||
+                    body.checkout_id || body.checkoutId || body.reference_id ||
+                    body.metadata?.pedido_id || body.metadata?.orderId ||
+                    body.metadata?.order_id || body.metadata?.external_id ||
+                    (body.items && body.items[0] && body.items[0].external_id ? body.items[0].external_id : null) ||
+                    (body.products && body.products[0] && body.products[0].external_id ? body.products[0].external_id : null);
+
+    // Try many possible status field names
+    const status = (body.status || body.payment_status || body.paymentStatus ||
+                    body.transaction_status || body.transactionStatus || body.checkout_status ||
+                    body.event || body.type || body.event_type || body.action || '').toLowerCase();
+
     console.log('Parsed: orderId=', orderId, 'status=', status);
 
-    if (orderId && status === 'paid') {
-      await db.updateOrderStatus(parseInt(orderId), 'aprovado');
-      console.log(`Pedido #${orderId} aprovado via webhook`);
-    } else if (orderId && (status === 'canceled' || status === 'refunded' || status === 'cancelled')) {
-      await db.updateOrderStatus(parseInt(orderId), status === 'canceled' || status === 'cancelled' ? 'cancelado' : 'reembolsado');
-      console.log(`Pedido #${orderId} atualizado para ${status}`);
+    const orderNumber = parseInt(orderId);
+    if (!isNaN(orderNumber)) {
+      if (status === 'paid' || status === 'approved' || status === 'completed' ||
+          status === 'confirmed' || status === 'success' || status === 'payment.approved' ||
+          status === 'charge.paid' || status === 'payment_confirmed') {
+        await db.updateOrderStatus(orderNumber, 'aprovado');
+        console.log(`Pedido #${orderNumber} aprovado via webhook`);
+      } else if (status === 'canceled' || status === 'cancelled' || status === 'refunded' ||
+                 status === 'refund' || status === 'chargeback' || status === 'voided' ||
+                 status === 'expired' || status === 'failed') {
+        await db.updateOrderStatus(orderNumber, status === 'refunded' || status === 'refund' || status === 'chargeback' ? 'reembolsado' : 'cancelado');
+        console.log(`Pedido #${orderNumber} atualizado para ${status}`);
+      } else {
+        console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação tomada`);
+      }
     } else {
-      console.log('Webhook não processou: tente outros nomes de campo para orderId');
+      console.log('Webhook não conseguiu extrair orderId. Campos disponíveis:', Object.keys(body));
       // Try to match by amount if we can't find orderId
-      if (body.amount || body.valor) {
-        const amount = parseFloat(body.amount || body.valor);
+      if (body.amount || body.valor || body.total || body.price) {
+        const amount = parseFloat(body.amount || body.valor || body.total || body.price);
         if (amount) {
           const allOrders = await db.allOrders();
           const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
           if (pending.length === 1) {
             await db.updateOrderStatus(pending[0].id, 'aprovado');
             console.log(`Pedido #${pending[0].id} aprovado via match de valor R$${amount}`);
+          } else if (pending.length > 1) {
+            console.log(`Múltiplos pedidos pendentes com valor R$${amount}, não foi possível determinar`);
+          } else {
+            console.log(`Nenhum pedido pendente encontrado com valor R$${amount}`);
           }
         }
       }
@@ -320,6 +346,7 @@ app.get('/painel', (req, res) => res.sendFile(path.join(__dirname, '..', 'public
 app.get('/pedido-sucesso', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-sucesso.html')));
 app.get('/pedido-cancelado', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-cancelado.html')));
 app.get('/comprovante', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'comprovante.html')));
+app.get('/comprovante/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'comprovante.html')));
 
 startServer().then(() => {
   app.listen(PORT, '0.0.0.0', () => {

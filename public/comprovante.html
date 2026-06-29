@@ -91,6 +91,9 @@
 
   <script>
     const orderId = window.location.pathname.split('/').pop();
+    const STORE_CPF = '709.589.644-59';
+    const STORE_NAME = 'Akila Jonas';
+    const STORE_EMAIL = 'akilajonas001@gmail.com';
 
     async function loadReceipt() {
       try {
@@ -139,6 +142,26 @@
           </div>
           <div class="receipt-body">
             <div class="receipt-section">
+              <div class="receipt-section-title">Vendedor</div>
+              <div class="receipt-grid">
+                <div class="receipt-field">
+                  <label>Nome</label>
+                  <div class="value">${STORE_NAME}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>CPF</label>
+                  <div class="value">${STORE_CPF}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>E-mail</label>
+                  <div class="value" style="font-weight:400;">${STORE_EMAIL}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div class="receipt-section">
               <div class="receipt-section-title">Informações do Pedido</div>
               <div class="receipt-grid">
                 <div class="receipt-field">
@@ -170,8 +193,12 @@
                   <div class="value">${data.cliente?.nome || data.usuario?.nome || '---'}</div>
                 </div>
                 <div class="receipt-field">
-                  <label>Email</label>
+                  <label>E-mail</label>
                   <div class="value" style="font-weight:400;">${data.usuario?.email || data.cliente?.email || '---'}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>Telefone</label>
+                  <div class="value" style="font-weight:400;">${data.cliente?.telefone || data.usuario?.telefone || '---'}</div>
                 </div>
               </div>
             </div>
@@ -217,6 +244,7 @@
           </div>
           <div class="receipt-footer">
             <p><strong>TechVault Store</strong> — Tecnologia e Inovação<br>
+            CPF: ${STORE_CPF} | ${STORE_EMAIL}<br>
             Este é um comprovante eletrônico. Guarde para futuras referências.<br>
             Emitido em ${dateStr} às ${timeStr}</p>
           </div>
@@ -232,8 +260,6 @@
     }
 
     function baixarPDF() {
-      const receipt = document.getElementById('receiptContent');
-      if (!receipt) return;
       window.print();
     }
 
