@@ -73,7 +73,7 @@ app.use('/api/admin', require('./routes/admin'));
 
 // --- USER-FACING ROUTES ---
 
-app.get('/api/chat/messages/:convKey(*)', (req, res) => {
+app.get('/api/chat/messages/:convKey(*)', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
@@ -81,12 +81,12 @@ app.get('/api/chat/messages/:convKey(*)', (req, res) => {
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
 
     const convKey = req.params.convKey;
-    const chatData = db.getChatMessages(convKey);
-    if (!chatData) return res.json([]);
-    const msgs = chatData.messages;
-
     const parts = convKey.split(':');
     if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.json([]);
+
+    const chatData = await db.getChatMessages(convKey);
+    if (!chatData) return res.json({ messages: [], resolved: false });
+    const msgs = chatData.messages;
 
     msgs.forEach(m => {
       if (m.from === 'admin' && !m.adminName && m.adminUserId) {
@@ -95,10 +95,10 @@ app.get('/api/chat/messages/:convKey(*)', (req, res) => {
       }
     });
     res.json({ messages: msgs, resolved: chatData.resolved });
-  } catch { res.json([]); }
+  } catch { res.json({ messages: [], resolved: false }); }
 });
 
-app.post('/api/chat/send/support/:userId', (req, res) => {
+app.post('/api/chat/send/support/:userId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -111,15 +111,15 @@ app.post('/api/chat/send/support/:userId', (req, res) => {
     if (!message?.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
 
     const key = 'support:' + decoded.id;
-    const chatData = db.getChatMessages(key);
+    const chatData = await db.getChatMessages(key);
     const msgs = chatData ? chatData.messages : [];
     msgs.push({ from: 'user', message: message.trim(), createdAt: new Date().toISOString(), read: false });
-    db.saveChatMessages(key, msgs);
+    await db.saveChatMessages(key, msgs);
     res.json({ success: true, conversationKey: key });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
 });
 
-app.post('/api/chat/read/:convKey(*)', (req, res) => {
+app.post('/api/chat/read/:convKey(*)', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -130,7 +130,7 @@ app.post('/api/chat/read/:convKey(*)', (req, res) => {
     const parts = convKey.split(':');
     if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
 
-    const chatData = db.getChatMessages(convKey);
+    const chatData = await db.getChatMessages(convKey);
     if (!chatData) return res.json({ success: true });
     const msgs = chatData.messages;
 
@@ -138,16 +138,16 @@ app.post('/api/chat/read/:convKey(*)', (req, res) => {
     msgs.forEach(m => {
       if (m.from === 'admin' && !m.read) { m.read = true; modified = true; }
     });
-    if (modified) db.saveChatMessages(convKey, msgs);
+    if (modified) await db.saveChatMessages(convKey, msgs);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao marcar como lido' }); }
 });
 
 // --- ADMIN ROUTES ---
 
-app.get('/api/admin/chat/support', adminAuth, (req, res) => {
+app.get('/api/admin/chat/support', async (req, res) => {
   try {
-    const chats = db.allChats();
+    const chats = await db.allChats();
     const result = [];
     for (const [convKey, data] of Object.entries(chats)) {
       if (!convKey.startsWith('support:')) continue;
@@ -179,7 +179,7 @@ app.post('/api/admin/chat/resolve', adminAuth, async (req, res) => {
   } catch { res.status(500).json({ error: 'Erro ao alterar status' }); }
 });
 
-app.post('/api/admin/chat/send', adminAuth, (req, res) => {
+app.post('/api/admin/chat/send', adminAuth, async (req, res) => {
   try {
     const { conversationKey, message, userId } = req.body;
     if (!message?.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
@@ -191,18 +191,18 @@ app.post('/api/admin/chat/send', adminAuth, (req, res) => {
     if (!key) return res.status(400).json({ error: 'conversationKey ou userId obrigatório' });
 
     const adminUserId = req.adminUser.id;
-    const chatData = db.getChatMessages(key);
+    const chatData = await db.getChatMessages(key);
     const msgs = chatData ? chatData.messages : [];
     msgs.push({ from: 'admin', adminUserId, adminName: req.adminUser.nome, message: message.trim(), createdAt: new Date().toISOString(), read: false });
-    db.saveChatMessages(key, msgs);
+    await db.saveChatMessages(key, msgs);
     res.json({ success: true });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
 });
 
-app.get('/api/admin/chat/:convKey(*)', adminAuth, (req, res) => {
+app.get('/api/admin/chat/:convKey(*)', adminAuth, async (req, res) => {
   try {
     const convKey = req.params.convKey;
-    const chatData = db.getChatMessages(convKey);
+    const chatData = await db.getChatMessages(convKey);
     if (!chatData) return res.json([]);
     const msgs = chatData.messages;
     msgs.forEach(m => {
@@ -212,10 +212,10 @@ app.get('/api/admin/chat/:convKey(*)', adminAuth, (req, res) => {
   } catch { res.status(500).json({ error: 'Erro ao carregar chat' }); }
 });
 
-app.delete('/api/admin/chat/:convKey(*)', adminAuth, (req, res) => {
+app.delete('/api/admin/chat/:convKey(*)', adminAuth, async (req, res) => {
   try {
     const convKey = req.params.convKey;
-    db.deleteChat(convKey);
+    await db.deleteChat(convKey);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });
