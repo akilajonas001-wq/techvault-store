@@ -82,18 +82,18 @@ app.get('/api/chat/messages/:convKey(*)', async (req, res) => {
 
     const convKey = req.params.convKey;
     const parts = convKey.split(':');
-    if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.json([]);
+    if (parts[0] !== 'support' || parseInt(parts[1]) != decoded.id) return res.json([]);
 
     const chatData = await db.getChatMessages(convKey);
     if (!chatData) return res.json({ messages: [], resolved: false });
     const msgs = chatData.messages;
 
-    msgs.forEach(m => {
+    await Promise.all(msgs.map(async (m) => {
       if (m.from === 'admin' && !m.adminName && m.adminUserId) {
-        const adminUser = db.userById(m.adminUserId);
+        const adminUser = await db.userById(m.adminUserId);
         if (adminUser) m.adminName = adminUser.nome;
       }
-    });
+    }));
     res.json({ messages: msgs, resolved: chatData.resolved });
   } catch { res.json({ messages: [], resolved: false }); }
 });
@@ -128,7 +128,7 @@ app.post('/api/chat/read/:convKey(*)', async (req, res) => {
 
     const convKey = req.params.convKey;
     const parts = convKey.split(':');
-    if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+    if (parts[0] !== 'support' || parseInt(parts[1]) != decoded.id) return res.status(403).json({ error: 'Acesso negado' });
 
     const chatData = await db.getChatMessages(convKey);
     if (!chatData) return res.json({ success: true });
@@ -154,7 +154,7 @@ app.get('/api/admin/chat/support', async (req, res) => {
       const msgs = data.messages;
       if (!msgs?.length) continue;
       const uid = parseInt(convKey.split(':')[1]);
-      const user = db.userById(uid);
+      const user = await db.userById(uid);
       const unread = msgs.filter(m => m.from === 'user' && !m.read).length;
       result.push({
         conversationKey: convKey, userId: uid,
