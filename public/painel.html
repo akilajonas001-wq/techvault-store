@@ -1763,6 +1763,10 @@
     // Nova Conversa (DM)
     let newConversaAllUsers = [];
 
+    function isStaff(u) {
+      return u.admin || u.role === 'admin' || u.role === 'funcionario';
+    }
+
     function openNewConversa() {
       document.getElementById('newConversaModal').classList.add('active');
       document.getElementById('newConversaSearch').value = '';
@@ -1773,8 +1777,8 @@
       })
       .then(r => r.json())
       .then(users => {
-        newConversaAllUsers = users.filter(u => !u.admin && u.role !== 'admin' && u.role !== 'funcionario');
-        renderNewConversaUsers(newConversaAllUsers);
+        newConversaAllUsers = users;
+        renderNewConversaUsers(users);
       })
       .catch(() => {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Erro ao carregar usuários</p></div>';
@@ -1785,17 +1789,27 @@
       document.getElementById('newConversaModal').classList.remove('active');
     }
 
+    function sortConversaUsers(list) {
+      const staff = list.filter(isStaff);
+      const clients = list.filter(u => !isStaff(u));
+      return [...staff, ...clients];
+    }
+
     function renderNewConversaUsers(list) {
       const container = document.getElementById('newConversaUsers');
-      if (!list.length) {
+      const sorted = sortConversaUsers(list);
+      if (!sorted.length) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário encontrado</p></div>';
         return;
       }
-      container.innerHTML = list.map(u => {
+      container.innerHTML = sorted.map(u => {
+        const isStaffUser = isStaff(u);
         const initials = (u.nome || u.email || '?').charAt(0).toUpperCase();
-        return '<div onclick="startNewConversa(' + u.id + ')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'var(--bg-cool)\'" onmouseout="this.style.background=\'transparent\'">' +
-          '<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-gradient);color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">' + initials + '</div>' +
-          '<div><div style="font-weight:600;font-size:14px;">' + (u.nome || 'Sem nome') + '</div><div style="font-size:12px;color:var(--text-muted);">' + u.email + '</div></div>' +
+        const roleLabel = isStaffUser ? '<span style="font-size:10px;color:var(--primary);font-weight:600;margin-left:6px;">' + (u.role === 'admin' ? 'ADM' : 'STAFF') + '</span>' : '';
+        const avatarBg = isStaffUser ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'var(--primary-gradient)';
+        return '<div onclick="startNewConversa(' + u.id + ')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.15s;' + (isStaffUser ? 'background:rgba(245,158,11,0.04);' : '') + '" onmouseover="this.style.background=\'var(--bg-cool)\'" onmouseout="this.style.background=\'' + (isStaffUser ? 'rgba(245,158,11,0.04)' : 'transparent') + '\'">' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:' + avatarBg + ';color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">' + initials + '</div>' +
+          '<div><div style="font-weight:600;font-size:14px;display:flex;align-items:center;">' + (u.nome || 'Sem nome') + roleLabel + '</div><div style="font-size:12px;color:var(--text-muted);">' + u.email + '</div></div>' +
           '<i class="fas fa-chevron-right" style="margin-left:auto;color:var(--text-muted);font-size:12px;"></i>' +
         '</div>';
       }).join('');
@@ -1803,6 +1817,10 @@
 
     function filterNewConversaUsers() {
       const q = document.getElementById('newConversaSearch').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (!q) {
+        renderNewConversaUsers(newConversaAllUsers);
+        return;
+      }
       const filtered = newConversaAllUsers.filter(u =>
         (u.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q) ||
         (u.email || '').toLowerCase().includes(q)
