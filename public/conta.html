@@ -137,13 +137,17 @@
     .tab-content.active { display: block; }
 
     @media (max-width: 768px) {
-      .account-layout { grid-template-columns: 1fr; }
+      .account-layout { grid-template-columns: 1fr; gap: 16px; }
       .account-sidebar { position: static; }
-      .account-nav { display: flex; overflow-x: auto; border-radius: 12px; }
-      .account-nav-item { white-space: nowrap; border-bottom: none; border-right: 1px solid var(--border); }
+      .account-nav { display: block; overflow-x: visible; border-radius: 12px; }
+      .account-nav-item { white-space: normal; border-bottom: 1px solid var(--border); border-right: none; }
       .info-grid { grid-template-columns: 1fr; }
       .header-top { flex-wrap: wrap; gap: 16px; padding: 14px 16px; }
       .search-box { order: 3; flex-basis: 100%; }
+      .account-content { padding: 20px 16px; }
+      .account-content h2 { font-size: 18px; }
+      .form-group input { font-size: 14px; padding: 12px 14px; }
+      .btn-large { padding: 14px 20px; font-size: 14px; }
     }
 
     .favorites-grid {
