@@ -101,6 +101,12 @@
     .order-status.cancelado { background: rgba(239,68,68,0.1); color: var(--error); }
     .order-items { font-size: 13px; color: var(--text-light); margin-bottom: 8px; line-height: 1.6; }
     .order-total-price { font-size: 18px; font-weight: 800; color: var(--text); }
+    .order-action-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: #f1f5f9; color: #475569; cursor: pointer; transition: all 0.2s;
+    }
+    .order-action-btn:hover { background: #e2e8f0; color: #1e293b; }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
     .form-group { margin-bottom: 20px; }
@@ -284,6 +290,9 @@
             <a class="account-nav-item" data-tab="favoritos" onclick="switchTab('favoritos')">
               <i class="fas fa-heart"></i> Favoritos
             </a>
+            <a class="account-nav-item" data-tab="comprovantes" onclick="switchTab('comprovantes')">
+              <i class="fas fa-file-invoice"></i> Comprovantes
+            </a>
             <a class="account-nav-item" onclick="logout()">
               <i class="fas fa-sign-out-alt"></i> Sair
             </a>
@@ -370,6 +379,18 @@
                 <i class="fas fa-heart-broken"></i>
                 <h3>Nenhum favorito</h3>
                 <p>Adicione produtos aos favoritos clicando no <i class="fas fa-heart"></i> nos produtos.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-comprovantes" class="tab-content">
+            <h2><i class="fas fa-file-invoice"></i> Comprovantes</h2>
+            <p style="color:#64748b;margin-bottom:20px;">Comprovantes de pedidos com pagamento aprovado.</p>
+            <div id="comprovantesList">
+              <div class="empty-state">
+                <i class="fas fa-receipt"></i>
+                <h3>Nenhum comprovante</h3>
+                <p>Seus comprovantes aparecerão aqui após a confirmação do pagamento.</p>
               </div>
             </div>
           </div>
@@ -525,13 +546,21 @@
           const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
           const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
           const statusClass = (o.status || 'pendente').toLowerCase();
-          return '<div class="order-card">' +
+          const isAprovado = (o.status || '').toLowerCase() === 'aprovado';
+          const comprovanteBtn = isAprovado
+            ? '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-file-invoice"></i> Comprovante</span>'
+            : '';
+          return '<div class="order-card" style="cursor:pointer;" onclick="window.location.href=\'/comprovante/' + o.id + '\'">' +
             '<div class="order-header">' +
               '<div><span class="order-id">Pedido #' + o.id + '</span><span class="order-date"> - ' + date + '</span></div>' +
               '<span class="order-status ' + statusClass + '">' + (o.status || 'Pendente') + '</span>' +
             '</div>' +
             '<div class="order-items">' + items + '</div>' +
             '<div class="order-total-price">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</div>' +
+            '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
+              comprovanteBtn +
+              '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-eye"></i> Ver Pedido</span>' +
+            '</div>' +
           '</div>';
         }).join('');
       } catch (err) {
@@ -569,15 +598,60 @@
       }
     }
 
+    async function loadComprovantes(token) {
+      try {
+        const container = document.getElementById('comprovantesList');
+        const res = await fetch('/api/orders', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error();
+        const orders = await res.json();
+        const approved = orders.filter(o => o.status === 'aprovado');
+        if (!approved.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-receipt"></i>
+              <h3>Nenhum comprovante</h3>
+              <p>Seus comprovantes aparecerão aqui após a confirmação do pagamento.</p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px;">' +
+          approved.map(o => {
+            const d = new Date(o.createdAt);
+            return '<div class="order-card" style="cursor:pointer;" onclick="window.location.href=\'/comprovante/' + o.id + '\'">' +
+              '<div class="order-header">' +
+                '<span class="order-num">Pedido #' + o.id + '</span>' +
+                '<span class="order-date">' + d.toLocaleDateString('pt-BR') + '</span>' +
+              '</div>' +
+              '<div class="order-body">' +
+                '<span class="order-status" style="color:#22c55e;"><i class="fas fa-check-circle"></i> Aprovado</span>' +
+                '<span class="order-total">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</span>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+                '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-file-invoice"></i> Comprovante</span>' +
+                '<span class="order-action-btn" onclick="event.stopPropagation();window.open(\'/comprovante/' + o.id + '\',\'_blank\')"><i class="fas fa-external-link-alt"></i> Abrir</span>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     function switchTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.getElementById('tab-' + tab).classList.add('active');
       document.querySelectorAll('.account-nav-item').forEach(el => el.classList.remove('active'));
       document.querySelector('.account-nav-item[data-tab="' + tab + '"]')?.classList.add('active');
+      const token = localStorage.getItem('techvault-token');
       if (tab === 'pedidos') {
-        const token = localStorage.getItem('techvault-token');
         if (token && userData) loadOrders(token, userData.id);
+      }
+      if (tab === 'comprovantes') {
+        if (token) loadComprovantes(token);
       }
     }
 

@@ -405,6 +405,26 @@ app.get('/api/debug/webhook-logs', (req, res) => {
   res.json(webhookLogs);
 });
 
+// ===================== RECEIPT ROUTES =====================
+
+app.get('/api/receipt/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    let decoded;
+    try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token inválido' }); }
+
+    const order = await db.orderById(parseInt(req.params.id));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+
+    const isOwner = order.userId && parseInt(order.userId) === decoded.id;
+    const isAdmin = await db.userById(decoded.id).then(u => u && (u.admin || u.role === 'admin' || u.role === 'funcionario'));
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'Acesso negado' });
+
+    res.json(order);
+  } catch { res.status(500).json({ error: 'Erro ao carregar comprovante' }); }
+});
+
 // ===================== STATIC PAGE ROUTES =====================
 
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
@@ -424,6 +444,7 @@ app.get('/devolucoes', (req, res) => res.sendFile(path.join(__dirname, '..', 'pu
 app.get('/painel', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'painel.html')));
 app.get('/pedido-sucesso', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-sucesso.html')));
 app.get('/pedido-cancelado', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-cancelado.html')));
+app.get('/comprovante', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'comprovante.html')));
 
 startServer().then(() => {
   app.listen(PORT, '0.0.0.0', () => {

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprovante - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #f1f5f9; color: #1e293b; min-height: 100vh; }
+    .receipt-actions { position: sticky; top: 0; z-index: 10; background: white; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .receipt-actions .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; text-decoration: none; transition: all 0.2s; }
+    .receipt-actions .btn-primary { background: linear-gradient(135deg, #1a73e8, #4285f4); color: white; }
+    .receipt-actions .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+    .receipt-actions .btn-outline { background: transparent; color: #475569; border: 1.5px solid #cbd5e1; }
+    .receipt-actions .btn-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+    .receipt-actions .btn-success { background: #22c55e; color: white; }
+    .receipt-actions .btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+    .receipt-wrapper { max-width: 800px; margin: 32px auto; padding: 0 16px; }
+    .receipt { background: white; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+    .receipt-header { background: linear-gradient(135deg, #1a73e8, #0d47a1); color: white; padding: 40px 48px; text-align: center; }
+    .receipt-header .store-name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .receipt-header .store-tagline { font-size: 13px; opacity: 0.8; }
+    .receipt-header .receipt-badge { display: inline-block; margin-top: 16px; padding: 6px 20px; border-radius: 20px; background: rgba(255,255,255,0.15); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .receipt-body { padding: 36px 48px; }
+    .receipt-section { margin-bottom: 28px; }
+    .receipt-section:last-child { margin-bottom: 0; }
+    .receipt-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 12px; }
+    .receipt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .receipt-field label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .receipt-field .value { font-size: 15px; font-weight: 600; color: #1e293b; margin-top: 2px; }
+    .receipt-divider { height: 1px; background: #e2e8f0; margin: 24px 0; }
+    .receipt-items { width: 100%; border-collapse: collapse; }
+    .receipt-items th { text-align: left; padding: 8px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; border-bottom: 2px solid #e2e8f0; }
+    .receipt-items td { padding: 12px 0; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+    .receipt-items td:last-child, .receipt-items th:last-child { text-align: right; }
+    .receipt-items td:nth-child(2), .receipt-items th:nth-child(2) { text-align: center; }
+    .receipt-totals { margin-top: 16px; }
+    .receipt-totals .row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .receipt-totals .row.total { border-top: 2px solid #1e293b; margin-top: 8px; padding-top: 12px; font-size: 18px; font-weight: 800; color: #1e293b; }
+    .receipt-totals .row .label { color: #64748b; }
+    .receipt-footer { background: #f8fafc; padding: 24px 48px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .receipt-footer p { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    .loading-state { text-align: center; padding: 80px 20px; }
+    .loading-state i { font-size: 48px; color: #1a73e8; margin-bottom: 16px; }
+    .loading-state p { color: #64748b; }
+    .error-state { text-align: center; padding: 80px 20px; }
+    .error-state i { font-size: 48px; color: #ef4444; margin-bottom: 16px; }
+    .error-state p { color: #64748b; }
+    @media print {
+      body { background: white; }
+      .receipt-actions { display: none !important; }
+      .receipt-wrapper { margin: 0; padding: 0; max-width: 100%; }
+      .receipt { box-shadow: none; border-radius: 0; }
+      .receipt-header { padding: 30px 40px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .receipt-body { padding: 24px 40px; }
+      .receipt-footer { padding: 16px 40px; }
+    }
+    @media (max-width: 600px) {
+      .receipt-header { padding: 24px 20px; }
+      .receipt-body { padding: 20px; }
+      .receipt-footer { padding: 16px 20px; }
+      .receipt-grid { grid-template-columns: 1fr; }
+      .receipt-actions { padding: 10px 12px; gap: 6px; }
+      .receipt-actions .btn { padding: 8px 14px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-actions" id="actionBar">
+    <button class="btn btn-primary" onclick="imprimir()"><i class="fas fa-print"></i> Imprimir</button>
+    <button class="btn btn-success" onclick="baixarPDF()"><i class="fas fa-file-pdf"></i> Baixar PDF</button>
+    <a class="btn btn-outline" href="/conta" id="verPedidoBtn"><i class="fas fa-eye"></i> Ver Pedido</a>
+  </div>
+
+  <div class="receipt-wrapper">
+    <div id="loadingState" class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Carregando comprovante...</p>
+    </div>
+    <div id="errorState" class="error-state" style="display:none">
+      <i class="fas fa-exclamation-circle"></i>
+      <p>Comprovante não encontrado ou acesso negado.</p>
+      <a href="/conta" style="display:inline-block;margin-top:16px;color:#1a73e8;text-decoration:none;font-weight:600;">← Voltar para Minha Conta</a>
+    </div>
+    <div class="receipt" id="receiptContent" style="display:none"></div>
+  </div>
+
+  <script>
+    const orderId = window.location.pathname.split('/').pop();
+
+    async function loadReceipt() {
+      try {
+        const token = localStorage.getItem('techvault-token');
+        if (!token) { window.location.href = '/login?redirect=/comprovante/' + orderId; return; }
+
+        const res = await fetch('/api/receipt/' + orderId, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Not found');
+        const data = await res.json();
+
+        document.getElementById('loadingState').style.display = 'none';
+
+        if (data.status !== 'aprovado') {
+          document.getElementById('receiptContent').style.display = 'block';
+          document.getElementById('receiptContent').innerHTML = `
+            <div class="receipt-header">
+              <div class="store-name">TechVault</div>
+              <div class="store-tagline">Tecnologia e Inovação</div>
+              <div class="receipt-badge" style="background:rgba(245,158,11,0.2);color:#f59e0b;">AGUARDANDO PAGAMENTO</div>
+            </div>
+            <div class="receipt-body" style="text-align:center;padding:60px 48px;">
+              <i class="fas fa-clock" style="font-size:48px;color:#f59e0b;margin-bottom:16px;"></i>
+              <h2 style="font-size:20px;margin-bottom:8px;">Pagamento Pendente</h2>
+              <p style="color:#64748b;">O comprovante será emitido automaticamente quando o pagamento for confirmado.</p>
+              <div style="margin-top:24px;padding:16px;background:#f8fafc;border-radius:12px;display:inline-block;">
+                <span style="font-size:12px;color:#94a3b8;">Pedido #${data.id}</span>
+              </div>
+            </div>
+          `;
+          document.getElementById('verPedidoBtn').href = '/conta';
+          return;
+        }
+
+        const date = new Date(data.createdAt);
+        const dateStr = date.toLocaleDateString('pt-BR');
+        const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        document.getElementById('receiptContent').style.display = 'block';
+        document.getElementById('receiptContent').innerHTML = `
+          <div class="receipt-header">
+            <div class="store-name">TechVault</div>
+            <div class="store-tagline">Tecnologia e Inovação</div>
+            <div class="receipt-badge"><i class="fas fa-check-circle"></i> COMPROVANTE DE PAGAMENTO</div>
+          </div>
+          <div class="receipt-body">
+            <div class="receipt-section">
+              <div class="receipt-section-title">Informações do Pedido</div>
+              <div class="receipt-grid">
+                <div class="receipt-field">
+                  <label>Pedido Nº</label>
+                  <div class="value">#${data.id}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>Data</label>
+                  <div class="value">${dateStr} às ${timeStr}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>Forma de Pagamento</label>
+                  <div class="value">${data.pagamento || 'PIX'}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>Status</label>
+                  <div class="value" style="color:#22c55e;">Aprovado</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="receipt-divider"></div>
+
+            <div class="receipt-section">
+              <div class="receipt-section-title">Cliente</div>
+              <div class="receipt-grid">
+                <div class="receipt-field">
+                  <label>Nome</label>
+                  <div class="value">${data.cliente?.nome || data.usuario?.nome || '---'}</div>
+                </div>
+                <div class="receipt-field">
+                  <label>Email</label>
+                  <div class="value" style="font-weight:400;">${data.usuario?.email || data.cliente?.email || '---'}</div>
+                </div>
+              </div>
+            </div>
+
+            ${data.endereco?.logradouro ? `
+            <div class="receipt-divider"></div>
+            <div class="receipt-section">
+              <div class="receipt-section-title">Endereço de Entrega</div>
+              <div class="receipt-field">
+                <div class="value" style="font-weight:400;">${data.endereco.logradouro || ''}${data.endereco.numero ? ', ' + data.endereco.numero : ''}${data.endereco.complemento ? ' - ' + data.endereco.complemento : ''}</div>
+                <div class="value" style="font-weight:400;font-size:13px;margin-top:2px;">${data.endereco.bairro || ''}${data.endereco.cidade ? ' - ' + data.endereco.cidade : ''}${data.endereco.estado ? '/' + data.endereco.estado : ''} ${data.endereco.cep || ''}</div>
+              </div>
+            </div>
+            ` : ''}
+
+            <div class="receipt-divider"></div>
+
+            <div class="receipt-section">
+              <div class="receipt-section-title">Itens</div>
+              <table class="receipt-items">
+                <thead>
+                  <tr><th>Produto</th><th>Qtd</th><th>Valor</th></tr>
+                </thead>
+                <tbody>
+                  ${(data.itens || []).map(item => {
+                    const specs = item.variantSpecs ? Object.values(item.variantSpecs).filter(Boolean).join(' | ') : '';
+                    return '<tr>' +
+                      '<td>' + item.nome + (specs ? '<br><span style="font-size:11px;color:#94a3b8;">' + specs + '</span>' : '') + '</td>' +
+                      '<td style="text-align:center;">' + (item.quantidade || 1) + '</td>' +
+                      '<td>R$ ' + ((item.preco * (item.quantidade || 1)).toFixed(2).replace('.', ',')) + '</td>' +
+                    '</tr>';
+                  }).join('')}
+                </tbody>
+              </table>
+              <div class="receipt-totals">
+                ${data.cupom ? '<div class="row"><span class="label">Cupom (' + data.cupom.code + ')</span><span style="color:#22c55e;">-' + (data.cupom.discount || 0) + (data.cupom.type === 'percent' ? '%' : '%') + '</span></div>' : ''}
+                <div class="row total">
+                  <span class="label">Total</span>
+                  <span>R$ ${(data.total || 0).toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="receipt-footer">
+            <p><strong>TechVault Store</strong> — Tecnologia e Inovação<br>
+            Este é um comprovante eletrônico. Guarde para futuras referências.<br>
+            Emitido em ${dateStr} às ${timeStr}</p>
+          </div>
+        `;
+      } catch (e) {
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+      }
+    }
+
+    function imprimir() {
+      window.print();
+    }
+
+    function baixarPDF() {
+      const receipt = document.getElementById('receiptContent');
+      if (!receipt) return;
+      window.print();
+    }
+
+    loadReceipt();
+  </script>
+</body>
+</html>
