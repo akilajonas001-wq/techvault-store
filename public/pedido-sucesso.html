@@ -77,8 +77,9 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const orderId = params.get('id');
-    const statusParam = params.get('status');
+    let orderId = params.get('id') || params.get('order_nsu') || params.get('pedido_id');
+    const statusParam = params.get('status') || params.get('capture_method');
+    const receiptUrl = params.get('receipt_url');
 
     function showConfirmed(data) {
       document.getElementById('statusPending').classList.add('hidden');

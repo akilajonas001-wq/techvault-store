@@ -54,15 +54,16 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
     console.log('Parsed:', JSON.stringify(body));
 
     // Try many possible field names for order ID
-    const orderId = body.external_id || body.externalId || body.id || body.reference ||
+    const orderId = body.order_nsu || body.external_id || body.externalId || body.id || body.reference ||
                     body.order_id || body.transaction_id || body.transactionId ||
                     body.orderId || body.pedido_id || body.pedidoId ||
                     body.checkout_id || body.checkoutId || body.reference_id ||
+                    body.nsu || body.orderNsu || body.order_nsu_id ||
                     (body.metadata && (body.metadata.pedido_id || body.metadata.orderId ||
-                     body.metadata.order_id || body.metadata.external_id)) ||
-                    (body.items && body.items[0] && body.items[0].external_id) ||
-                    (body.products && body.products[0] && body.products[0].external_id) ||
-                    (body.customer && body.customer.external_id);
+                     body.metadata.order_id || body.metadata.external_id || body.metadata.order_nsu)) ||
+                    (body.items && body.items[0] && (body.items[0].external_id || body.items[0].order_nsu)) ||
+                    (body.products && body.products[0] && (body.products[0].external_id || body.products[0].order_nsu)) ||
+                    (body.customer && (body.customer.external_id || body.customer.order_nsu));
 
     // Try many possible status field names
     const status = (body.status || body.payment_status || body.paymentStatus ||

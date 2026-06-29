@@ -134,7 +134,8 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 // ========== PEDIDOS ==========
 
-const INFINITE_PAY_CHECKOUT_URL = 'https://checkout.infinitepay.io/akila-jonas/JlFvnPXXzd';
+const INFINITE_PAY_API = 'https://api.infinitepay.io/invoices/public/checkout/links';
+const INFINITE_PAY_HANDLE = 'akila-jonas';
 
 router.post('/orders', requireAuth, async (req, res) => {
   try {
@@ -170,18 +171,50 @@ router.post('/orders', requireAuth, async (req, res) => {
       html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
     }).catch(e => console.error('Erro email:', e.message));
 
-    const successUrl = `${req.protocol}://${req.get('host')}/pedido-sucesso?id=${newOrder.id}`;
-    const cancelUrl = `${req.protocol}://${req.get('host')}/pedido-cancelado?id=${newOrder.id}`;
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}`;
+    const cancelUrl = `${baseUrl}/pedido-cancelado?id=${newOrder.id}`;
+    const webhookUrl = `${baseUrl}/api/webhooks/infinitepay`;
 
-    let checkoutBaseUrl = INFINITE_PAY_CHECKOUT_URL;
-    try {
-      if (itens && itens.length > 0) {
-        const p = await db.productById(Number(itens[0].id) || itens[0].id);
-        if (p && p.checkoutLink) checkoutBaseUrl = p.checkoutLink;
+    // Cria link de checkout dinâmico via API InfinitePay
+    const apiPayload = {
+      handle: INFINITE_PAY_HANDLE,
+      itens: (itens || []).map(item => ({
+        quantity: item.quantidade || 1,
+        price: Math.round((item.preco || 0) * 100),
+        description: item.nome || 'Produto'
+      })),
+      order_nsu: String(newOrder.id),
+      redirect_url: successUrl,
+      webhook_url: webhookUrl,
+      customer: {
+        name: cliente?.nome || user.nome,
+        email: cliente?.email || user.email,
+        phone_number: cliente?.telefone || user.telefone || ''
       }
-    } catch (e) {}
-    const sep = checkoutBaseUrl.includes('?') ? '&' : '?';
-    const checkoutUrl = `${checkoutBaseUrl}${sep}external_id=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+    };
+
+    let checkoutUrl = null;
+    try {
+      const apiRes = await fetch(INFINITE_PAY_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload)
+      });
+      const apiData = await apiRes.json();
+      if (apiRes.ok && apiData.url) {
+        checkoutUrl = apiData.url;
+      } else {
+        console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
+      }
+    } catch (e) {
+      console.error('InfinitePay API fetch error:', e.message);
+    }
+
+    // Fallback: static checkout link + order_nsu como query param
+    if (!checkoutUrl) {
+      checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
+    }
 
     res.json({
       success: true, orderId: newOrder.id,
