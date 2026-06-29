@@ -56,14 +56,14 @@ router.get('/orders', async (req, res) => {
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar pedidos' }); }
 });
 
-router.delete('/orders', async (req, res) => {
+router.delete('/orders/:id', async (req, res) => {
   try {
     if (req.adminUser.role !== 'admin') {
-      return res.status(403).json({ error: 'Apenas administradores podem zerar pedidos' });
+      return res.status(403).json({ error: 'Apenas administradores podem excluir pedidos' });
     }
-    await db.clearAllOrders();
+    await db.deleteOrderById(parseInt(req.params.id));
     res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao zerar pedidos' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao excluir pedido' }); }
 });
 
 router.put('/orders/:id/status', async (req, res) => {

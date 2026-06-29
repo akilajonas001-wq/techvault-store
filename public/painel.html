@@ -373,10 +373,7 @@
       <div class="card">
         <div class="card-header">
           <h2><i class="fas fa-box"></i> Todos os Pedidos</h2>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
-            <button id="clearOrdersBtn" class="order-detail-btn" onclick="clearAllOrders()" style="border-color:var(--error);color:var(--error);font-size:11px;display:none;" title="Zerar todos os pedidos"><i class="fas fa-trash-alt"></i> Zerar</button>
-          </div>
+          <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="ordersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando pedidos...</div>
       </div>
@@ -678,7 +675,6 @@
         allProducts = await productsRes.json();
         allNewsletter = await newsletterRes.json();
 
-        if (currentUserRole === 'admin') document.getElementById('clearOrdersBtn').style.display = 'inline-flex';
         updateStats();
         renderOrders();
         renderCarts();
@@ -730,7 +726,8 @@
             '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
             '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
             '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-            '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button></td>' +
+            '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>' +
+            (currentUserRole === 'admin' ? ' <button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir pedido" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>' : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
@@ -829,26 +826,25 @@
       }
     }
 
-    async function clearAllOrders() {
-      if (currentUserRole !== 'admin') { alert('Apenas administradores podem zerar pedidos'); return; }
-      if (!confirm('Tem certeza? Todos os pedidos serão excluídos permanentemente.')) return;
-      if (!confirm('Esta ação não pode ser desfeita. Deseja realmente continuar?')) return;
+    async function deleteOrder(orderId) {
+      if (currentUserRole !== 'admin') { notify('Apenas administradores podem excluir pedidos', 'error'); return; }
+      if (!confirm('Excluir pedido #' + orderId + ' permanentemente?')) return;
       try {
-        const res = await fetch('/api/admin/orders', {
+        const res = await fetch('/api/admin/orders/' + orderId, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + getToken() }
         });
         const data = await res.json();
         if (data.success) {
-          allOrders = [];
+          allOrders = allOrders.filter(o => o.id != orderId);
           renderOrders();
           updateStats();
-          notify('Todos os pedidos foram zerados!', 'success');
+          notify('Pedido #' + orderId + ' excluído!', 'success');
         } else {
-          notify(data.error || 'Erro ao zerar pedidos', 'error');
+          notify(data.error || 'Erro ao excluir pedido', 'error');
         }
       } catch (err) {
-        notify('Erro de conexão ao zerar pedidos', 'error');
+        notify('Erro de conexão ao excluir pedido', 'error');
       }
     }
 

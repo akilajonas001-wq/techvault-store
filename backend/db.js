@@ -497,8 +497,8 @@ async function updateOrderStatus(id, status) {
   await query(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
 }
 
-async function clearAllOrders() {
-  await query(`DELETE FROM orders`);
+async function deleteOrderById(id) {
+  await query(`DELETE FROM orders WHERE id = $1`, [id]);
 }
 
 async function allComments(productId) {
@@ -778,7 +778,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, clearAllOrders,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, deleteOrderById,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,
