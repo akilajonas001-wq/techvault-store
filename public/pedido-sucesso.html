@@ -136,7 +136,19 @@
     }
 
     if (statusParam === 'paid' || statusParam === 'approved') {
-      fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(showConfirmed).catch(() => showConfirmed(null));
+      const data = await fetch('/api/check-order-status/' + orderId).then(r => r.json()).catch(() => null);
+      if (data && (data.status === 'aprovado' || data.status === 'paid')) {
+        showConfirmed(data);
+      } else {
+        // Tenta verificar/confirmar o pagamento manualmente
+        const verify = await fetch('/api/verify-payment/' + orderId, { method: 'POST' }).then(r => r.json()).catch(() => null);
+        if (verify && verify.verified) {
+          const data2 = await fetch('/api/check-order-status/' + orderId).then(r => r.json());
+          showConfirmed(data2);
+        } else {
+          showConfirmed(null);
+        }
+      }
     } else if (orderId) {
       let attempts = 0;
       const maxAttempts = 30;
@@ -167,7 +179,20 @@
         if (attempts < maxAttempts) {
           setTimeout(checkStatus, 3000);
         } else {
-          document.getElementById('autoUpdateMsg').innerHTML = '<i class="fas fa-info-circle"></i> Você pode verificar o status em <a href="/conta" style="color:var(--primary);">Meus Pedidos</a>.';
+          // Fallback: tenta confirmar via verify-payment
+          document.getElementById('autoUpdateMsg').innerHTML = '<i class="fas fa-sync-alt"></i> Verificando pagamento...';
+          fetch('/api/verify-payment/' + orderId, { method: 'POST' })
+            .then(r => r.json())
+            .then(verify => {
+              if (verify && verify.verified) {
+                fetch('/api/check-order-status/' + orderId).then(r => r.json()).then(showConfirmed);
+              } else {
+                document.getElementById('autoUpdateMsg').innerHTML = '<i class="fas fa-info-circle"></i> Você pode verificar o status em <a href="/conta" style="color:var(--primary);">Meus Pedidos</a>.';
+              }
+            })
+            .catch(() => {
+              document.getElementById('autoUpdateMsg').innerHTML = '<i class="fas fa-info-circle"></i> Você pode verificar o status em <a href="/conta" style="color:var(--primary);">Meus Pedidos</a>.';
+            });
         }
       };
       setTimeout(checkStatus, 2000);

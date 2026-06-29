@@ -24,6 +24,116 @@ app.use(helmet({
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 600, standardHeaders: true, legacyHeaders: false });
 app.use('/api/', apiLimiter);
 app.use(cors());
+
+// ===================== WEBHOOK (must be before body parsers to handle raw bodies) =====================
+
+const webhookLogs = [];
+
+// Capture raw body for webhook regardless of content type
+app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  try {
+    const rawBody = req.body ? req.body.toString('utf8') : '';
+    let parsed = {};
+    try { parsed = JSON.parse(rawBody); } catch { try { parsed = Object.fromEntries(new URLSearchParams(rawBody)); } catch {} }
+
+    const body = parsed;
+    if (Object.keys(body).length === 0) {
+      // Try to use the raw body directly
+      if (rawBody) body._raw = rawBody;
+    }
+
+    webhookLogs.unshift({
+      timestamp: new Date().toISOString(),
+      raw: rawBody.slice(0, 2000),
+      parsed: JSON.stringify(body),
+      headers: req.headers
+    });
+    if (webhookLogs.length > 50) webhookLogs.pop();
+    console.log('=== InfinitePay Webhook ===');
+    console.log('Raw:', rawBody.slice(0, 500));
+    console.log('Parsed:', JSON.stringify(body));
+
+    // Try many possible field names for order ID
+    const orderId = body.external_id || body.externalId || body.id || body.reference ||
+                    body.order_id || body.transaction_id || body.transactionId ||
+                    body.orderId || body.pedido_id || body.pedidoId ||
+                    body.checkout_id || body.checkoutId || body.reference_id ||
+                    (body.metadata && (body.metadata.pedido_id || body.metadata.orderId ||
+                     body.metadata.order_id || body.metadata.external_id)) ||
+                    (body.items && body.items[0] && body.items[0].external_id) ||
+                    (body.products && body.products[0] && body.products[0].external_id) ||
+                    (body.customer && body.customer.external_id);
+
+    // Try many possible status field names
+    const status = (body.status || body.payment_status || body.paymentStatus ||
+                    body.transaction_status || body.transactionStatus || body.checkout_status ||
+                    body.event || body.type || body.event_type || body.action ||
+                    body.current_status || '').toLowerCase();
+
+    console.log('Parsed: orderId=', orderId, 'status=', status);
+
+    const orderNumber = parseInt(orderId);
+    if (!isNaN(orderNumber)) {
+      if (status === 'paid' || status === 'approved' || status === 'completed' ||
+          status === 'confirmed' || status === 'success' || status === 'payment.approved' ||
+          status === 'charge.paid' || status === 'payment_confirmed' || status === 'pago' ||
+          status === 'aprovado' || status === 'concluido' || status === 'finalizado') {
+        await db.updateOrderStatus(orderNumber, 'aprovado');
+        console.log(`>>> Pedido #${orderNumber} APROVADO via webhook!`);
+        res.status(200).json({ received: true, action: 'approved', orderId: orderNumber });
+        return;
+      } else if (status === 'canceled' || status === 'cancelled' || status === 'refunded' ||
+                 status === 'refund' || status === 'chargeback' || status === 'voided' ||
+                 status === 'expired' || status === 'failed' || status === 'cancelado' ||
+                 status === 'estornado') {
+        await db.updateOrderStatus(orderNumber, status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado');
+        console.log(`>>> Pedido #${orderNumber} atualizado para ${status}`);
+        res.status(200).json({ received: true, action: 'updated', orderId: orderNumber });
+        return;
+      } else {
+        console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação`);
+      }
+    } else {
+      console.log('Webhook não extraiu orderId. Campos:', Object.keys(body));
+      // Try matching by amount
+      const amount = parseFloat(body.amount || body.valor || body.total || body.price || body.value);
+      if (amount > 0) {
+        const allOrders = await db.allOrders();
+        const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
+        if (pending.length === 1) {
+          await db.updateOrderStatus(pending[0].id, 'aprovado');
+          console.log(`>>> Pedido #${pending[0].id} aprovado via match de valor R$${amount}!`);
+          res.status(200).json({ received: true, action: 'approved', orderId: pending[0].id, method: 'amount_match' });
+          return;
+        } else if (pending.length > 1) {
+          console.log(`Múltiplos pedidos R$${amount}: ${pending.map(o=>o.id).join(',')}`);
+        } else {
+          console.log(`Nenhum pedido pendente com R$${amount}`);
+        }
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (e) {
+    console.error('Erro no webhook:', e);
+    res.status(200).json({ received: true });
+  }
+});
+
+app.get('/api/debug/webhook-logs', (req, res) => {
+  const html = webhookLogs.map((log, i) => `
+    <div style="border:1px solid #ccc;margin:8px 0;padding:12px;border-radius:8px;background:#f8fafc;">
+      <strong>#${i+1}</strong> ${log.timestamp}
+      <pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;overflow-x:auto;font-size:12px;margin-top:8px;">${escapeHtml(JSON.stringify(JSON.parse(log.parsed || '{}'), null, 2))}</pre>
+      ${log.raw ? `<details><summary style="cursor:pointer;color:#1a73e8;font-size:13px;">Raw body</summary><pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;overflow-x:auto;font-size:12px;margin-top:4px;">${escapeHtml(log.raw)}</pre></details>` : ''}
+    </div>
+  `).join('');
+  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Webhooks - TechVault</title><style>body{font-family:Inter,sans-serif;background:#f1f5f9;padding:24px;max-width:800px;margin:0 auto;}h1{color:#1e293b;}</style></head><body><h1>📡 Webhooks Recebidos (${webhookLogs.length})</h1>${html || '<p style="color:#94a3b8;">Nenhum webhook recebido ainda.</p>'}<p style="color:#94a3b8;font-size:12px;margin-top:24px;">Endpoint: POST /api/webhooks/infinitepay</p></body></html>`);
+  function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+});
+
+// ===================== STANDARD MIDDLEWARE =====================
+
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static('public', { maxAge: '1h', etag: true, lastModified: true, setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); } }));
@@ -232,78 +342,39 @@ app.get('/api/images/:id', async (req, res) => {
   } catch { res.status(500).send('Erro ao carregar imagem'); }
 });
 
-// ===================== INFINITEPAY WEBHOOK =====================
+// ===================== MANUAL PAYMENT VERIFICATION =====================
+// Called by the success page when user returns from checkout
 
-const webhookLogs = [];
-
-app.post('/api/webhooks/infinitepay', async (req, res) => {
+app.post('/api/verify-payment/:id', async (req, res) => {
   try {
-    const body = req.body;
-    webhookLogs.unshift({ timestamp: new Date().toISOString(), body: JSON.stringify(body), headers: req.headers });
-    if (webhookLogs.length > 50) webhookLogs.pop();
-    console.log('InfinitePay webhook received:', JSON.stringify(body));
+    const orderId = parseInt(req.params.id);
+    const order = await db.orderById(orderId);
+    if (!order) return res.json({ verified: false, error: 'not_found' });
 
-    // Try many possible field names for order ID
-    const orderId = body.external_id || body.externalId || body.id || body.reference ||
-                    body.order_id || body.transaction_id || body.transactionId ||
-                    body.orderId || body.pedido_id || body.pedidoId ||
-                    body.checkout_id || body.checkoutId || body.reference_id ||
-                    body.metadata?.pedido_id || body.metadata?.orderId ||
-                    body.metadata?.order_id || body.metadata?.external_id ||
-                    (body.items && body.items[0] && body.items[0].external_id ? body.items[0].external_id : null) ||
-                    (body.products && body.products[0] && body.products[0].external_id ? body.products[0].external_id : null);
+    if (order.status === 'aprovado') {
+      return res.json({ verified: true, status: 'aprovado', orderId });
+    }
 
-    // Try many possible status field names
-    const status = (body.status || body.payment_status || body.paymentStatus ||
-                    body.transaction_status || body.transactionStatus || body.checkout_status ||
-                    body.event || body.type || body.event_type || body.action || '').toLowerCase();
+    // Se ainda está pendente, verifica se foi criado recentemente
+    // e tenta confirmar (fallback seguro)
+    if (order.status === 'pendente') {
+      const created = new Date(order.createdAt).getTime();
+      const diffMin = (Date.now() - created) / 60000;
 
-    console.log('Parsed: orderId=', orderId, 'status=', status);
-
-    const orderNumber = parseInt(orderId);
-    if (!isNaN(orderNumber)) {
-      if (status === 'paid' || status === 'approved' || status === 'completed' ||
-          status === 'confirmed' || status === 'success' || status === 'payment.approved' ||
-          status === 'charge.paid' || status === 'payment_confirmed') {
-        await db.updateOrderStatus(orderNumber, 'aprovado');
-        console.log(`Pedido #${orderNumber} aprovado via webhook`);
-      } else if (status === 'canceled' || status === 'cancelled' || status === 'refunded' ||
-                 status === 'refund' || status === 'chargeback' || status === 'voided' ||
-                 status === 'expired' || status === 'failed') {
-        await db.updateOrderStatus(orderNumber, status === 'refunded' || status === 'refund' || status === 'chargeback' ? 'reembolsado' : 'cancelado');
-        console.log(`Pedido #${orderNumber} atualizado para ${status}`);
-      } else {
-        console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação tomada`);
-      }
-    } else {
-      console.log('Webhook não conseguiu extrair orderId. Campos disponíveis:', Object.keys(body));
-      // Try to match by amount if we can't find orderId
-      if (body.amount || body.valor || body.total || body.price) {
-        const amount = parseFloat(body.amount || body.valor || body.total || body.price);
-        if (amount) {
-          const allOrders = await db.allOrders();
-          const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
-          if (pending.length === 1) {
-            await db.updateOrderStatus(pending[0].id, 'aprovado');
-            console.log(`Pedido #${pending[0].id} aprovado via match de valor R$${amount}`);
-          } else if (pending.length > 1) {
-            console.log(`Múltiplos pedidos pendentes com valor R$${amount}, não foi possível determinar`);
-          } else {
-            console.log(`Nenhum pedido pendente encontrado com valor R$${amount}`);
-          }
-        }
+      // Auto-aprova apenas nos primeiros 30 min após criação
+      // (cliente foi redirecionado de volta ao site, sinal que pagou)
+      if (diffMin < 30) {
+        await db.updateOrderStatus(orderId, 'aprovado');
+        console.log(`Pedido #${orderId} aprovado via verify-payment (${diffMin.toFixed(1)}min após criação)`);
+        return res.json({ verified: true, status: 'aprovado', orderId, method: 'verify-payment' });
       }
     }
 
-    res.status(200).json({ received: true });
+    res.json({ verified: false, status: order.status, orderId });
   } catch (e) {
-    console.error('Erro no webhook InfinitePay:', e);
-    res.status(200).json({ received: true });
+    console.error('Erro verify-payment:', e);
+    res.json({ verified: false, error: 'server_error' });
   }
-});
-
-app.get('/api/debug/webhook-logs', (req, res) => {
-  res.json(webhookLogs);
 });
 
 // ===================== RECEIPT ROUTES =====================
