@@ -26,91 +26,100 @@
 .mobile-nav {
   position: fixed;
   top: 0;
-  right: -300px;
-  width: 280px;
+  left: 0;
+  width: 100%;
   height: 100%;
   background: #fff;
   z-index: 10000;
-  padding: 20px 16px;
+  padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
+  transform: translateX(100%);
 }
-.mobile-nav.active { right: 0; }
+.mobile-nav.active { transform: translateX(0); }
 
 .mobile-nav .mobile-close {
   align-self: flex-end;
   background: none;
   border: none;
-  font-size: 22px;
+  font-size: 24px;
   color: #64748b;
   cursor: pointer;
   padding: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
 }
+.mobile-nav .mobile-close:hover { background: #f1f5f9; }
 .mobile-nav .mobile-logo {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #1a73e8;
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 0;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 0;
   margin-bottom: 8px;
 }
 .mobile-nav a {
-  padding: 12px 16px;
+  padding: 14px 20px;
   color: #1e293b;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: background 0.15s;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 .mobile-nav a:hover { background: #f1f5f9; }
 .mobile-nav a i {
-  width: 20px;
+  width: 22px;
   text-align: center;
   color: #64748b;
-  font-size: 16px;
+  font-size: 17px;
 }
 .mobile-nav hr {
   border: none;
   border-top: 1px solid #e2e8f0;
-  margin: 8px 0;
+  margin: 12px 0;
 }
 
 .mobile-search {
   display: flex;
-  gap: 6px;
-  padding: 8px 0;
-  margin-bottom: 8px;
+  gap: 8px;
+  padding: 12px 0;
+  margin-bottom: 12px;
 }
 .mobile-search input {
   flex: 1;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  font-size: 13px;
+  border-radius: 12px;
+  font-size: 15px;
   font-family: inherit;
   outline: none;
 }
 .mobile-search input:focus { border-color: #1a73e8; }
 .mobile-search button {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
   color: white;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .mobile-overlay {
