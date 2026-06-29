@@ -1751,9 +1751,14 @@
         const data = await res.json();
         if (data.success) {
           if (activeChatConvKey === convKey) closeChatModal();
-          loadSupportChatList();
+          if (convKey.startsWith('dm:')) loadDMList();
+          else loadSupportChatList();
         }
       } catch {}
+    }
+
+    async function deleteDMConversa(convKey) {
+      await deleteSupportChat(convKey);
     }
 
     async function deleteCurrentChat() {
@@ -1836,6 +1841,14 @@
       const convKey = 'dm:' + userId + ':' + staffId;
       const user = newConversaAllUsers.find(u => u.id === userId);
       const userName = user ? (user.nome || user.email || 'Usuário') : 'Usuário #' + userId;
+      // Envia mensagem inicial para criar a conversa no banco
+      try {
+        await fetch('/api/admin/chat/send', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationKey: convKey, message: '--- Conversa iniciada pelo staff ---' })
+        });
+      } catch {}
       openChat(convKey, userName, 'dm');
     }
 
@@ -1866,6 +1879,7 @@
               '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
               '<td style="white-space:nowrap;">' +
                 '<button onclick="openChat(\'' + c.conversationKey + '\', \'' + (c.userName || '').replace(/'/g, "\\'") + ' &times ' + (c.staffName || '').replace(/'/g, "\\'") + '\', \'dm\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;"><i class="fas fa-eye"></i> Ver</button>' +
+                '<button onclick="deleteDMConversa(\'' + c.conversationKey + '\')" class="btn" style="padding:5px 10px;font-size:11px;background:transparent;color:var(--error);border:1px solid rgba(239,68,68,0.3);margin-left:4px;"><i class="fas fa-trash-alt"></i></button>' +
               '</td>' +
             '</tr>';
           }).join('') +
