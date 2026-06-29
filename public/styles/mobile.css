@@ -128,14 +128,62 @@
 
 @media (max-width: 768px) {
   .hamburger { display: flex; }
-  .header-top { flex-wrap: wrap; gap: 0; padding: 10px 12px; justify-content: space-between; }
-  .logo img { height: 38px; }
+  .header-top { flex-wrap: wrap; gap: 0; padding: 10px 12px !important; justify-content: space-between; }
+  .logo img { height: 38px !important; }
   .header-menu { gap: 6px; }
   .search-box { order: 3; flex-basis: 100%; margin-top: 10px; }
   .search-box input { font-size: 14px; padding: 10px 14px; }
   .search-box button { padding: 10px 14px; min-width: 44px; justify-content: center; }
-  .auth-buttons-desktop { display: none; }
+  .auth-buttons-desktop { display: none !important; }
   #userMenu { display: none !important; }
-  .cart-modal-content { max-width: 100%; padding: 24px 16px; }
-  .cart-modal-header h2 { font-size: 18px; }
+  .cart-modal-content { max-width: 100% !important; padding: 24px 16px; }
+  .cart-modal-header h2 { font-size: 18px !important; }
+
+  /* General spacing */
+  .container { padding-left: 16px !important; padding-right: 16px !important; }
+  .breadcrumb { margin: 16px 0 !important; font-size: 13px !important; }
+
+  /* Account/Profile page */
+  .account-content { padding: 20px 16px !important; }
+  .account-content h2 { font-size: 18px !important; margin-bottom: 16px !important; }
+  .account-nav-item { padding: 12px 14px !important; font-size: 13px !important; }
+
+  /* Order cards */
+  .order-card { padding: 14px !important; }
+  .order-total-price { font-size: 16px !important; }
+  .order-id { font-size: 14px !important; }
+
+  /* Forms */
+  .form-group input { padding: 12px 14px !important; font-size: 14px !important; }
+  .btn { padding: 14px 24px !important; font-size: 14px !important; }
+  .btn-large { padding: 14px 24px !important; font-size: 15px !important; }
+
+  /* Empty state */
+  .empty-state { padding: 40px 16px !important; }
+  .empty-state i { font-size: 48px !important; }
+
+  /* Favorites grid */
+  .favorites-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Order items */
+  .order-date { font-size: 12px !important; }
+
+  /* Admin panel */
+  .dashboard-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+  .card-header { flex-direction: column !important; gap: 12px !important; align-items: stretch !important; }
+}
+
+@media (max-width: 480px) {
+  .container { padding-left: 12px !important; padding-right: 12px !important; }
+  .account-content { padding: 16px 12px !important; }
+  .account-content h2 { font-size: 16px !important; }
+  .favorites-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .order-card { padding: 12px !important; }
+  .order-total-price { font-size: 14px !important; }
+  .empty-state { padding: 32px 12px !important; }
+  .empty-state i { font-size: 40px !important; }
+  .dashboard-grid { grid-template-columns: 1fr !important; }
 }
