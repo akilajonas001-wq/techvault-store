@@ -69,71 +69,9 @@ app.use('/api', require('./routes/profile'));
 app.use('/api/admin', require('./routes/admin'));
 
 // ===================== CHAT ROUTES =====================
-// Chat key format:
-//   support:userId        → Support chat (user → any admin/funcionario)
-//   dm:userId:staffId     → Direct message (user ↔ specific staff)
+// Key format: support:userId  → Atendimento
 
 // --- USER-FACING ROUTES ---
-
-app.get('/api/chat/staff', (req, res) => {
-  try {
-    const staff = db.adminStaff();
-    res.json(staff.map(s => ({ id: s.id, nome: s.nome, role: s.role, admin: s.admin })));
-  } catch { res.json([]); }
-});
-
-app.get('/api/chat/conversations', (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.json([]);
-    let decoded;
-    try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.json([]); }
-
-    const chats = db.allChats();
-    const result = [];
-    for (const [convKey, data] of Object.entries(chats)) {
-      const msgs = data.messages;
-      if (!msgs?.length) continue;
-      const parts = convKey.split(':');
-      const type = parts[0];
-
-      let belongs = false;
-      let targetName = 'Atendimento';
-      let targetId = null;
-
-      if (type === 'support') {
-        const uid = parseInt(parts[1]);
-        if (uid !== decoded.id) continue;
-        belongs = true;
-        const lastAdmin = msgs.slice().reverse().find(m => m.from === 'admin');
-        if (lastAdmin && lastAdmin.adminName) targetName = lastAdmin.adminName;
-      } else if (type === 'dm') {
-        const uid = parseInt(parts[1]);
-        const sid = parseInt(parts[2]);
-        if (uid !== decoded.id && sid !== decoded.id) continue;
-        belongs = true;
-        const otherId = uid === decoded.id ? sid : uid;
-        const other = db.userById(otherId);
-        targetName = other ? other.nome : 'Usuário #' + otherId;
-        targetId = otherId;
-      }
-
-      if (!belongs) continue;
-
-      const unread = msgs.filter(m => m.from !== 'user' && !m.read).length;
-      result.push({
-        conversationKey: convKey, type,
-        targetId, targetName,
-        unreadCount: unread, totalMessages: msgs.length,
-        lastMessage: msgs[msgs.length - 1],
-        updatedAt: msgs[msgs.length - 1].createdAt,
-        resolved: data.resolved || false
-      });
-    }
-    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    res.json(result);
-  } catch { res.json([]); }
-});
 
 app.get('/api/chat/messages/:convKey(*)', (req, res) => {
   try {
@@ -148,11 +86,7 @@ app.get('/api/chat/messages/:convKey(*)', (req, res) => {
     const msgs = chatData.messages;
 
     const parts = convKey.split(':');
-    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.json([]);
-    if (parts[0] === 'dm') {
-      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
-      if (uid !== decoded.id && sid !== decoded.id) return res.json([]);
-    }
+    if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.json([]);
 
     msgs.forEach(m => {
       if (m.from === 'admin' && !m.adminName && m.adminUserId) {
@@ -164,7 +98,7 @@ app.get('/api/chat/messages/:convKey(*)', (req, res) => {
   } catch { res.json([]); }
 });
 
-app.post('/api/chat/send/:type/:target', (req, res) => {
+app.post('/api/chat/send/support/:userId', (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
@@ -176,16 +110,7 @@ app.post('/api/chat/send/:type/:target', (req, res) => {
     const { message } = req.body;
     if (!message?.trim()) return res.status(400).json({ error: 'Mensagem vazia' });
 
-    const chatType = req.params.type; // 'support' or 'dm'
-    const target = req.params.target;  // for dm: staffId, for support: 'general'
-    let key;
-
-    if (chatType === 'dm') {
-      key = 'dm:' + decoded.id + ':' + target;
-    } else {
-      key = 'support:' + decoded.id;
-    }
-
+    const key = 'support:' + decoded.id;
     const chatData = db.getChatMessages(key);
     const msgs = chatData ? chatData.messages : [];
     msgs.push({ from: 'user', message: message.trim(), createdAt: new Date().toISOString(), read: false });
@@ -202,16 +127,12 @@ app.post('/api/chat/read/:convKey(*)', (req, res) => {
     try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token inválido' }); }
 
     const convKey = req.params.convKey;
+    const parts = convKey.split(':');
+    if (parts[0] !== 'support' || parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
+
     const chatData = db.getChatMessages(convKey);
     if (!chatData) return res.json({ success: true });
     const msgs = chatData.messages;
-
-    const parts = convKey.split(':');
-    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
-    if (parts[0] === 'dm') {
-      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
-      if (uid !== decoded.id && sid !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
-    }
 
     let modified = false;
     msgs.forEach(m => {
@@ -220,25 +141,6 @@ app.post('/api/chat/read/:convKey(*)', (req, res) => {
     if (modified) db.saveChatMessages(convKey, msgs);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro ao marcar como lido' }); }
-});
-
-app.delete('/api/chat/conversation/:convKey(*)', (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
-    let decoded;
-    try { decoded = jwt.verify(token, JWT_SECRET); } catch { return res.status(401).json({ error: 'Token inválido' }); }
-
-    const convKey = req.params.convKey;
-    const parts = convKey.split(':');
-    if (parts[0] === 'support' && parseInt(parts[1]) !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
-    if (parts[0] === 'dm') {
-      const uid = parseInt(parts[1]), sid = parseInt(parts[2]);
-      if (uid !== decoded.id && sid !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
-    }
-    db.deleteChat(convKey);
-    res.json({ success: true });
-  } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });
 
 // --- ADMIN ROUTES ---
@@ -261,33 +163,6 @@ app.get('/api/admin/chat/support', adminAuth, (req, res) => {
         unreadCount: unread, totalMessages: msgs.length,
         lastMessage: msgs[msgs.length - 1], updatedAt: msgs[msgs.length - 1].createdAt,
         resolved: data.resolved || false
-      });
-    }
-    result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-    res.json(result);
-  } catch { res.status(500).json([]); }
-});
-
-app.get('/api/admin/chat/dm', adminAuth, (req, res) => {
-  try {
-    const chats = db.allChats();
-    const result = [];
-    for (const [convKey, data] of Object.entries(chats)) {
-      if (!convKey.startsWith('dm:')) continue;
-      const msgs = data.messages;
-      if (!msgs?.length) continue;
-      const [, uidStr, sidStr] = convKey.split(':');
-      const uid = parseInt(uidStr), sid = parseInt(sidStr);
-      const user = db.userById(uid);
-      const staff = db.userById(sid);
-      const unread = msgs.filter(m => m.from === 'user' && !m.read).length;
-      result.push({
-        conversationKey: convKey, userId: uid, staffId: sid,
-        userName: user ? user.nome : 'Usuário #' + uid,
-        userEmail: user ? user.email : '',
-        staffName: staff ? staff.nome : 'Staff #' + sid,
-        unreadCount: unread, totalMessages: msgs.length,
-        lastMessage: msgs[msgs.length - 1], updatedAt: msgs[msgs.length - 1].createdAt
       });
     }
     result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));

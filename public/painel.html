@@ -363,7 +363,6 @@
       <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
       <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
       <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
-      <button class="tab-btn" data-tab="conversas" onclick="switchTab('conversas', this)"><i class="fas fa-comments"></i> Conversas</button>
       <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
@@ -400,19 +399,6 @@
           <span id="chatsCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="allChatsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
-      </div>
-    </div>
-
-    <div id="tab-conversas" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <h2><i class="fas fa-comments"></i> Conversas (Usuários x Staff)</h2>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <span id="dmCount" style="font-size: 13px; color: var(--text-muted);"></span>
-            <button onclick="openNewConversa()" class="btn btn-primary" style="padding:6px 14px;font-size:12px;"><i class="fas fa-plus"></i> Nova Conversa</button>
-          </div>
-        </div>
-        <div id="dmContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
       </div>
     </div>
 
@@ -615,22 +601,6 @@
         <div style="display:flex;gap:10px;">
           <input type="text" id="chatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendChatMessage()" style="flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;outline:none;">
           <button class="btn btn-primary" onclick="sendChatMessage()" style="padding:12px 20px;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-overlay" id="newConversaModal">
-      <div class="modal-content" style="max-width:450px;">
-        <div class="modal-header">
-          <h3><i class="fas fa-comment-plus"></i> Nova Conversa</h3>
-          <button class="modal-close" onclick="closeNewConversaModal()"><i class="fas fa-times"></i></button>
-        </div>
-        <div style="padding:12px 0;">
-          <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px;">Selecione o usuário</label>
-          <input type="text" id="newConversaSearch" placeholder="Buscar usuário..." oninput="filterNewConversaUsers()" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;">
-          <div id="newConversaUsers" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
-            <div class="loading" style="padding:20px;text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
-          </div>
         </div>
       </div>
     </div>
@@ -1569,10 +1539,6 @@
     document.getElementById('chatModal')?.addEventListener('click', function(e) {
       if (e.target === this) closeChatModal();
     });
-    document.getElementById('newConversaModal')?.addEventListener('click', function(e) {
-      if (e.target === this) closeNewConversaModal();
-    });
-
     async function loadSupportChatMessages(convKey, silent) {
       try {
         const res = await fetch('/api/admin/chat/' + encodeURIComponent(convKey), {
@@ -1751,141 +1717,13 @@
         const data = await res.json();
         if (data.success) {
           if (activeChatConvKey === convKey) closeChatModal();
-          if (convKey.startsWith('dm:')) loadDMList();
-          else loadSupportChatList();
+          loadSupportChatList();
         }
       } catch {}
-    }
-
-    async function deleteDMConversa(convKey) {
-      await deleteSupportChat(convKey);
     }
 
     async function deleteCurrentChat() {
       if (activeChatConvKey) await deleteSupportChat(activeChatConvKey);
-    }
-
-    // Nova Conversa (DM)
-    let newConversaAllUsers = [];
-
-    function isStaff(u) {
-      return u.admin || u.role === 'admin' || u.role === 'funcionario';
-    }
-
-    function openNewConversa() {
-      document.getElementById('newConversaModal').classList.add('active');
-      document.getElementById('newConversaSearch').value = '';
-      const container = document.getElementById('newConversaUsers');
-      container.innerHTML = '<div class="loading" style="padding:20px;text-align:center;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
-      fetch('/api/admin/users', {
-        headers: { 'Authorization': 'Bearer ' + getToken() }
-      })
-      .then(r => r.json())
-      .then(users => {
-        newConversaAllUsers = users;
-        renderNewConversaUsers(users);
-      })
-      .catch(() => {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Erro ao carregar usuários</p></div>';
-      });
-    }
-
-    function closeNewConversaModal() {
-      document.getElementById('newConversaModal').classList.remove('active');
-    }
-
-    function sortConversaUsers(list) {
-      const staff = list.filter(isStaff);
-      const clients = list.filter(u => !isStaff(u));
-      return [...staff, ...clients];
-    }
-
-    function renderNewConversaUsers(list) {
-      const container = document.getElementById('newConversaUsers');
-      const sorted = sortConversaUsers(list);
-      if (!sorted.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário encontrado</p></div>';
-        return;
-      }
-      container.innerHTML = sorted.map(u => {
-        const isStaffUser = isStaff(u);
-        const initials = (u.nome || u.email || '?').charAt(0).toUpperCase();
-        const roleLabel = isStaffUser ? '<span style="font-size:10px;color:var(--primary);font-weight:600;margin-left:6px;">' + (u.role === 'admin' ? 'ADM' : 'STAFF') + '</span>' : '';
-        const avatarBg = isStaffUser ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'var(--primary-gradient)';
-        return '<div onclick="startNewConversa(' + u.id + ')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.15s;' + (isStaffUser ? 'background:rgba(245,158,11,0.04);' : '') + '" onmouseover="this.style.background=\'var(--bg-cool)\'" onmouseout="this.style.background=\'' + (isStaffUser ? 'rgba(245,158,11,0.04)' : 'transparent') + '\'">' +
-          '<div style="width:36px;height:36px;border-radius:50%;background:' + avatarBg + ';color:white;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">' + initials + '</div>' +
-          '<div><div style="font-weight:600;font-size:14px;display:flex;align-items:center;">' + (u.nome || 'Sem nome') + roleLabel + '</div><div style="font-size:12px;color:var(--text-muted);">' + u.email + '</div></div>' +
-          '<i class="fas fa-chevron-right" style="margin-left:auto;color:var(--text-muted);font-size:12px;"></i>' +
-        '</div>';
-      }).join('');
-    }
-
-    function filterNewConversaUsers() {
-      const q = document.getElementById('newConversaSearch').value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      if (!q) {
-        renderNewConversaUsers(newConversaAllUsers);
-        return;
-      }
-      const filtered = newConversaAllUsers.filter(u =>
-        (u.nome || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q) ||
-        (u.email || '').toLowerCase().includes(q)
-      );
-      renderNewConversaUsers(filtered);
-    }
-
-    async function startNewConversa(userId) {
-      closeNewConversaModal();
-      const token = getToken();
-      const staffId = currentUserId;
-      if (!staffId) return;
-      const convKey = 'dm:' + userId + ':' + staffId;
-      const user = newConversaAllUsers.find(u => u.id === userId);
-      const userName = user ? (user.nome || user.email || 'Usuário') : 'Usuário #' + userId;
-      // Envia mensagem inicial para criar a conversa no banco
-      try {
-        await fetch('/api/admin/chat/send', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationKey: convKey, message: '--- Conversa iniciada pelo staff ---' })
-        });
-      } catch {}
-      openChat(convKey, userName, 'dm');
-    }
-
-    // DM list
-    function loadDMList() {
-      fetch('/api/admin/chat/dm', {
-        headers: { 'Authorization': 'Bearer ' + getToken() }
-      })
-      .then(r => r.json())
-      .then(list => {
-        const container = document.getElementById('dmContainer');
-        if (!list || !list.length) {
-          container.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>Nenhuma conversa entre usuários e staff</p></div>';
-          document.getElementById('dmCount').textContent = '';
-          return;
-        }
-        document.getElementById('dmCount').textContent = list.length + ' conversa' + (list.length !== 1 ? 's' : '');
-        container.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
-          '<th>Usuário</th><th>Staff</th><th>Última mensagem</th><th>Ações</th>' +
-          '</tr></thead><tbody>' +
-          list.map(c => {
-            const time = new Date(c.lastMessage.createdAt).toLocaleString('pt-BR');
-            const preview = c.lastMessage.message.length > 55 ? c.lastMessage.message.slice(0, 55) + '...' : c.lastMessage.message;
-            const fromLabel = c.lastMessage.from === 'admin' ? 'Staff' : 'Usuário';
-            return '<tr>' +
-              '<td><strong>' + c.userName + '</strong></td>' +
-              '<td><span class="badge badge-blue">' + c.staffName + '</span></td>' +
-              '<td style="font-size:12px;color:var(--text-muted)"><strong>' + fromLabel + ':</strong> ' + preview + '<br><span style="font-size:10px">' + time + '</span></td>' +
-              '<td style="white-space:nowrap;">' +
-                '<button onclick="openChat(\'' + c.conversationKey + '\', \'' + (c.userName || '').replace(/'/g, "\\'") + ' &times ' + (c.staffName || '').replace(/'/g, "\\'") + '\', \'dm\')" class="btn btn-primary" style="padding:5px 12px;font-size:11px;"><i class="fas fa-eye"></i> Ver</button>' +
-                '<button onclick="deleteDMConversa(\'' + c.conversationKey + '\')" class="btn" style="padding:5px 10px;font-size:11px;background:transparent;color:var(--error);border:1px solid rgba(239,68,68,0.3);margin-left:4px;"><i class="fas fa-trash-alt"></i></button>' +
-              '</td>' +
-            '</tr>';
-          }).join('') +
-          '</tbody></table></div>';
-      })
-      .catch(() => {});
     }
 
     // Override switchTab to load chats when the tab is selected
@@ -1898,8 +1736,6 @@
       localStorage.setItem('painel-tab', tab);
       if (tab === 'chats') {
         loadSupportChatList();
-      } else if (tab === 'conversas') {
-        loadDMList();
       }
     };
 
