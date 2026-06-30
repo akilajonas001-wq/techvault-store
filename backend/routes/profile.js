@@ -17,9 +17,9 @@ router.get('/profile', requireAuth, async (req, res) => {
 
 router.put('/profile', requireAuth, async (req, res) => {
   try {
-    const { nome, telefone, cep, logradouro, numero, complemento, bairro, cidade, estado } = req.body;
+    const { nome, telefone, cep, logradouro, numero, complemento, bairro, cidade, estado, cpf } = req.body;
     const profile = await db.updateUserProfile(req.user.id, {
-      nome, telefone, cep, logradouro, numero, complemento, bairro, cidade, estado
+      nome, telefone, cep, logradouro, numero, complemento, bairro, cidade, estado, cpf
     });
     if (!profile) return res.status(404).json({ error: 'Usuário não encontrado' });
     res.json({ success: true, profile });

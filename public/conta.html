@@ -318,6 +318,10 @@
                   <input type="email" id="editEmail" readonly style="background:var(--bg-cool);cursor:not-allowed;">
                 </div>
               </div>
+              <div class="form-group">
+                <label for="editCpf">CPF</label>
+                <input type="text" id="editCpf" name="cpf" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)">
+              </div>
               <div class="form-row">
                 <div class="form-group">
                   <label for="editTelefone">Telefone</label>
@@ -458,6 +462,7 @@
         const profile = await res.json();
         document.getElementById('editNome').value = profile.nome || '';
         document.getElementById('editEmail').value = profile.email || '';
+        document.getElementById('editCpf').value = profile.cpf || '';
         document.getElementById('editTelefone').value = profile.telefone || '';
         document.getElementById('editCep').value = profile.cep || '';
         document.getElementById('editLogradouro').value = profile.logradouro || '';
@@ -484,6 +489,7 @@
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             nome: document.getElementById('editNome').value,
+            cpf: document.getElementById('editCpf').value,
             telefone: document.getElementById('editTelefone').value,
             cep: document.getElementById('editCep').value,
             logradouro: document.getElementById('editLogradouro').value,
@@ -504,6 +510,14 @@
       } catch (err) {
         result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
       }
+    }
+
+    function mascaraCPF(input) {
+      let v = input.value.replace(/\D/g, '');
+      if (v.length > 9) v = v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6, 9) + '-' + v.slice(9, 11);
+      else if (v.length > 6) v = v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6);
+      else if (v.length > 3) v = v.slice(0, 3) + '.' + v.slice(3);
+      input.value = v;
     }
 
     function mascaraCEP(input) {

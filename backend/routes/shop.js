@@ -155,6 +155,7 @@ router.post('/orders', requireAuth, async (req, res) => {
     db.updateUserProfile(user.id, {
       nome: cliente?.nome || user.nome,
       telefone: cliente?.telefone || user.telefone,
+      cpf: cliente?.cpf || '',
       cep: endereco?.cep || '',
       logradouro: endereco?.logradouro || '',
       numero: endereco?.numero || '',

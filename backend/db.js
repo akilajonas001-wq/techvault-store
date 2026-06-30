@@ -157,6 +157,11 @@ async function migrateUserProfileColumns() {
     console.error('Erro ao adicionar checkoutLink:', e.message);
   }
   try {
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar cpf:', e.message);
+  }
+  try {
     await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS frete TEXT DEFAULT ''`);
   } catch (e) {
     console.error('Erro ao adicionar frete:', e.message);
@@ -342,7 +347,7 @@ async function updateUser(id, data) {
 
 async function getUserProfile(id) {
   const result = await query(
-    `SELECT id, nome, email, username, telefone, role, admin, cep, logradouro, numero, complemento, bairro, cidade, estado, createdAt FROM users WHERE id = $1`,
+    `SELECT id, nome, email, username, telefone, role, admin, cep, logradouro, numero, complemento, bairro, cidade, estado, cpf, createdAt FROM users WHERE id = $1`,
     [id]
   );
   return result.rows.length ? {
@@ -355,7 +360,7 @@ async function updateUserProfile(id, data) {
   const fields = [];
   const values = [];
   let idx = 1;
-  const allowed = ['nome', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado'];
+  const allowed = ['nome', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cpf'];
   for (const [key, val] of Object.entries(data)) {
     if (allowed.includes(key)) {
       fields.push(`${key} = $${idx++}`);
