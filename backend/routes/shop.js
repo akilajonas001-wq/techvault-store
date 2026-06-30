@@ -177,44 +177,57 @@ router.post('/orders', requireAuth, async (req, res) => {
     const cancelUrl = `${baseUrl}/pedido-cancelado?id=${newOrder.id}`;
     const webhookUrl = `${baseUrl}/api/webhooks/infinitepay`;
 
-    // Cria link de checkout dinâmico via API InfinitePay
-    const apiPayload = {
-      handle: INFINITE_PAY_HANDLE,
-      itens: (itens || []).map(item => ({
-        quantity: item.quantidade || 1,
-        price: Math.round((item.preco || 0) * 100),
-        description: item.nome || 'Produto'
-      })),
-      order_nsu: String(newOrder.id),
-      redirect_url: successUrl,
-      webhook_url: webhookUrl,
-      customer: {
-        name: cliente?.nome || user.nome,
-        email: cliente?.email || user.email,
-        phone_number: cliente?.telefone || user.telefone || ''
-      }
-    };
-
+    // Check if any product has a custom checkoutLink set by admin
     let checkoutUrl = null;
-    try {
-      const apiRes = await fetch(INFINITE_PAY_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiPayload)
-      });
-      const apiData = await apiRes.json();
-      if (apiRes.ok && apiData.url) {
-        checkoutUrl = apiData.url;
-      } else {
-        console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
-      }
-    } catch (e) {
-      console.error('InfinitePay API fetch error:', e.message);
+    for (const item of (itens || [])) {
+      try {
+        const product = await db.productById(item.id || item.productId);
+        if (product && product.checkoutLink) {
+          checkoutUrl = product.checkoutLink;
+          break;
+        }
+      } catch {}
     }
 
-    // Fallback: static checkout link + order_nsu como query param
     if (!checkoutUrl) {
-      checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
+      // Cria link de checkout dinâmico via API InfinitePay
+      const apiPayload = {
+        handle: INFINITE_PAY_HANDLE,
+        itens: (itens || []).map(item => ({
+          quantity: item.quantidade || 1,
+          price: Math.round((item.preco || 0) * 100),
+          description: item.nome || 'Produto'
+        })),
+        order_nsu: String(newOrder.id),
+        redirect_url: successUrl,
+        webhook_url: webhookUrl,
+        customer: {
+          name: cliente?.nome || user.nome,
+          email: cliente?.email || user.email,
+          phone_number: cliente?.telefone || user.telefone || ''
+        }
+      };
+
+      try {
+        const apiRes = await fetch(INFINITE_PAY_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(apiPayload)
+        });
+        const apiData = await apiRes.json();
+        if (apiRes.ok && apiData.url) {
+          checkoutUrl = apiData.url;
+        } else {
+          console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
+        }
+      } catch (e) {
+        console.error('InfinitePay API fetch error:', e.message);
+      }
+
+      // Fallback: static checkout link + order_nsu como query param
+      if (!checkoutUrl) {
+        checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
+      }
     }
 
     res.json({

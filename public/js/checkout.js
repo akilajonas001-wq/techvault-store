@@ -1,29 +1,25 @@
+let profileData = null;
+let appliedCoupon = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuth();
-  loadCartItems();
-  loadUserData();
+  loadCartItems('orderCartItems', 'orderTotal');
+  loadCartItems('orderCartItems2', 'orderTotal2');
+  await loadUserData();
   loadUserCoupons();
 });
 
-// Verificar autenticação
 async function checkAuth() {
   const token = localStorage.getItem('techvault-token');
-  
   if (!token) {
-    // Redirecionar para login se não estiver autenticado
     window.location.href = '/login?redirect=checkout';
     return;
   }
-  
   try {
     const response = await fetch('/api/auth/check', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-    
     const data = await response.json();
-    
     if (data.authenticated) {
       currentUser = data.user;
     } else {
@@ -36,39 +32,38 @@ async function checkAuth() {
   }
 }
 
-// Carregar dados do usuário (perfil completo)
 async function loadUserData() {
   if (!currentUser) return;
-  
   try {
     const token = localStorage.getItem('techvault-token');
     const res = await fetch('/api/profile', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     if (!res.ok) return;
-    const profile = await res.json();
-    
+    profileData = await res.json();
+
     const fields = {
-      nomeCompleto: profile.nome,
-      telefone: profile.telefone,
-      cep: profile.cep,
-      logradouro: profile.logradouro,
-      numero: profile.numero,
-      complemento: profile.complemento,
-      bairro: profile.bairro,
-      cidade: profile.cidade,
-      estado: profile.estado
+      nomeCompleto: profileData.nome,
+      telefone: profileData.telefone,
+      cep: profileData.cep,
+      logradouro: profileData.logradouro,
+      numero: profileData.numero,
+      complemento: profileData.complemento,
+      bairro: profileData.bairro,
+      cidade: profileData.cidade,
+      estado: profileData.estado
     };
-    
+
     for (const [id, value] of Object.entries(fields)) {
       const el = document.getElementById(id);
       if (el && value) el.value = value;
     }
-    
-    // Se tinha CEP salvo, buscar dados do ViaCEP
+    const cpfEl = document.getElementById('cpfCheckout');
+    if (cpfEl && profileData.cpf) cpfEl.value = profileData.cpf;
+
     const cepEl = document.getElementById('cep');
-    if (cepEl && profile.cep) {
-      const cep = profile.cep.replace(/\D/g, '');
+    if (cepEl && profileData.cep) {
+      const cep = profileData.cep.replace(/\D/g, '');
       if (cep.length === 8) {
         try {
           const viaRes = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -82,25 +77,159 @@ async function loadUserData() {
         } catch {}
       }
     }
+
+    // If user has saved profile data, show the data cards view
+    if (profileData.nome && profileData.cep) {
+      renderDataCards(profileData);
+      document.getElementById('savedDataSection').style.display = 'block';
+      document.getElementById('fullFormSection').style.display = 'none';
+    }
   } catch (error) {
     console.error('Erro ao carregar perfil:', error);
   }
 }
 
-// Carregar itens do carrinho
-function loadCartItems() {
-  const cart = JSON.parse(localStorage.getItem('techvault-cart') || '[]');
-  const cartItemsContainer = document.getElementById('orderCartItems');
-  const orderTotalElement = document.getElementById('orderTotal');
-  
-  if (cart.length === 0) {
-    cartItemsContainer.innerHTML = '<p class="cart-empty">Seu carrinho está vazio</p>';
-    if (orderTotalElement) orderTotalElement.textContent = 'R$ 0,00';
+function renderDataCards(profile) {
+  const container = document.getElementById('dataCardsContainer');
+  const enderecoCompleto = [profile.logradouro, profile.numero, profile.complemento, profile.bairro, profile.cidade + '/' + profile.estado, 'CEP: ' + profile.cep].filter(Boolean).join(', ');
+
+  container.innerHTML = `
+    <div class="data-card selected" onclick="toggleDataCard(this)">
+      <input type="checkbox" checked>
+      <div class="data-card-body">
+        <strong><i class="fas fa-user"></i> Dados Pessoais</strong>
+        <span>${profile.nome || ''}${profile.cpf ? ' • CPF: ' + profile.cpf : ''}</span>
+        <span><i class="fas fa-phone"></i> ${profile.telefone || 'Não informado'}</span>
+      </div>
+    </div>
+    <div class="data-card selected" onclick="toggleDataCard(this)">
+      <input type="checkbox" checked>
+      <div class="data-card-body">
+        <strong><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</strong>
+        <span>${enderecoCompleto || 'Não informado'}</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('dataCardsInfo').textContent = '✓ Dados carregados do seu perfil';
+}
+
+function toggleDataCard(el) {
+  const cb = el.querySelector('input[type="checkbox"]');
+  cb.checked = !cb.checked;
+  el.classList.toggle('selected', cb.checked);
+}
+
+function showFullForm() {
+  document.getElementById('savedDataSection').style.display = 'none';
+  document.getElementById('fullFormSection').style.display = 'block';
+}
+
+async function handleQuickCheckout() {
+  const token = localStorage.getItem('techvault-token');
+  if (!token || !currentUser) {
+    showNotification('Você precisa estar logado', 'error');
     return;
   }
-  
+
+  const cards = document.querySelectorAll('.data-card');
+  const usePessoal = cards[0]?.querySelector('input[type="checkbox"]')?.checked ?? true;
+  const useEndereco = cards[1]?.querySelector('input[type="checkbox"]')?.checked ?? true;
+
+  const cartData = loadCartItems('orderCartItems', 'orderTotal');
+  if (!cartData || cartData.cart.length === 0) {
+    showNotification('Seu carrinho está vazio', 'error');
+    return;
+  }
+
+  const { cart, total } = cartData;
+
+  let finalTotal = total;
+  if (appliedCoupon) {
+    finalTotal = total - appliedCoupon.discountValue;
+  }
+
+  const orderData = {
+    userId: currentUser.id,
+    endereco: useEndereco ? {
+      cep: profileData.cep || '',
+      logradouro: profileData.logradouro || '',
+      numero: profileData.numero || '',
+      complemento: profileData.complemento || '',
+      bairro: profileData.bairro || '',
+      cidade: profileData.cidade || '',
+      estado: profileData.estado || ''
+    } : {},
+    itens: cart.map(item => ({
+      id: item.id,
+      nome: item.nome,
+      categoria: item.categoria,
+      preco: item.preco,
+      quantidade: item.quantidade,
+      variantSpecs: item.variantSpecs || null
+    })),
+    total: finalTotal,
+    totalOriginal: total,
+    cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
+    cliente: {
+      nome: usePessoal ? profileData.nome : '',
+      telefone: usePessoal ? profileData.telefone : '',
+      cpf: usePessoal ? profileData.cpf : ''
+    }
+  };
+
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const errorMessage = document.getElementById('errorMessage');
+
+  try {
+    loadingOverlay.style.display = 'flex';
+
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(orderData)
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success && data.checkout_url) {
+      localStorage.removeItem('techvault-cart');
+      fetch('/api/cart/clear', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).catch(() => {});
+      window.location.href = data.checkout_url;
+    } else {
+      loadingOverlay.style.display = 'none';
+      errorMessage.textContent = data.error || 'Erro ao processar pedido';
+      errorMessage.style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Erro:', error);
+    document.getElementById('loadingOverlay').style.display = 'none';
+    errorMessage.textContent = 'Erro de conexão. Tente novamente.';
+    errorMessage.style.display = 'block';
+  }
+}
+
+function loadCartItems(containerId, totalId) {
+  const cart = JSON.parse(localStorage.getItem('techvault-cart') || '[]');
+  const container = document.getElementById(containerId);
+  const totalEl = document.getElementById(totalId);
+
+  if (!container) return;
+
+  if (cart.length === 0) {
+    container.innerHTML = '<p class="cart-empty" style="padding:20px 0;color:var(--text-muted);font-size:13px;">Seu carrinho está vazio</p>';
+    if (totalEl) totalEl.textContent = 'R$ 0,00';
+    return;
+  }
+
   let total = 0;
-  cartItemsContainer.innerHTML = cart.map(item => {
+  container.innerHTML = cart.map(item => {
     const subtotal = item.preco * item.quantidade;
     total += subtotal;
     let specsInfo = '';
@@ -120,29 +249,33 @@ function loadCartItems() {
       </div>
     `;
   }).join('');
-  
-  if (orderTotalElement) {
-    orderTotalElement.textContent = `R$ ${total.toFixed(2)}`;
+
+  if (totalEl) {
+    totalEl.textContent = `R$ ${total.toFixed(2)}`;
   }
-  
+
   return { cart, total };
 }
 
-// Máscara de CEP
 function mascaraCEP(input) {
   let v = input.value.replace(/\D/g, '');
   if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
   input.value = v;
 }
 
-// Buscar CEP via API ViaCEP
+function mascaraCPF(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 9) v = v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6, 9) + '-' + v.slice(9, 11);
+  else if (v.length > 6) v = v.slice(0, 3) + '.' + v.slice(3, 6) + '.' + v.slice(6);
+  else if (v.length > 3) v = v.slice(0, 3) + '.' + v.slice(3);
+  input.value = v;
+}
+
 async function buscarCEP() {
   const cepInput = document.getElementById('cep');
   let cep = cepInput.value.replace(/\D/g, '');
-  
   if (cep.length !== 8) return;
 
-  // Mostrar loading
   const campos = ['logradouro', 'bairro', 'cidade', 'estado'];
   campos.forEach(id => {
     const el = document.getElementById(id);
@@ -152,7 +285,6 @@ async function buscarCEP() {
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await response.json();
-    
     if (!data.erro) {
       document.getElementById('logradouro').value = data.logradouro || '';
       document.getElementById('bairro').value = data.bairro || '';
@@ -161,35 +293,24 @@ async function buscarCEP() {
       document.getElementById('numero')?.focus();
     } else {
       showNotification('CEP não encontrado', 'error');
-      campos.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
+      campos.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
   } catch (error) {
-    console.error('Erro ao buscar CEP:', error);
-    showNotification('Erro ao buscar CEP. Tente novamente.', 'error');
-    campos.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
+    showNotification('Erro ao buscar CEP', 'error');
+    campos.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   }
 }
 
-// Handle Checkout
 async function handleCheckout(event) {
   event.preventDefault();
-  
+
   const token = localStorage.getItem('techvault-token');
   if (!token || !currentUser) {
-    showNotification('Você precisa estar logado para finalizar o pedido', 'error');
-    setTimeout(() => {
-      window.location.href = '/login';
-    }, 1500);
+    showNotification('Você precisa estar logado', 'error');
+    setTimeout(() => { window.location.href = '/login'; }, 1500);
     return;
   }
-  
-  // Coletar dados do formulário
+
   const endereco = {
     cep: document.getElementById('cep').value,
     logradouro: document.getElementById('logradouro').value,
@@ -199,20 +320,19 @@ async function handleCheckout(event) {
     cidade: document.getElementById('cidade').value,
     estado: document.getElementById('estado').value
   };
-  
+
   const nomeCompleto = document.getElementById('nomeCompleto').value;
   const telefone = document.getElementById('telefone').value;
-  
-  // Validar carrinho
-  const cartData = loadCartItems();
+  const cpf = document.getElementById('cpfCheckout').value;
+
+  const cartData = loadCartItems('orderCartItems2', 'orderTotal2');
   if (!cartData || cartData.cart.length === 0) {
     showNotification('Seu carrinho está vazio', 'error');
     return;
   }
-  
+
   const { cart, total } = cartData;
-  
-  // Preparar dados do pedido
+
   let finalTotal = total;
   if (appliedCoupon) {
     finalTotal = total - appliedCoupon.discountValue;
@@ -234,16 +354,17 @@ async function handleCheckout(event) {
     cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
     cliente: {
       nome: nomeCompleto,
-      telefone
+      telefone,
+      cpf
     }
   };
-  
+
   const errorMessage = document.getElementById('errorMessage');
   const loadingOverlay = document.getElementById('loadingOverlay');
-  
+
   try {
     loadingOverlay.style.display = 'flex';
-    
+
     const response = await fetch('/api/orders', {
       method: 'POST',
       headers: {
@@ -252,18 +373,15 @@ async function handleCheckout(event) {
       },
       body: JSON.stringify(orderData)
     });
-    
+
     const data = await response.json();
-    
+
     if (response.ok && data.success && data.checkout_url) {
-      // Limpar carrinho
       localStorage.removeItem('techvault-cart');
       fetch('/api/cart/clear', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + token }
       }).catch(() => {});
-      
-      // Redirecionar para o InfinitePay Checkout
       window.location.href = data.checkout_url;
     } else {
       loadingOverlay.style.display = 'none';
@@ -271,15 +389,12 @@ async function handleCheckout(event) {
       errorMessage.style.display = 'block';
     }
   } catch (error) {
-    console.error('Erro ao finalizar pedido:', error);
+    console.error('Erro:', error);
     document.getElementById('loadingOverlay').style.display = 'none';
     errorMessage.textContent = 'Erro de conexão. Tente novamente.';
     errorMessage.style.display = 'block';
   }
 }
-
-// Cupom de desconto
-let appliedCoupon = null;
 
 async function loadUserCoupons() {
   try {
@@ -290,23 +405,18 @@ async function loadUserCoupons() {
     });
     const coupons = await res.json();
     if (!coupons.length) return;
-    
     const infoSection = document.querySelector('.checkout-section');
     if (!infoSection) return;
-    
     const cupomSection = infoSection.querySelector('[class*="gift"]')?.closest('div[style*="padding"]') || infoSection.querySelector('[style*="background: linear-gradient(135deg, rgba(26, 115, 232, 0.05)"]');
     if (!cupomSection) return;
-    
     let couponHtml = '<div style="margin-top:12px;padding:12px;background:#fefce8;border-radius:8px;border:1px solid #fde68a;">' +
       '<p style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px;"><i class="fas fa-tag"></i> Seus cupons disponíveis:</p>';
-    
     coupons.forEach(c => {
       couponHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid #fef9c3;">' +
         '<div><span style="font-size:12px;font-weight:700;color:#d97706;">' + c.code + '</span><span style="font-size:11px;color:#6b7280;margin-left:6px;">' + c.discount + '% off</span></div>' +
         '<button onclick="quickApplyCoupon(\'' + c.code + '\')" style="padding:4px 10px;border:none;border-radius:4px;background:#d97706;color:white;font-size:11px;font-weight:600;cursor:pointer;">Usar</button>' +
       '</div>';
     });
-    
     couponHtml += '</div>';
     cupomSection.insertAdjacentHTML('afterend', couponHtml);
   } catch {}
@@ -323,11 +433,10 @@ async function applyCoupon() {
   const code = input.value.trim();
   if (!code) { result.innerHTML = '<span style="color:var(--error)">Digite um código</span>'; return; }
 
-  const cartData = loadCartItems();
+  const cartData = loadCartItems('orderCartItems', 'orderTotal');
   if (!cartData) return;
   const total = cartData.total;
 
-  // Try personal coupon first
   const token = localStorage.getItem('techvault-token');
   if (token) {
     try {
@@ -356,7 +465,6 @@ async function applyCoupon() {
     } catch {}
   }
 
-  // Fallback: try global coupon validation
   try {
     const res = await fetch('/api/coupons/validate', {
       method: 'POST',
@@ -394,47 +502,18 @@ function showNotification(message, type = 'info') {
     font-weight: 600;
     animation: slideIn 0.3s ease;
   `;
-  
   document.body.appendChild(notification);
-  
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease';
     setTimeout(() => notification.remove(), 300);
   }, 3000);
 }
 
-// Adicionar animações
 const style = document.createElement('style');
 style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(100%);
-      opacity: 0;
-    }
-  }
-  
-  .success-message h3 {
-    font-size: 20px;
-    margin-bottom: 10px;
-  }
-  
-  .success-message p {
-    margin: 8px 0;
-  }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+  .success-message h3 { font-size: 20px; margin-bottom: 10px; }
+  .success-message p { margin: 8px 0; }
 `;
 document.head.appendChild(style);
