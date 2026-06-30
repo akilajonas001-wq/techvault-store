@@ -723,6 +723,7 @@ async function adminProducts(search, pausedFilter) {
   return result.rows.map(p => ({
     ...p, paused: p.paused === 1 || p.paused === true,
     precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
+    checkoutLink: p.checkoutlink || '',
     modified: (p.paused === 1 || p.paused === true) || (p.precoAlterado === 1 || p.precoAlterado === true)
   }));
 }
