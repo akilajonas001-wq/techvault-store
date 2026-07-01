@@ -179,14 +179,22 @@ router.post('/orders', requireAuth, async (req, res) => {
 
     // Check if any product has a custom checkoutLink set by admin
     let checkoutUrl = null;
+    let foundCustomCheckout = false;
     for (const item of (itens || [])) {
       try {
         const product = await db.productById(item.id || item.productId);
         if (product && product.checkoutLink) {
           checkoutUrl = product.checkoutLink;
+          foundCustomCheckout = true;
           break;
         }
       } catch {}
+    }
+
+    if (foundCustomCheckout && checkoutUrl) {
+      // Append order_nsu and redirect_url to custom checkout link
+      const separator = checkoutUrl.includes('?') ? '&' : '?';
+      checkoutUrl += `${separator}order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
     }
 
     if (!checkoutUrl) {

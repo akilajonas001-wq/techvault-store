@@ -138,6 +138,23 @@ async function initDb() {
       data BYTEA NOT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS user_addresses (
+      id SERIAL PRIMARY KEY,
+      userId BIGINT NOT NULL,
+      label TEXT DEFAULT '',
+      nome TEXT DEFAULT '',
+      cpf TEXT DEFAULT '',
+      telefone TEXT DEFAULT '',
+      cep TEXT DEFAULT '',
+      logradouro TEXT DEFAULT '',
+      numero TEXT DEFAULT '',
+      complemento TEXT DEFAULT '',
+      bairro TEXT DEFAULT '',
+      cidade TEXT DEFAULT '',
+      estado TEXT DEFAULT '',
+      isDefault SMALLINT DEFAULT 0,
+      createdAt TEXT DEFAULT (NOW())
+    );
   `);
   await migrateUserProfileColumns();
 }
@@ -377,6 +394,53 @@ async function deleteUser(id) {
   await query(`DELETE FROM users WHERE id = $1`, [id]);
 }
 
+async function userAddresses(userId) {
+  const result = await query(`SELECT * FROM user_addresses WHERE userId = $1 ORDER BY isDefault DESC, id ASC`, [userId]);
+  return result.rows.map(a => ({ ...a, isDefault: a.isDefault === 1 || a.isDefault === true }));
+}
+
+async function createAddress(userId, data) {
+  if (data.isDefault) {
+    await query(`UPDATE user_addresses SET isDefault = 0 WHERE userId = $1`, [userId]);
+  }
+  const result = await query(
+    `INSERT INTO user_addresses (userId, label, nome, cpf, telefone, cep, logradouro, numero, complemento, bairro, cidade, estado, isDefault) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+    [userId, data.label || '', data.nome || '', data.cpf || '', data.telefone || '',
+     data.cep || '', data.logradouro || '', data.numero || '', data.complemento || '',
+     data.bairro || '', data.cidade || '', data.estado || '', data.isDefault ? 1 : 0]
+  );
+  return { ...result.rows[0], isDefault: result.rows[0].isDefault === 1 || result.rows[0].isDefault === true };
+}
+
+async function updateAddress(id, userId, data) {
+  if (data.isDefault) {
+    await query(`UPDATE user_addresses SET isDefault = 0 WHERE userId = $1`, [userId]);
+  }
+  const fields = []; const values = [];
+  let idx = 1;
+  const allowed = ['label', 'nome', 'cpf', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'estado'];
+  for (const key of allowed) {
+    if (data[key] !== undefined) {
+      fields.push(`${key} = $${idx++}`);
+      values.push(data[key] === null ? '' : data[key]);
+    }
+  }
+  if (data.isDefault !== undefined) {
+    fields.push(`isDefault = $${idx++}`);
+    values.push(data.isDefault ? 1 : 0);
+  }
+  if (fields.length === 0) return null;
+  values.push(id);
+  values.push(userId);
+  await query(`UPDATE user_addresses SET ${fields.join(', ')} WHERE id = $${idx} AND userId = $${idx + 1}`, values);
+  const result = await query(`SELECT * FROM user_addresses WHERE id = $1`, [id]);
+  return result.rows.length ? { ...result.rows[0], isDefault: result.rows[0].isDefault === 1 || result.rows[0].isDefault === true } : null;
+}
+
+async function deleteAddress(id, userId) {
+  await query(`DELETE FROM user_addresses WHERE id = $1 AND userId = $2`, [id, userId]);
+}
+
 const parseProduct = (p) => p ? {
   ...p,
   imagens: JSON.parse(p.imagens || '[]'),
@@ -385,7 +449,7 @@ const parseProduct = (p) => p ? {
   especificacoes: JSON.parse(p.specs || '{}'),
   variantes: JSON.parse(p.variants || '[]'),
   frete: p.frete || '',
-  checkoutLink: p.checkoutlink || '',
+  checkoutLink: p.checkoutlink || p.checkoutLink || '',
   paused: p.paused === 1 || p.paused === true,
   precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
   destaque: p.destaque === 1 || p.destaque === true
@@ -728,7 +792,7 @@ async function adminProducts(search, pausedFilter) {
   return result.rows.map(p => ({
     ...p, paused: p.paused === 1 || p.paused === true,
     precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
-    checkoutLink: p.checkoutlink || '',
+  checkoutLink: p.checkoutlink || p.checkoutLink || '',
     modified: (p.paused === 1 || p.paused === true) || (p.precoAlterado === 1 || p.precoAlterado === true)
   }));
 }
@@ -794,5 +858,6 @@ module.exports = {
   getWishlist, toggleWishlist,
   getCategories, searchProducts, productsByCategory, featuredProducts, offerProducts,
   adminProducts, adminStaff,
+  userAddresses, createAddress, updateAddress, deleteAddress,
   saveImage, getImage, deleteImage, deleteProductImages
 };

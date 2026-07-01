@@ -177,6 +177,7 @@ app.get('/api/check-order-status/:id', async (req, res) => {
 app.use('/api', require('./routes/auth'));
 app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/profile'));
+app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/admin', require('./routes/admin'));
 
 // ===================== CHAT ROUTES =====================

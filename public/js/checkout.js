@@ -1,5 +1,6 @@
 let profileData = null;
 let appliedCoupon = null;
+let savedAddresses = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuth();
@@ -34,95 +35,104 @@ async function checkAuth() {
 
 async function loadUserData() {
   if (!currentUser) return;
+  const token = localStorage.getItem('techvault-token');
   try {
-    const token = localStorage.getItem('techvault-token');
     const res = await fetch('/api/profile', {
       headers: { 'Authorization': 'Bearer ' + token }
     });
-    if (!res.ok) return;
-    profileData = await res.json();
-
-    const fields = {
-      nomeCompleto: profileData.nome,
-      telefone: profileData.telefone,
-      cep: profileData.cep,
-      logradouro: profileData.logradouro,
-      numero: profileData.numero,
-      complemento: profileData.complemento,
-      bairro: profileData.bairro,
-      cidade: profileData.cidade,
-      estado: profileData.estado
-    };
-
-    for (const [id, value] of Object.entries(fields)) {
-      const el = document.getElementById(id);
-      if (el && value) el.value = value;
-    }
-    const cpfEl = document.getElementById('cpfCheckout');
-    if (cpfEl && profileData.cpf) cpfEl.value = profileData.cpf;
-
-    const cepEl = document.getElementById('cep');
-    if (cepEl && profileData.cep) {
-      const cep = profileData.cep.replace(/\D/g, '');
-      if (cep.length === 8) {
-        try {
-          const viaRes = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-          const data = await viaRes.json();
-          if (!data.erro) {
-            if (!document.getElementById('logradouro').value) document.getElementById('logradouro').value = data.logradouro || '';
-            if (!document.getElementById('bairro').value) document.getElementById('bairro').value = data.bairro || '';
-            if (!document.getElementById('cidade').value) document.getElementById('cidade').value = data.localidade || '';
-            if (!document.getElementById('estado').value) document.getElementById('estado').value = data.uf || '';
-          }
-        } catch {}
+    if (res.ok) profileData = await res.json();
+  } catch {}
+  try {
+    const res = await fetch('/api/addresses', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (res.ok) {
+      savedAddresses = await res.json();
+      if (savedAddresses.length > 0) {
+        renderAddressCards(savedAddresses);
+        document.getElementById('savedDataSection').style.display = 'block';
+        document.getElementById('fullFormSection').style.display = 'none';
+        return;
       }
     }
-
-    // If user has saved profile data, show the data cards view
-    if (profileData.nome && profileData.cep) {
-      renderDataCards(profileData);
-      document.getElementById('savedDataSection').style.display = 'block';
-      document.getElementById('fullFormSection').style.display = 'none';
-    }
-  } catch (error) {
-    console.error('Erro ao carregar perfil:', error);
+  } catch {}
+  if (profileData && profileData.nome && profileData.cep) {
+    renderLegacyDataCards(profileData);
+    document.getElementById('savedDataSection').style.display = 'block';
+    document.getElementById('fullFormSection').style.display = 'none';
   }
 }
 
-function renderDataCards(profile) {
+function renderAddressCards(addresses) {
+  const container = document.getElementById('dataCardsContainer');
+  container.innerHTML = addresses.map((a, idx) => {
+    const enderecoLinha = [a.logradouro, a.numero, a.complemento].filter(Boolean).join(', ');
+    const cidadeLinha = [a.bairro, a.cidade + '/' + a.estado].filter(Boolean).join(' - ');
+    return `
+      <div class="data-card ${idx === 0 ? 'selected' : ''}" onclick="selectAddressCard(this, ${a.id})">
+        <input type="radio" name="selectedAddress" value="${a.id}" ${idx === 0 ? 'checked' : ''}>
+        <div class="data-card-body">
+          <strong><i class="fas fa-map-marker-alt"></i> ${a.label || 'Endereço ' + (idx + 1)}</strong>
+          <span>${a.nome || ''}${a.cpf ? ' • CPF: ' + a.cpf : ''}</span>
+          <span>${enderecoLinha}${enderecoLinha && cidadeLinha ? '<br>' : ''}${cidadeLinha}</span>
+          <span><i class="fas fa-phone"></i> ${a.telefone || ''} ${a.cep ? '• CEP: ' + a.cep : ''}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('dataCardsInfo').textContent = '✓ Selecione o endereço para entrega';
+}
+
+function renderLegacyDataCards(profile) {
   const container = document.getElementById('dataCardsContainer');
   const enderecoCompleto = [profile.logradouro, profile.numero, profile.complemento, profile.bairro, profile.cidade + '/' + profile.estado, 'CEP: ' + profile.cep].filter(Boolean).join(', ');
-
   container.innerHTML = `
-    <div class="data-card selected" onclick="toggleDataCard(this)">
-      <input type="checkbox" checked>
+    <div class="data-card selected" onclick="selectAddressCard(this, null)">
+      <input type="radio" name="selectedAddress" value="" checked>
       <div class="data-card-body">
-        <strong><i class="fas fa-user"></i> Dados Pessoais</strong>
+        <strong><i class="fas fa-user"></i> Dados do Perfil</strong>
         <span>${profile.nome || ''}${profile.cpf ? ' • CPF: ' + profile.cpf : ''}</span>
-        <span><i class="fas fa-phone"></i> ${profile.telefone || 'Não informado'}</span>
-      </div>
-    </div>
-    <div class="data-card selected" onclick="toggleDataCard(this)">
-      <input type="checkbox" checked>
-      <div class="data-card-body">
-        <strong><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</strong>
-        <span>${enderecoCompleto || 'Não informado'}</span>
+        <span><i class="fas fa-map-marker-alt"></i> ${enderecoCompleto || 'Não informado'}</span>
+        <span><i class="fas fa-phone"></i> ${profile.telefone || ''}</span>
       </div>
     </div>
   `;
-
   document.getElementById('dataCardsInfo').textContent = '✓ Dados carregados do seu perfil';
 }
 
-function toggleDataCard(el) {
-  const cb = el.querySelector('input[type="checkbox"]');
-  cb.checked = !cb.checked;
-  el.classList.toggle('selected', cb.checked);
+function selectAddressCard(el, addrId) {
+  document.querySelectorAll('.data-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type="radio"]').checked = true;
+}
+
+function getSelectedAddress() {
+  const checked = document.querySelector('input[name="selectedAddress"]:checked');
+  if (!checked) return null;
+  const addrId = parseInt(checked.value);
+  if (!addrId) return profileData;
+  return savedAddresses.find(a => a.id === addrId) || null;
 }
 
 function showFullForm() {
   document.getElementById('savedDataSection').style.display = 'none';
   document.getElementById('fullFormSection').style.display = 'block';
+  const addr = getSelectedAddress();
+  if (addr) {
+    fillFormFields(addr);
+  }
+}
+
+function fillFormFields(addr) {
+  const map = {
+    cep: 'cep', logradouro: 'logradouro', numero: 'numero', complemento: 'complemento',
+    bairro: 'bairro', cidade: 'cidade', estado: 'estado',
+    nomeCompleto: 'nome', cpfCheckout: 'cpf', telefone: 'telefone'
+  };
+  for (const [fieldId, dataKey] of Object.entries(map)) {
+    const el = document.getElementById(fieldId);
+    if (el && addr[dataKey]) el.value = addr[dataKey];
+  }
 }
 
 async function handleQuickCheckout() {
@@ -132,9 +142,11 @@ async function handleQuickCheckout() {
     return;
   }
 
-  const cards = document.querySelectorAll('.data-card');
-  const usePessoal = cards[0]?.querySelector('input[type="checkbox"]')?.checked ?? true;
-  const useEndereco = cards[1]?.querySelector('input[type="checkbox"]')?.checked ?? true;
+  const addr = getSelectedAddress();
+  if (!addr) {
+    showNotification('Selecione um endereço de entrega', 'error');
+    return;
+  }
 
   const cartData = loadCartItems('orderCartItems', 'orderTotal');
   if (!cartData || cartData.cart.length === 0) {
@@ -143,23 +155,25 @@ async function handleQuickCheckout() {
   }
 
   const { cart, total } = cartData;
-
   let finalTotal = total;
   if (appliedCoupon) {
     finalTotal = total - appliedCoupon.discountValue;
   }
 
+  const selectedId = document.querySelector('input[name="selectedAddress"]:checked');
+  const isProfileAddr = selectedId && !parseInt(selectedId.value);
+
   const orderData = {
     userId: currentUser.id,
-    endereco: useEndereco ? {
-      cep: profileData.cep || '',
-      logradouro: profileData.logradouro || '',
-      numero: profileData.numero || '',
-      complemento: profileData.complemento || '',
-      bairro: profileData.bairro || '',
-      cidade: profileData.cidade || '',
-      estado: profileData.estado || ''
-    } : {},
+    endereco: {
+      cep: addr.cep || '',
+      logradouro: addr.logradouro || '',
+      numero: addr.numero || '',
+      complemento: addr.complemento || '',
+      bairro: addr.bairro || '',
+      cidade: addr.cidade || '',
+      estado: addr.estado || ''
+    },
     itens: cart.map(item => ({
       id: item.id,
       nome: item.nome,
@@ -172,9 +186,9 @@ async function handleQuickCheckout() {
     totalOriginal: total,
     cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
     cliente: {
-      nome: usePessoal ? profileData.nome : '',
-      telefone: usePessoal ? profileData.telefone : '',
-      cpf: usePessoal ? profileData.cpf : ''
+      nome: addr.nome || '',
+      telefone: addr.telefone || '',
+      cpf: addr.cpf || ''
     }
   };
 
@@ -183,24 +197,15 @@ async function handleQuickCheckout() {
 
   try {
     loadingOverlay.style.display = 'flex';
-
     const response = await fetch('/api/orders', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(orderData)
     });
-
     const data = await response.json();
-
     if (response.ok && data.success && data.checkout_url) {
       localStorage.removeItem('techvault-cart');
-      fetch('/api/cart/clear', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token }
-      }).catch(() => {});
+      fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
       window.location.href = data.checkout_url;
     } else {
       loadingOverlay.style.display = 'none';
@@ -219,15 +224,12 @@ function loadCartItems(containerId, totalId) {
   const cart = JSON.parse(localStorage.getItem('techvault-cart') || '[]');
   const container = document.getElementById(containerId);
   const totalEl = document.getElementById(totalId);
-
   if (!container) return;
-
   if (cart.length === 0) {
     container.innerHTML = '<p class="cart-empty" style="padding:20px 0;color:var(--text-muted);font-size:13px;">Seu carrinho está vazio</p>';
     if (totalEl) totalEl.textContent = 'R$ 0,00';
     return;
   }
-
   let total = 0;
   container.innerHTML = cart.map(item => {
     const subtotal = item.preco * item.quantidade;
@@ -249,11 +251,7 @@ function loadCartItems(containerId, totalId) {
       </div>
     `;
   }).join('');
-
-  if (totalEl) {
-    totalEl.textContent = `R$ ${total.toFixed(2)}`;
-  }
-
+  if (totalEl) totalEl.textContent = `R$ ${total.toFixed(2)}`;
   return { cart, total };
 }
 
@@ -275,13 +273,8 @@ async function buscarCEP() {
   const cepInput = document.getElementById('cep');
   let cep = cepInput.value.replace(/\D/g, '');
   if (cep.length !== 8) return;
-
   const campos = ['logradouro', 'bairro', 'cidade', 'estado'];
-  campos.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = 'Buscando...';
-  });
-
+  campos.forEach(id => { const el = document.getElementById(id); if (el) el.value = 'Buscando...'; });
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const data = await response.json();
@@ -303,7 +296,6 @@ async function buscarCEP() {
 
 async function handleCheckout(event) {
   event.preventDefault();
-
   const token = localStorage.getItem('techvault-token');
   if (!token || !currentUser) {
     showNotification('Você precisa estar logado', 'error');
@@ -332,7 +324,6 @@ async function handleCheckout(event) {
   }
 
   const { cart, total } = cartData;
-
   let finalTotal = total;
   if (appliedCoupon) {
     finalTotal = total - appliedCoupon.discountValue;
@@ -342,21 +333,14 @@ async function handleCheckout(event) {
     userId: currentUser.id,
     endereco,
     itens: cart.map(item => ({
-      id: item.id,
-      nome: item.nome,
-      categoria: item.categoria,
-      preco: item.preco,
-      quantidade: item.quantidade,
+      id: item.id, nome: item.nome, categoria: item.categoria,
+      preco: item.preco, quantidade: item.quantidade,
       variantSpecs: item.variantSpecs || null
     })),
     total: finalTotal,
     totalOriginal: total,
     cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
-    cliente: {
-      nome: nomeCompleto,
-      telefone,
-      cpf
-    }
+    cliente: { nome: nomeCompleto, telefone, cpf }
   };
 
   const errorMessage = document.getElementById('errorMessage');
@@ -364,24 +348,15 @@ async function handleCheckout(event) {
 
   try {
     loadingOverlay.style.display = 'flex';
-
     const response = await fetch('/api/orders', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(orderData)
     });
-
     const data = await response.json();
-
     if (response.ok && data.success && data.checkout_url) {
       localStorage.removeItem('techvault-cart');
-      fetch('/api/cart/clear', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token }
-      }).catch(() => {});
+      fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
       window.location.href = data.checkout_url;
     } else {
       loadingOverlay.style.display = 'none';
@@ -400,9 +375,7 @@ async function loadUserCoupons() {
   try {
     const token = localStorage.getItem('techvault-token');
     if (!token) return;
-    const res = await fetch('/api/coupons/my', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const res = await fetch('/api/coupons/my', { headers: { 'Authorization': 'Bearer ' + token } });
     const coupons = await res.json();
     if (!coupons.length) return;
     const infoSection = document.querySelector('.checkout-section');
@@ -432,17 +405,13 @@ async function applyCoupon() {
   const result = document.getElementById('couponResult');
   const code = input.value.trim();
   if (!code) { result.innerHTML = '<span style="color:var(--error)">Digite um código</span>'; return; }
-
   const cartData = loadCartItems('orderCartItems', 'orderTotal');
   if (!cartData) return;
   const total = cartData.total;
-
   const token = localStorage.getItem('techvault-token');
   if (token) {
     try {
-      const myRes = await fetch('/api/coupons/my', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
+      const myRes = await fetch('/api/coupons/my', { headers: { 'Authorization': 'Bearer ' + token } });
       const myCoupons = await myRes.json();
       const personal = myCoupons.find(c => c.code.toUpperCase() === code.toUpperCase());
       if (personal) {
@@ -464,7 +433,6 @@ async function applyCoupon() {
       }
     } catch {}
   }
-
   try {
     const res = await fetch('/api/coupons/validate', {
       method: 'POST',
@@ -491,16 +459,11 @@ function showNotification(message, type = 'info') {
   const notification = document.createElement('div');
   notification.textContent = message;
   notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
+    position: fixed; top: 20px; right: 20px;
     background: ${type === 'success' ? '#00ff88' : type === 'error' ? '#ff4757' : '#00d4ff'};
     color: ${type === 'success' || type === 'error' ? 'white' : '#0a0a0f'};
-    padding: 15px 25px;
-    border-radius: 8px;
-    z-index: 3000;
-    font-weight: 600;
-    animation: slideIn 0.3s ease;
+    padding: 15px 25px; border-radius: 8px; z-index: 3000;
+    font-weight: 600; animation: slideIn 0.3s ease;
   `;
   document.body.appendChild(notification);
   setTimeout(() => {
