@@ -177,60 +177,61 @@ router.post('/orders', requireAuth, async (req, res) => {
     const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}&ref=${paymentRef}`;
     const webhookUrl = `${baseUrl}/api/webhooks/infinitepay`;
 
-    // Check if any product has a custom checkoutLink set by admin
+    // Always try to create a dynamic checkout via API first (ensures webhook has order_nsu/redirect)
     let checkoutUrl = null;
-    let foundCustomCheckout = false;
+    let customCheckoutFallback = null;
+
+    // Find if any product has a custom checkoutLink (keep as fallback)
     for (const item of (itens || [])) {
       try {
         const product = await db.productById(item.id || item.productId);
         if (product && product.checkoutLink) {
-          checkoutUrl = product.checkoutLink;
-          foundCustomCheckout = true;
+          customCheckoutFallback = product.checkoutLink;
           break;
         }
       } catch {}
     }
 
-    if (foundCustomCheckout && checkoutUrl) {
-      const separator = checkoutUrl.includes('?') ? '&' : '?';
-      checkoutUrl += `${separator}order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
+    // Try InfinitePay API to create dynamic checkout with proper webhook data
+    const apiPayload = {
+      handle: INFINITE_PAY_HANDLE,
+      itens: (itens || []).map(item => ({
+        quantity: item.quantidade || 1,
+        price: Math.round((item.preco || 0) * 100),
+        description: item.nome || 'Produto'
+      })),
+      order_nsu: paymentRef,
+      redirect_url: successUrl,
+      webhook_url: webhookUrl,
+      customer: {
+        name: cliente?.nome || user.nome,
+        email: cliente?.email || user.email,
+        phone_number: cliente?.telefone || user.telefone || ''
+      }
+    };
+
+    try {
+      const apiRes = await fetch(INFINITE_PAY_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(apiPayload)
+      });
+      const apiData = await apiRes.json();
+      if (apiRes.ok && apiData.url) {
+        checkoutUrl = apiData.url;
+      } else {
+        console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
+      }
+    } catch (e) {
+      console.error('InfinitePay API fetch error:', e.message);
     }
 
+    // Fallback: use custom checkout link if API failed
     if (!checkoutUrl) {
-      const apiPayload = {
-        handle: INFINITE_PAY_HANDLE,
-        itens: (itens || []).map(item => ({
-          quantity: item.quantidade || 1,
-          price: Math.round((item.preco || 0) * 100),
-          description: item.nome || 'Produto'
-        })),
-        order_nsu: paymentRef,
-        redirect_url: successUrl,
-        webhook_url: webhookUrl,
-        customer: {
-          name: cliente?.nome || user.nome,
-          email: cliente?.email || user.email,
-          phone_number: cliente?.telefone || user.telefone || ''
-        }
-      };
-
-      try {
-        const apiRes = await fetch(INFINITE_PAY_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(apiPayload)
-        });
-        const apiData = await apiRes.json();
-        if (apiRes.ok && apiData.url) {
-          checkoutUrl = apiData.url;
-        } else {
-          console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
-        }
-      } catch (e) {
-        console.error('InfinitePay API fetch error:', e.message);
-      }
-
-      if (!checkoutUrl) {
+      if (customCheckoutFallback) {
+        const separator = customCheckoutFallback.includes('?') ? '&' : '?';
+        checkoutUrl = `${customCheckoutFallback}${separator}order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
+      } else {
         checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
       }
     }

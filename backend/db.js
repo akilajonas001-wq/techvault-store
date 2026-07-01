@@ -194,6 +194,11 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar paymentRef:', e.message);
   }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS infinitepayId TEXT`);
+  } catch (e) {
+    console.error('Erro ao adicionar infinitepayId:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -529,6 +534,7 @@ const parseOrder = (o) => o ? {
   id: o.id,
   userId: o.userid,
   paymentRef: o.paymentref || o.paymentRef || null,
+  infinitepayId: o.infinitepayid || o.infinitepayId || null,
   totalOriginal: o.totaloriginal,
   createdAt: o.createdat || o.createdAt,
   usuario: JSON.parse(o.usuario || '{}'),
@@ -582,6 +588,15 @@ async function orderByPaymentRef(ref) {
 
 async function updateOrderStatusByRef(ref, status) {
   await query(`UPDATE orders SET status = $1 WHERE paymentRef = $2`, [status, ref]);
+}
+
+async function updateOrderInfinitepayId(id, infinitepayId) {
+  await query(`UPDATE orders SET infinitepayId = $1 WHERE id = $2`, [infinitepayId, id]);
+}
+
+async function orderByInfinitepayId(infinitepayId) {
+  const result = await query(`SELECT * FROM orders WHERE infinitepayId = $1`, [infinitepayId]);
+  return result.rows.length ? parseOrder(result.rows[0]) : null;
 }
 
 async function deleteOrderById(id) {
@@ -866,7 +881,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, deleteOrderById,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,

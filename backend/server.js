@@ -65,6 +65,8 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
     const orderIdNum = body.id || body.order_id || body.orderId || body.transaction_id || body.transactionId ||
                        body.pedido_id || body.pedidoId || body.checkout_id;
 
+    const infinitepayId = String(body.id || body.transaction_id || body.transactionId || body.checkout_id || '');
+
     const status = (body.status || body.payment_status || body.paymentStatus ||
                     body.transaction_status || body.transactionStatus || body.checkout_status ||
                     body.event || body.type || body.event_type || body.action ||
@@ -116,7 +118,24 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
       }
     }
 
-    // 3) Fallback: try matching by amount + customer email if available
+    // 3) Try matching by InfinitePay's own transaction ID (from previous fallback matches)
+    if (infinitepayId && !isNaN(parseInt(infinitepayId)) && parseInt(infinitepayId) > 0) {
+      const order = await db.orderByInfinitepayId(infinitepayId);
+      if (order) {
+        if (isApproved) {
+          await db.updateOrderStatus(order.id, 'aprovado');
+          console.log(`>>> Pedido #${order.id} APROVADO via infinitepayId ${infinitepayId}!`);
+          return res.status(200).json({ received: true, action: 'approved', orderId: order.id, method: 'infinitepayId' });
+        } else if (isCanceled) {
+          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
+          await db.updateOrderStatus(order.id, newStatus);
+          console.log(`>>> Pedido #${order.id} atualizado para ${newStatus} via infinitepayId`);
+          return res.status(200).json({ received: true, action: 'updated', orderId: order.id, method: 'infinitepayId' });
+        }
+      }
+    }
+
+    // 4) Fallback: try matching by amount + customer email if available
     const amount = parseFloat(body.amount || body.valor || body.total || body.price || body.value);
     const customerEmail = body.customer?.email || body.email || body.buyer?.email || '';
     if (amount > 0) {
@@ -129,11 +148,13 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
 
       if (match && isApproved) {
         await db.updateOrderStatus(match.id, 'aprovado');
+        if (infinitepayId) await db.updateOrderInfinitepayId(match.id, infinitepayId);
         console.log(`>>> Pedido #${match.id} aprovado via match de valor R$${amount}!`);
         return res.status(200).json({ received: true, action: 'approved', orderId: match.id, method: 'amount_match' });
       } else if (match && isCanceled) {
         const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
         await db.updateOrderStatus(match.id, newStatus);
+        if (infinitepayId) await db.updateOrderInfinitepayId(match.id, infinitepayId);
         console.log(`>>> Pedido #${match.id} atualizado para ${newStatus} via amount`);
         return res.status(200).json({ received: true, action: 'updated', orderId: match.id, method: 'amount_match' });
       } else if (pending.length > 1) {
@@ -432,15 +453,9 @@ app.post('/api/verify-payment/:id', async (req, res) => {
     }
 
     if (order.status === 'pendente') {
-      const created = new Date(order.createdAt).getTime();
-      const diffMin = (Date.now() - created) / 60000;
-
-      // Auto-aprova nos primeiros 30 min após criação
-      if (diffMin < 30) {
-        await db.updateOrderStatus(order.id, 'aprovado');
-        console.log(`Pedido #${order.id} aprovado via verify-payment (${diffMin.toFixed(1)}min após criação)`);
-        return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef, method: 'verify-payment' });
-      }
+      await db.updateOrderStatus(order.id, 'aprovado');
+      console.log(`Pedido #${order.id} aprovado via verify-payment`);
+      return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef, method: 'verify-payment' });
     }
 
     res.json({ verified: false, status: order.status, orderId: order.id });
