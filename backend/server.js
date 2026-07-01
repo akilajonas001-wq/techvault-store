@@ -53,66 +53,97 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
     console.log('Raw:', rawBody.slice(0, 500));
     console.log('Parsed:', JSON.stringify(body));
 
-    // Try many possible field names for order ID
-    const orderId = body.order_nsu || body.external_id || body.externalId || body.id || body.reference ||
-                    body.order_id || body.transaction_id || body.transactionId ||
-                    body.orderId || body.pedido_id || body.pedidoId ||
-                    body.checkout_id || body.checkoutId || body.reference_id ||
-                    body.nsu || body.orderNsu || body.order_nsu_id ||
-                    (body.metadata && (body.metadata.pedido_id || body.metadata.orderId ||
-                     body.metadata.order_id || body.metadata.external_id || body.metadata.order_nsu)) ||
-                    (body.items && body.items[0] && (body.items[0].external_id || body.items[0].order_nsu)) ||
-                    (body.products && body.products[0] && (body.products[0].external_id || body.products[0].order_nsu)) ||
-                    (body.customer && (body.customer.external_id || body.customer.order_nsu));
+    // Extract possible identifiers from webhook body
+    const paymentRef = body.paymentRef || body.payment_ref || body.external_id || body.externalId ||
+                       body.order_nsu || body.orderNsu || body.nsu ||
+                       body.reference_id || body.reference ||
+                       (body.metadata && (body.metadata.paymentRef || body.metadata.payment_ref ||
+                        body.metadata.order_nsu || body.metadata.external_id)) ||
+                       (body.items && body.items[0] && (body.items[0].external_id || body.items[0].order_nsu || body.items[0].paymentRef)) ||
+                       (body.customer && (body.customer.external_id || body.customer.order_nsu));
 
-    // Try many possible status field names
+    const orderIdNum = body.id || body.order_id || body.orderId || body.transaction_id || body.transactionId ||
+                       body.pedido_id || body.pedidoId || body.checkout_id;
+
     const status = (body.status || body.payment_status || body.paymentStatus ||
                     body.transaction_status || body.transactionStatus || body.checkout_status ||
                     body.event || body.type || body.event_type || body.action ||
                     body.current_status || '').toLowerCase();
 
-    console.log('Parsed: orderId=', orderId, 'status=', status);
+    const isApproved = ['paid', 'approved', 'completed', 'confirmed', 'success',
+      'payment.approved', 'charge.paid', 'payment_confirmed', 'pago',
+      'aprovado', 'concluido', 'finalizado'].includes(status);
 
-    const orderNumber = parseInt(orderId);
-    if (!isNaN(orderNumber)) {
-      if (status === 'paid' || status === 'approved' || status === 'completed' ||
-          status === 'confirmed' || status === 'success' || status === 'payment.approved' ||
-          status === 'charge.paid' || status === 'payment_confirmed' || status === 'pago' ||
-          status === 'aprovado' || status === 'concluido' || status === 'finalizado') {
-        await db.updateOrderStatus(orderNumber, 'aprovado');
-        console.log(`>>> Pedido #${orderNumber} APROVADO via webhook!`);
-        res.status(200).json({ received: true, action: 'approved', orderId: orderNumber });
-        return;
-      } else if (status === 'canceled' || status === 'cancelled' || status === 'refunded' ||
-                 status === 'refund' || status === 'chargeback' || status === 'voided' ||
-                 status === 'expired' || status === 'failed' || status === 'cancelado' ||
-                 status === 'estornado') {
-        await db.updateOrderStatus(orderNumber, status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado');
-        console.log(`>>> Pedido #${orderNumber} atualizado para ${status}`);
-        res.status(200).json({ received: true, action: 'updated', orderId: orderNumber });
-        return;
-      } else {
-        console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação`);
-      }
-    } else {
-      console.log('Webhook não extraiu orderId. Campos:', Object.keys(body));
-      // Try matching by amount
-      const amount = parseFloat(body.amount || body.valor || body.total || body.price || body.value);
-      if (amount > 0) {
-        const allOrders = await db.allOrders();
-        const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
-        if (pending.length === 1) {
-          await db.updateOrderStatus(pending[0].id, 'aprovado');
-          console.log(`>>> Pedido #${pending[0].id} aprovado via match de valor R$${amount}!`);
-          res.status(200).json({ received: true, action: 'approved', orderId: pending[0].id, method: 'amount_match' });
-          return;
-        } else if (pending.length > 1) {
-          console.log(`Múltiplos pedidos R$${amount}: ${pending.map(o=>o.id).join(',')}`);
-        } else {
-          console.log(`Nenhum pedido pendente com R$${amount}`);
+    const isCanceled = ['canceled', 'cancelled', 'refunded', 'refund', 'chargeback',
+      'voided', 'expired', 'failed', 'cancelado', 'estornado'].includes(status);
+
+    console.log('Parsed: paymentRef=', paymentRef, 'orderIdNum=', orderIdNum, 'status=', status);
+
+    // 1) Try matching by paymentRef (UUID) — most reliable
+    if (paymentRef && paymentRef.includes('-')) {
+      const order = await db.orderByPaymentRef(paymentRef);
+      if (order) {
+        if (isApproved) {
+          await db.updateOrderStatus(order.id, 'aprovado');
+          console.log(`>>> Pedido #${order.id} APROVADO via paymentRef ${paymentRef}!`);
+          return res.status(200).json({ received: true, action: 'approved', orderId: order.id, method: 'paymentRef' });
+        } else if (isCanceled) {
+          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
+          await db.updateOrderStatus(order.id, newStatus);
+          console.log(`>>> Pedido #${order.id} atualizado para ${newStatus} via paymentRef`);
+          return res.status(200).json({ received: true, action: 'updated', orderId: order.id, method: 'paymentRef' });
         }
       }
     }
+
+    // 2) Try matching by numeric order ID
+    const orderNumber = parseInt(paymentRef || orderIdNum);
+    if (!isNaN(orderNumber) && orderNumber > 0) {
+      const order = await db.orderById(orderNumber);
+      if (order) {
+        if (isApproved) {
+          await db.updateOrderStatus(orderNumber, 'aprovado');
+          console.log(`>>> Pedido #${orderNumber} APROVADO via webhook!`);
+          return res.status(200).json({ received: true, action: 'approved', orderId: orderNumber, method: 'orderId' });
+        } else if (isCanceled) {
+          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
+          await db.updateOrderStatus(orderNumber, newStatus);
+          console.log(`>>> Pedido #${orderNumber} atualizado para ${newStatus}`);
+          return res.status(200).json({ received: true, action: 'updated', orderId: orderNumber, method: 'orderId' });
+        } else {
+          console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação`);
+        }
+      }
+    }
+
+    // 3) Fallback: try matching by amount + customer email if available
+    const amount = parseFloat(body.amount || body.valor || body.total || body.price || body.value);
+    const customerEmail = body.customer?.email || body.email || body.buyer?.email || '';
+    if (amount > 0) {
+      const allOrders = await db.allOrders();
+      const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
+
+      // If customer email available, try to narrow down
+      const byEmail = customerEmail ? pending.filter(o => o.usuario?.email === customerEmail || o.cliente?.email === customerEmail) : [];
+      const match = byEmail.length === 1 ? byEmail[0] : pending.length === 1 ? pending[0] : null;
+
+      if (match && isApproved) {
+        await db.updateOrderStatus(match.id, 'aprovado');
+        console.log(`>>> Pedido #${match.id} aprovado via match de valor R$${amount}!`);
+        return res.status(200).json({ received: true, action: 'approved', orderId: match.id, method: 'amount_match' });
+      } else if (match && isCanceled) {
+        const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
+        await db.updateOrderStatus(match.id, newStatus);
+        console.log(`>>> Pedido #${match.id} atualizado para ${newStatus} via amount`);
+        return res.status(200).json({ received: true, action: 'updated', orderId: match.id, method: 'amount_match' });
+      } else if (pending.length > 1) {
+        console.log(`Múltiplos pedidos R$${amount}: ${pending.map(o=>o.id).join(',')}`);
+      } else {
+        console.log(`Nenhum pedido pendente com R$${amount}`);
+      }
+    }
+
+    console.log('Webhook não conseguiu identificar pedido. Campos:', Object.keys(body));
 
     res.status(200).json({ received: true });
   } catch (e) {
@@ -131,6 +162,38 @@ app.get('/api/debug/webhook-logs', (req, res) => {
   `).join('');
   res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Webhooks - TechVault</title><style>body{font-family:Inter,sans-serif;background:#f1f5f9;padding:24px;max-width:800px;margin:0 auto;}h1{color:#1e293b;}</style></head><body><h1>📡 Webhooks Recebidos (${webhookLogs.length})</h1>${html || '<p style="color:#94a3b8;">Nenhum webhook recebido ainda.</p>'}<p style="color:#94a3b8;font-size:12px;margin-top:24px;">Endpoint: POST /api/webhooks/infinitepay</p></body></html>`);
   function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+});
+
+// ===================== PUBLIC CONFIRM PAYMENT =====================
+// InfinitePay can redirect here after payment to auto-confirm the order
+// URL: /api/confirm-payment/:paymentRef
+app.get('/api/confirm-payment/:ref', async (req, res) => {
+  try {
+    const ref = req.params.ref;
+    let order = await db.orderByPaymentRef(ref);
+    if (order) {
+      if (order.status === 'pendente') {
+        await db.updateOrderStatus(order.id, 'aprovado');
+        console.log(`>>> Pedido #${order.id} aprovado via /confirm-payment (ref: ${ref})`);
+      }
+      return res.redirect(`/pedido-sucesso?id=${order.id}&ref=${ref}`);
+    }
+    // Try by numeric ID as fallback
+    const id = parseInt(ref);
+    if (!isNaN(id)) {
+      order = await db.orderById(id);
+      if (order) {
+        if (order.status === 'pendente') {
+          await db.updateOrderStatus(id, 'aprovado');
+        }
+        return res.redirect(`/pedido-sucesso?id=${id}`);
+      }
+    }
+    res.redirect('/');
+  } catch (e) {
+    console.error('Erro confirm-payment:', e);
+    res.redirect('/');
+  }
 });
 
 // ===================== STANDARD MIDDLEWARE =====================
@@ -349,30 +412,38 @@ app.get('/api/images/:id', async (req, res) => {
 
 app.post('/api/verify-payment/:id', async (req, res) => {
   try {
-    const orderId = parseInt(req.params.id);
-    const order = await db.orderById(orderId);
+    const param = req.params.id;
+    let order = null;
+
+    // Try matching by paymentRef first (UUID format)
+    if (param.includes('-')) {
+      order = await db.orderByPaymentRef(param);
+    }
+    // Fallback to numeric order ID
+    if (!order) {
+      const orderId = parseInt(param);
+      if (!isNaN(orderId)) order = await db.orderById(orderId);
+    }
+
     if (!order) return res.json({ verified: false, error: 'not_found' });
 
     if (order.status === 'aprovado') {
-      return res.json({ verified: true, status: 'aprovado', orderId });
+      return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef });
     }
 
-    // Se ainda está pendente, verifica se foi criado recentemente
-    // e tenta confirmar (fallback seguro)
     if (order.status === 'pendente') {
       const created = new Date(order.createdAt).getTime();
       const diffMin = (Date.now() - created) / 60000;
 
-      // Auto-aprova apenas nos primeiros 30 min após criação
-      // (cliente foi redirecionado de volta ao site, sinal que pagou)
+      // Auto-aprova nos primeiros 30 min após criação
       if (diffMin < 30) {
-        await db.updateOrderStatus(orderId, 'aprovado');
-        console.log(`Pedido #${orderId} aprovado via verify-payment (${diffMin.toFixed(1)}min após criação)`);
-        return res.json({ verified: true, status: 'aprovado', orderId, method: 'verify-payment' });
+        await db.updateOrderStatus(order.id, 'aprovado');
+        console.log(`Pedido #${order.id} aprovado via verify-payment (${diffMin.toFixed(1)}min após criação)`);
+        return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef, method: 'verify-payment' });
       }
     }
 
-    res.json({ verified: false, status: order.status, orderId });
+    res.json({ verified: false, status: order.status, orderId: order.id });
   } catch (e) {
     console.error('Erro verify-payment:', e);
     res.json({ verified: false, error: 'server_error' });

@@ -79,6 +79,7 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     let orderId = params.get('id') || params.get('order_nsu') || params.get('pedido_id');
+    const paymentRef = params.get('ref') || params.get('paymentRef') || params.get('payment_ref');
     const statusParam = params.get('status') || params.get('capture_method');
     const receiptUrl = params.get('receipt_url');
 
@@ -152,7 +153,8 @@
       }
 
       // Immediately try to auto-confirm via verify-payment
-      const verify = await fetch('/api/verify-payment/' + orderId, { method: 'POST' }).then(r => r.json()).catch(() => null);
+      const verifyId = paymentRef && paymentRef.includes('-') ? paymentRef : orderId;
+      const verify = await fetch('/api/verify-payment/' + verifyId, { method: 'POST' }).then(r => r.json()).catch(() => null);
       if (verify && verify.verified) {
         data = await fetch('/api/check-order-status/' + orderId).then(r => r.json());
         showConfirmed(data);

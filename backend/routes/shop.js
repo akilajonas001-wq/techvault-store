@@ -173,8 +173,8 @@ router.post('/orders', requireAuth, async (req, res) => {
     }).catch(e => console.error('Erro email:', e.message));
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}`;
-    const cancelUrl = `${baseUrl}/pedido-cancelado?id=${newOrder.id}`;
+    const paymentRef = newOrder.paymentRef;
+    const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}&ref=${paymentRef}`;
     const webhookUrl = `${baseUrl}/api/webhooks/infinitepay`;
 
     // Check if any product has a custom checkoutLink set by admin
@@ -192,13 +192,11 @@ router.post('/orders', requireAuth, async (req, res) => {
     }
 
     if (foundCustomCheckout && checkoutUrl) {
-      // Append order_nsu and redirect_url to custom checkout link
       const separator = checkoutUrl.includes('?') ? '&' : '?';
-      checkoutUrl += `${separator}order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
+      checkoutUrl += `${separator}order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
     }
 
     if (!checkoutUrl) {
-      // Cria link de checkout dinâmico via API InfinitePay
       const apiPayload = {
         handle: INFINITE_PAY_HANDLE,
         itens: (itens || []).map(item => ({
@@ -206,7 +204,7 @@ router.post('/orders', requireAuth, async (req, res) => {
           price: Math.round((item.preco || 0) * 100),
           description: item.nome || 'Produto'
         })),
-        order_nsu: String(newOrder.id),
+        order_nsu: paymentRef,
         redirect_url: successUrl,
         webhook_url: webhookUrl,
         customer: {
@@ -232,14 +230,13 @@ router.post('/orders', requireAuth, async (req, res) => {
         console.error('InfinitePay API fetch error:', e.message);
       }
 
-      // Fallback: static checkout link + order_nsu como query param
       if (!checkoutUrl) {
-        checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${newOrder.id}&redirect_url=${encodeURIComponent(successUrl)}`;
+        checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
       }
     }
 
     res.json({
-      success: true, orderId: newOrder.id,
+      success: true, orderId: newOrder.id, paymentRef,
       message: 'Pedido criado! Redirecionando para o pagamento...',
       checkout_url: checkoutUrl
     });

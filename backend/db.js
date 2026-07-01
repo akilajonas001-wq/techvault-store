@@ -68,6 +68,7 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS orders (
       id BIGINT PRIMARY KEY,
       userId BIGINT,
+      paymentRef TEXT UNIQUE,
       usuario TEXT DEFAULT '{}',
       endereco TEXT DEFAULT '{}',
       itens TEXT DEFAULT '[]',
@@ -187,6 +188,11 @@ async function migrateUserProfileColumns() {
     await query(`ALTER TABLE chats ADD COLUMN IF NOT EXISTS resolved SMALLINT DEFAULT 0`);
   } catch (e) {
     console.error('Erro ao adicionar resolved:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS paymentRef TEXT`);
+  } catch (e) {
+    console.error('Erro ao adicionar paymentRef:', e.message);
   }
 }
 
@@ -522,6 +528,7 @@ const parseOrder = (o) => o ? {
   ...o,
   id: o.id,
   userId: o.userid,
+  paymentRef: o.paymentref || o.paymentRef || null,
   totalOriginal: o.totaloriginal,
   createdAt: o.createdat || o.createdAt,
   usuario: JSON.parse(o.usuario || '{}'),
@@ -548,22 +555,33 @@ async function ordersByUserId(userId) {
 }
 
 async function createOrder(data) {
+  const { randomUUID } = require('crypto');
+  const paymentRef = data.paymentRef || randomUUID();
   await query(
-    `INSERT INTO orders (id, userId, usuario, endereco, itens, total, totalOriginal, cupom, cliente, taxas, pagamento, status, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-    [data.id, data.userId, JSON.stringify(data.usuario || {}),
+    `INSERT INTO orders (id, userId, paymentRef, usuario, endereco, itens, total, totalOriginal, cupom, cliente, taxas, pagamento, status, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    [data.id, data.userId, paymentRef, JSON.stringify(data.usuario || {}),
      JSON.stringify(data.endereco || {}), JSON.stringify(data.itens || []),
      data.total || 0, data.totalOriginal || null,
      data.cupom ? JSON.stringify(data.cupom) : null,
      JSON.stringify(data.cliente || {}), JSON.stringify(data.taxas || {}),
-     data.pagamento || 'PicPay PIX', data.status || 'aprovado',
+     data.pagamento || 'PicPay PIX', data.status || 'pendente',
      data.createdAt || new Date().toISOString()]
   );
   const result = await query(`SELECT * FROM orders WHERE id = $1`, [data.id]);
-  return result.rows.length ? parseOrder(result.rows[0]) : null;
+  return { ...parseOrder(result.rows[0]), paymentRef };
 }
 
 async function updateOrderStatus(id, status) {
   await query(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
+}
+
+async function orderByPaymentRef(ref) {
+  const result = await query(`SELECT * FROM orders WHERE paymentRef = $1`, [ref]);
+  return result.rows.length ? parseOrder(result.rows[0]) : null;
+}
+
+async function updateOrderStatusByRef(ref, status) {
+  await query(`UPDATE orders SET status = $1 WHERE paymentRef = $2`, [status, ref]);
 }
 
 async function deleteOrderById(id) {
@@ -848,7 +866,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, deleteOrderById,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, deleteOrderById,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,
