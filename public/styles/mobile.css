@@ -23,11 +23,10 @@
 .hamburger.active span:nth-child(2) { opacity: 0; }
 .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
-.mobile-nav { display: none !important; }
-.mobile-overlay { display: none !important; }
-
+/* Mobile Nav - hidden by default on desktop */
 @media (max-width: 768px) {
   .hamburger { display: flex; }
+  
   .mobile-overlay {
     position: fixed;
     top: 0;
@@ -37,16 +36,17 @@
     background: rgba(0,0,0,0.4);
     z-index: 9999;
     backdrop-filter: blur(2px);
-    display: none !important;
+    display: none;
   }
-  .mobile-overlay.active { display: block !important; }
+  .mobile-overlay.active { display: block; }
 
   .mobile-nav {
-    display: flex !important;
+    display: none;
     position: fixed;
     top: 0;
-    left: 0;
-    width: 100%;
+    right: -100%;
+    width: 280px;
+    max-width: 85%;
     height: 100%;
     background: #fff;
     z-index: 10000;
@@ -54,11 +54,10 @@
     flex-direction: column;
     gap: 4px;
     box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
-    transform: translateX(100%);
   }
-  .mobile-nav.active { transform: translateX(0); }
+  .mobile-nav.active { right: 0; }
 
   .mobile-nav .mobile-close {
     align-self: flex-end;
@@ -148,6 +147,49 @@
   .search-box button { padding: 10px 14px; min-width: 44px; justify-content: center; }
   .auth-buttons-desktop { display: none !important; }
   #userMenu { display: none !important; }
+  
+  /* Mobile auth buttons (visible only on mobile, below header) */
+  .mobile-auth-buttons {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    justify-content: center;
+  }
+  .mobile-auth-buttons.active { display: none; }
+  .mobile-login-link,
+  .mobile-register-link {
+    flex: 1;
+    max-width: 200px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .mobile-login-link {
+    color: #1a73e8;
+    background: rgba(26,115,232,0.1);
+  }
+  .mobile-login-link:hover {
+    background: rgba(26,115,232,0.15);
+  }
+  .mobile-register-link {
+    color: white;
+    background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+    box-shadow: 0 2px 4px rgba(26,115,232,0.2);
+  }
+  .mobile-register-link:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(26,115,232,0.3);
+  }
   .cart-modal-content { max-width: 100% !important; padding: 24px 16px; }
   .cart-modal-header h2 { font-size: 18px !important; }
 

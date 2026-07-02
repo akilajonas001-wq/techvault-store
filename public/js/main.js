@@ -70,9 +70,11 @@ function showAuthButtons() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
   const mobileNavLinks = document.querySelectorAll('.mobile-nav a[href="/login"], .mobile-nav a[href="/registro"]');
+  const mobileAuthButtons = document.getElementById('mobileAuthButtons');
 
   if (authButtons) authButtons.style.display = 'flex';
   if (userMenu) userMenu.style.display = 'none';
+  if (mobileAuthButtons) mobileAuthButtons.classList.remove('active');
   mobileNavLinks.forEach(el => el.style.display = 'flex');
   const mobileLogout = document.querySelector('.mobile-nav .mobile-logout');
   if (mobileLogout) mobileLogout.remove();
@@ -89,8 +91,10 @@ function showAuthButtons() {
 function showUserMenu() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
+  const mobileAuthButtons = document.getElementById('mobileAuthButtons');
 
   if (authButtons) authButtons.style.display = 'none';
+  if (mobileAuthButtons) mobileAuthButtons.classList.add('active');
   if (userMenu) {
     userMenu.style.display = 'flex';
     let adminLink = '';
