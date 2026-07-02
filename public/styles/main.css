@@ -11,7 +11,7 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   overscroll-behavior-x: none;
   position: relative;
@@ -23,6 +23,7 @@ body {
   color: #1e293b;
   line-height: 1.6;
   overflow-x: hidden;
+  overflow-y: visible;
   width: 100%;
   max-width: 100%;
 }
