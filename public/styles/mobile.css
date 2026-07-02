@@ -1,23 +1,33 @@
 /* ===========================================
-   MOBILE STYLES - Only applied on screens <= 768px
+   MOBILE STYLES ONLY
+   Aplicado apenas em telas <= 768px
    =========================================== */
 
 @media (max-width: 768px) {
-  /* Prevenir overflow no mobile tambem */
+  /* ===========================================
+     OVERFLOW PREVENTION - MOBILE
+     =========================================== */
   html, body {
     overflow-x: hidden;
+    width: 100%;
     max-width: 100vw;
+    position: relative;
   }
   
-  /* Header adjustments */
+  /* ===========================================
+     HEADER MOBILE
+     =========================================== */
   .header-top {
     padding: 10px 12px !important;
     gap: 8px;
     flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
   }
   
   .logo img {
     height: 32px !important;
+    max-width: 100%;
   }
   
   /* Search box - full width below header items */
@@ -26,17 +36,20 @@
     flex-basis: 100%;
     margin-top: 8px;
     max-width: 100%;
+    min-width: 0;
   }
   
   .search-box input {
     font-size: 14px;
     padding: 10px 14px;
+    min-width: 0;
   }
   
   .search-box button {
     padding: 10px 14px;
     min-width: 44px;
     justify-content: center;
+    flex-shrink: 0;
   }
   
   .search-box button span {
@@ -61,21 +74,20 @@
     display: flex !important;
     order: 2;
     margin-left: auto;
+    flex-shrink: 0;
   }
   
-  /* Wishlist - keep visible on mobile header */
-  .wishlist-icon {
-    display: flex;
-    order: 1;
-  }
-  
-  /* Cart - keep visible on mobile header */
+  /* Wishlist and Cart - keep visible on mobile header */
+  .wishlist-icon,
   .cart-icon {
     display: flex;
     order: 1;
+    flex-shrink: 0;
   }
   
-  /* Mobile Overlay */
+  /* ===========================================
+     MOBILE OVERLAY
+     =========================================== */
   .mobile-overlay {
     position: fixed;
     top: 0;
@@ -88,6 +100,7 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
+    max-width: 100vw;
   }
   
   .mobile-overlay.active {
@@ -95,7 +108,9 @@
     visibility: visible;
   }
   
-  /* Mobile Navigation Panel */
+  /* ===========================================
+     MOBILE NAVIGATION PANEL
+     =========================================== */
   .mobile-nav {
     position: fixed;
     top: 0;
@@ -103,6 +118,7 @@
     width: 280px;
     max-width: 85vw;
     height: 100vh;
+    max-height: 100vh;
     background: #ffffff;
     z-index: 9999;
     padding: 0;
@@ -112,9 +128,10 @@
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     overflow-x: hidden;
-    /* Garantir que não afete layout desktop */
+    /* Critical: prevent any transform or left positioning */
     left: auto !important;
     transform: none !important;
+    max-width: 100vw;
   }
   
   .mobile-nav.active {
@@ -132,6 +149,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    flex-shrink: 0;
   }
   
   .mobile-nav .mobile-logo {
@@ -142,6 +160,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
   }
   
   .mobile-nav .mobile-close {
@@ -158,6 +177,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
+    flex-shrink: 0;
   }
   
   .mobile-nav .mobile-close:hover {
@@ -171,6 +191,7 @@
     background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
     color: white;
     display: none;
+    flex-shrink: 0;
   }
   
   .mobile-user-info.active {
@@ -181,20 +202,30 @@
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .mobile-user-info .user-email {
     font-size: 13px;
     opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
-  /* Mobile Nav Links */
+  /* Mobile Nav Links Container */
   .mobile-nav-links {
     padding: 12px 0;
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   
-  .mobile-nav a {
+  /* Mobile Nav Links */
+  .mobile-nav a,
+  .mobile-nav-links a {
     display: flex;
     align-items: center;
     gap: 14px;
@@ -205,9 +236,14 @@
     font-weight: 500;
     transition: background 0.15s ease;
     border-left: 3px solid transparent;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
-  .mobile-nav a:hover {
+  .mobile-nav a:hover,
+  .mobile-nav-links a:hover {
     background: #f1f5f9;
     border-left-color: #1a73e8;
   }
@@ -217,6 +253,7 @@
     text-align: center;
     color: #64748b;
     font-size: 16px;
+    flex-shrink: 0;
   }
   
   .mobile-nav a.active-link {
@@ -229,22 +266,12 @@
     color: #1a73e8;
   }
   
-  /* Mobile Nav Section Divider */
+  /* Mobile Nav Divider */
   .mobile-nav-divider {
     display: block;
     border: none;
     border-top: 1px solid #e2e8f0;
     margin: 8px 0;
-  }
-  
-  /* Mobile Nav Section Title */
-  .mobile-nav-title {
-    padding: 12px 20px 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
   
   /* Mobile Search in nav */
@@ -253,6 +280,8 @@
     gap: 8px;
     padding: 16px 20px;
     border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    width: 100%;
   }
   
   .mobile-search input {
@@ -264,6 +293,7 @@
     font-family: inherit;
     outline: none;
     transition: border-color 0.2s;
+    min-width: 0;
   }
   
   .mobile-search input:focus {
@@ -282,6 +312,7 @@
     align-items: center;
     justify-content: center;
     transition: transform 0.2s;
+    flex-shrink: 0;
   }
   
   .mobile-search button:active {
@@ -308,7 +339,9 @@
     display: none;
   }
   
-  /* Cart Modal adjustments */
+  /* ===========================================
+     PAGE ADJUSTMENTS MOBILE
+     =========================================== */
   .cart-modal-content {
     max-width: 100% !important;
     padding: 20px 16px !important;
@@ -318,10 +351,10 @@
     font-size: 18px !important;
   }
   
-  /* Page container adjustments */
   .container {
     padding-left: 16px !important;
     padding-right: 16px !important;
+    max-width: 100% !important;
   }
   
   .breadcrumb {
@@ -329,7 +362,6 @@
     font-size: 13px !important;
   }
   
-  /* Account page adjustments */
   .account-content {
     padding: 20px 16px !important;
   }
@@ -337,6 +369,9 @@
   .account-content h2 {
     font-size: 18px !important;
     margin-bottom: 16px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .account-nav-item {
@@ -344,9 +379,9 @@
     font-size: 13px !important;
   }
   
-  /* Order cards */
   .order-card {
     padding: 14px !important;
+    max-width: 100%;
   }
   
   .order-total-price {
@@ -357,15 +392,16 @@
     font-size: 14px !important;
   }
   
-  /* Form inputs */
   .form-group input {
     padding: 12px 14px !important;
     font-size: 14px !important;
+    max-width: 100%;
   }
   
   .btn {
     padding: 14px 24px !important;
     font-size: 14px !important;
+    max-width: 100%;
   }
   
   .btn-large {
@@ -373,7 +409,6 @@
     font-size: 15px !important;
   }
   
-  /* Empty state */
   .empty-state {
     padding: 40px 16px !important;
   }
@@ -382,23 +417,21 @@
     font-size: 48px !important;
   }
   
-  /* Favorites grid */
   .favorites-grid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px !important;
   }
   
-  /* Table wrapper for overflow */
   .table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
   
   .order-date {
     font-size: 12px !important;
   }
   
-  /* Dashboard grid */
   .dashboard-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 12px !important;
@@ -427,6 +460,7 @@
   .container {
     padding-left: 12px !important;
     padding-right: 12px !important;
+    max-width: 100% !important;
   }
   
   .account-content {
@@ -488,6 +522,7 @@
   .benefit-icon {
     width: 44px !important;
     height: 44px !important;
+    flex-shrink: 0;
   }
   
   .benefit-icon i {
