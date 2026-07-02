@@ -22,6 +22,93 @@ const categoryIcons = {
   'Eletrodomésticos': 'fa-blender'
 };
 
+// Wishlist integration
+function isInWishlist(id) {
+  const saved = localStorage.getItem('techvault-wishlist');
+  if (!saved) return false;
+  const wishlist = JSON.parse(saved);
+  return wishlist.some(p => p.id === id);
+}
+
+function toggleWishlist(id, btn) {
+  const saved = localStorage.getItem('techvault-wishlist') || '[]';
+  let wishlist = JSON.parse(saved);
+  const exists = wishlist.some(p => p.id === id);
+
+  if (exists) {
+    wishlist = wishlist.filter(p => p.id !== id);
+    if (btn) {
+      btn.classList.remove('active');
+      btn.querySelector('i').classList.replace('fas', 'far');
+      btn.setAttribute('title', 'Adicionar aos favoritos');
+    }
+    showToast('Removido dos favoritos');
+  } else {
+    // Fetch product details
+    fetch(`/api/products/${id}`)
+      .then(r => r.json())
+      .then(p => {
+        wishlist.push({ id: p.id, nome: p.nome, imagem: p.imagem, preco: p.preco });
+        localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
+        if (btn) {
+          btn.classList.add('active');
+          btn.querySelector('i').classList.replace('far', 'fas');
+          btn.setAttribute('title', 'Remover dos favoritos');
+        }
+        updateWishlistCount();
+        showToast('Adicionado aos favoritos! ❤️');
+      });
+    return;
+  }
+
+  localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
+  updateWishlistCount();
+}
+
+function updateWishlistCount() {
+  const saved = localStorage.getItem('techvault-wishlist');
+  const count = saved ? JSON.parse(saved).length : 0;
+  const countEl = document.getElementById('wishlistCount');
+  if (countEl) {
+    countEl.textContent = count;
+    countEl.style.display = count > 0 ? 'flex' : 'none';
+  }
+}
+
+function showToast(message, isError = false) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' error' : '');
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 14px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 9999;
+    animation: slideInRight 0.3s ease;
+    border-left: 4px solid ${isError ? '#ef4444' : '#10b981'};
+  `;
+  toast.innerHTML = `
+    <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}" style="color: ${isError ? '#ef4444' : '#10b981'}; font-size: 20px;"></i>
+    <span style="font-weight: 500; color: #1e293b;">${message}</span>
+  `;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 async function loadCategories() {
   try {
     const response = await fetch('/api/categories');
@@ -114,6 +201,7 @@ async function loadOffers() {
 function quickAdd(id, nome, preco, imagem) {
   const produto = { id, nome, preco, imagem };
   addToCart(produto);
+  showToast(`${nome} adicionado ao carrinho! 🛒`);
 }
 
 function triggerStagger() {

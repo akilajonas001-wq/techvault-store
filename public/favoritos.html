@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Favoritos - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/mobile.css">
+  <link rel="stylesheet" href="/styles/premium.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --primary-light: #4285f4;
+      --primary-dark: #1557b0;
+      --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+      --text: #1e293b;
+      --text-light: #64748b;
+      --bg-light: #f8fafc;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --error: #ef4444;
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-light); color: var(--text); }
+
+    .header {
+      background: var(--white);
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .logo {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo img { height: 48px; width: auto; }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-header h1 i {
+      color: var(--error);
+    }
+
+    .wishlist-count-badge {
+      background: var(--primary-gradient);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .wishlist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .wishlist-item {
+      background: var(--white);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .wishlist-item:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .wishlist-item-image {
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      padding: 24px;
+      position: relative;
+    }
+
+    .wishlist-item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .wishlist-item:hover .wishlist-item-image img {
+      transform: scale(1.08);
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--error);
+      transition: all 0.3s ease;
+      z-index: 5;
+    }
+
+    .remove-btn:hover {
+      background: var(--error);
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .wishlist-item-info {
+      padding: 20px;
+    }
+
+    .wishlist-item-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .wishlist-item-price {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .wishlist-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary-gradient);
+      color: white;
+      box-shadow: 0 4px 14px rgba(26, 115, 232, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(26, 115, 232, 0.4);
+    }
+
+    .btn-outline {
+      background: white;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      background: var(--white);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .empty-state i {
+      font-size: 80px;
+      color: var(--text-light);
+      margin-bottom: 24px;
+    }
+
+    .empty-state h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      color: var(--text-light);
+      margin-bottom: 24px;
+    }
+
+    .empty-state .btn {
+      display: inline-flex;
+      margin: 0 auto;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .header-top {
+        padding: 12px 16px;
+      }
+
+      .logo img {
+        height: 40px;
+      }
+
+      .container {
+        padding: 24px 16px;
+      }
+
+      .page-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .page-header h1 {
+        font-size: 24px;
+      }
+
+      .wishlist-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .wishlist-item-image {
+        height: 160px;
+      }
+
+      .wishlist-item-info {
+        padding: 14px;
+      }
+
+      .wishlist-item-name {
+        font-size: 13px;
+      }
+
+      .wishlist-item-price {
+        font-size: 18px;
+      }
+
+      .wishlist-actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        padding: 10px 14px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .wishlist-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: white;
+      padding: 16px 24px;
+      border-radius: 14px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9999;
+      animation: slideInRight 0.3s ease;
+      border-left: 4px solid #10b981;
+    }
+
+    .toast.error {
+      border-left-color: #ef4444;
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(calc(100% + 40px)); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <a href="/" class="logo">
+        <img src="/images/logo.png" alt="TechVault">
+      </a>
+      <div style="margin-left: auto;">
+        <a href="/" style="text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px;">
+          <i class="fas fa-arrow-left"></i> Voltar para loja
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <div class="page-header">
+      <h1>
+        <i class="fas fa-heart"></i>
+        Meus Favoritos
+        <span class="wishlist-count-badge" id="wishlistCountBadge">0 itens</span>
+      </h1>
+    </div>
+
+    <div id="wishlistContent">
+      <!-- Conteúdo carregado via JS -->
+    </div>
+  </div>
+
+  <script>
+    let wishlist = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWishlist();
+    });
+
+    function loadWishlist() {
+      const saved = localStorage.getItem('techvault-wishlist');
+      if (saved) {
+        wishlist = JSON.parse(saved);
+      }
+      renderWishlist();
+    }
+
+    function renderWishlist() {
+      const container = document.getElementById('wishlistContent');
+      const countBadge = document.getElementById('wishlistCountBadge');
+
+      countBadge.textContent = `${wishlist.length} ${wishlist.length === 1 ? 'item' : 'itens'}`;
+
+      if (wishlist.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="far fa-heart"></i>
+            <h2>Sua lista de favoritos está vazia</h2>
+            <p>Adicione produtos aos favoritos para encontrá-los aqui</p>
+            <a href="/" class="btn btn-primary">
+              <i class="fas fa-shopping-bag"></i> Explorar produtos
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="wishlist-grid">
+          ${wishlist.map(item => `
+            <div class="wishlist-item">
+              <button class="remove-btn" onclick="removeFromWishlist(${item.id})" title="Remover">
+                <i class="fas fa-times"></i>
+              </button>
+              <div class="wishlist-item-image" onclick="window.location.href='/produto/${item.id}'">
+                <img src="${item.imagem}" alt="${item.nome}" loading="lazy">
+              </div>
+              <div class="wishlist-item-info">
+                <div class="wishlist-item-name">${item.nome}</div>
+                <div class="wishlist-item-price">R$ ${item.preco.toFixed(2).replace('.', ',')}</div>
+                <div class="wishlist-actions">
+                  <button class="btn btn-primary" onclick="addToCart(${item.id}, '${item.nome.replace(/'/g, "\\'")}', ${item.preco})">
+                    <i class="fas fa-cart-plus"></i> Adicionar ao carrinho
+                  </button>
+                  <a href="/produto/${item.id}" class="btn btn-outline">
+                    <i class="fas fa-eye"></i> Ver
+                  </a>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function removeFromWishlist(id) {
+      wishlist = wishlist.filter(p => p.id !== id);
+      localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
+      renderWishlist();
+      showToast('Produto removido dos favoritos');
+    }
+
+    function addToCart(id, nome, preco) {
+      // Fetch product details and add to cart
+      fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: id, quantity: 1 })
+      }).then(() => {
+        showToast(`${nome} adicionado ao carrinho! 🛒`);
+        updateCartCount();
+      }).catch(() => {
+        // Fallback to localStorage cart
+        let cart = JSON.parse(localStorage.getItem('techvault-cart') || '[]');
+        const existing = cart.find(p => p.id === id);
+        if (existing) {
+          existing.quantidade += 1;
+        } else {
+          cart.push({ id, nome, preco, quantidade: 1 });
+        }
+        localStorage.setItem('techvault-cart', JSON.stringify(cart));
+        showToast(`${nome} adicionado ao carrinho! 🛒`);
+        updateCartCount();
+      });
+    }
+
+    function updateCartCount() {
+      // Dispatch event for parent window to update
+      window.dispatchEvent(new CustomEvent('cart-updated'));
+    }
+
+    function showToast(message, isError = false) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast' + (isError ? ' error' : '');
+      toast.innerHTML = `
+        <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}" style="color: ${isError ? '#ef4444' : '#10b981'}; font-size: 20px;"></i>
+        <span style="font-weight: 500; color: #1e293b;">${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

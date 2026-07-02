@@ -8,7 +8,8 @@
   <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link rel="stylesheet" href="/styles/mobile.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/premium.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -1273,7 +1274,11 @@
       </div>
       
       <div class="header-menu">
-        <a href="#" onclick="showOffers()" class="menu-link">Ofertas</a>
+        <a href="#ofertas" class="menu-link">Ofertas</a>
+        <div class="wishlist-icon" onclick="window.location.href='/favoritos'" title="Favoritos">
+          <i class="far fa-heart"></i>
+          <span class="wishlist-count" id="wishlistCount">0</span>
+        </div>
         <div class="cart-icon" onclick="viewCart()">
           <i class="fas fa-shopping-cart"></i>
           <span class="cart-count" id="cartCount">0</span>
@@ -1361,6 +1366,85 @@
     </div>
   </section>
 
+  <!-- Seção de Benefícios -->
+  <section class="benefits-section reveal">
+    <div class="benefits-grid">
+      <div class="benefit-card">
+        <div class="benefit-icon">
+          <i class="fas fa-truck"></i>
+        </div>
+        <div class="benefit-text">
+          <h4>Frete Grátis</h4>
+          <p>Para compras acima de R$ 199</p>
+        </div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="benefit-text">
+          <h4>Compra Segura</h4>
+          <p>Proteção total do seu pedido</p>
+        </div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">
+          <i class="fas fa-undo"></i>
+        </div>
+        <div class="benefit-text">
+          <h4>Troca Fácil</h4>
+          <p>Até 7 dias para devolução</p>
+        </div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">
+          <i class="fas fa-headset"></i>
+        </div>
+        <div class="benefit-text">
+          <h4>Suporte 24/7</h4>
+          <p>Atendimento em tempo real</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Confiança e Segurança -->
+  <section class="trust-section reveal">
+    <h3>Por que comprar no TechVault?</h3>
+    <div class="trust-grid">
+      <div class="trust-badge">
+        <i class="fas fa-check-circle"></i>
+        <span>Produtos Originais</span>
+      </div>
+      <div class="trust-badge">
+        <i class="fas fa-lock"></i>
+        <span>Pagamento Seguro</span>
+      </div>
+      <div class="trust-badge">
+        <i class="fas fa-shipping-fast"></i>
+        <span>Entrega Rápida</span>
+      </div>
+      <div class="trust-badge">
+        <i class="fas fa-smile"></i>
+        <span>Garantia de Satisfação</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter -->
+  <section class="newsletter-section reveal">
+    <div class="newsletter-content">
+      <h3>Reba ofertas exclusivas!</h3>
+      <p>Receba cupons de desconto e novidades em primeira mão</p>
+      <form class="newsletter-form" onsubmit="subscribeNewsletter(event)">
+        <input type="email" id="newsletterEmail" placeholder="Seu melhor e-mail" required>
+        <button type="submit">
+          <i class="far fa-paper-plane"></i> Inscrever
+        </button>
+      </form>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer reveal">
     <div class="footer-content">
@@ -1387,7 +1471,13 @@
         <h3>Formas de Pagamento</h3>
         <ul>
           <li><a href="#"><i class="fab fa-pix" style="margin-right: 8px;"></i>PIX</a></li>
+          <li><a href="#"><i class="far fa-credit-card" style="margin-right: 8px;"></i>Cartão de Crédito</a></li>
         </ul>
+        <div class="payment-methods">
+          <span class="payment-badge"><i class="fab fa-pix"></i> PIX</span>
+          <span class="payment-badge"><i class="far fa-credit-card"></i> Visa</span>
+          <span class="payment-badge"><i class="far fa-credit-card"></i> Mastercard</span>
+        </div>
       </div>
       <div class="footer-section">
         <h3>Redes Sociais</h3>
@@ -1446,6 +1536,125 @@
   </script>
   <script src="/js/main.js?v=4"></script>
   <script src="/js/home.js?v=3"></script>
+  <script>
+    // Scroll Reveal Animation
+    function initScrollReveal() {
+      const reveals = document.querySelectorAll('.reveal');
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            if (entry.target.querySelector('.stagger-children')) {
+              setTimeout(() => {
+                entry.target.querySelector('.stagger-children').classList.add('active');
+              }, 200);
+            }
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -100px 0px' });
+
+      reveals.forEach(el => observer.observe(el));
+    }
+
+    // Header scroll effect
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('.header');
+      if (header) {
+        header.classList.toggle('scrolled', window.scrollY > 50);
+      }
+    });
+
+    // Newsletter subscription
+    function subscribeNewsletter(e) {
+      e.preventDefault();
+      const email = document.getElementById('newsletterEmail').value;
+      if (email) {
+        fetch('/api/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        }).then(() => {
+          showToast('Email cadastrado com sucesso! 🎉');
+          document.getElementById('newsletterEmail').value = '';
+        }).catch(() => {
+          showToast('Erro ao cadastrar. Tente novamente.', true);
+        });
+      }
+    }
+
+    // Wishlist functions
+    let wishlist = [];
+
+    function loadWishlist() {
+      const saved = localStorage.getItem('techvault-wishlist');
+      if (saved) wishlist = JSON.parse(saved);
+      updateWishlistCount();
+    }
+
+    function saveWishlist() {
+      localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
+      updateWishlistCount();
+    }
+
+    function updateWishlistCount() {
+      const countEl = document.getElementById('wishlistCount');
+      if (countEl) {
+        countEl.textContent = wishlist.length;
+        countEl.style.display = wishlist.length > 0 ? 'flex' : 'none';
+      }
+    }
+
+    function addToWishlist(produto) {
+      const exists = wishlist.find(p => p.id === produto.id);
+      if (exists) {
+        removeFromWishlist(produto.id);
+        showToast('Removido dos favoritos');
+      } else {
+        wishlist.push({ id: produto.id, nome: produto.nome, imagem: produto.imagem, preco: produto.preco });
+        saveWishlist();
+        showToast('Adicionado aos favoritos! ❤️');
+      }
+    }
+
+    function removeFromWishlist(id) {
+      wishlist = wishlist.filter(p => p.id !== id);
+      saveWishlist();
+    }
+
+    function viewWishlist() {
+      if (wishlist.length === 0) {
+        showToast('Sua lista de favoritos está vazia');
+        return;
+      }
+      // Could navigate to a dedicated wishlist page
+      showToast(`Você tem ${wishlist.length} itens nos favoritos`);
+    }
+
+    // Toast notification
+    function showToast(message, isError = false) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast' + (isError ? ' error' : '');
+      toast.innerHTML = `
+        <i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}" style="color: ${isError ? 'var(--error)' : 'var(--success)'}; font-size: 20px;"></i>
+        <span style="font-weight: 500; color: var(--text);">${message}</span>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'slideInRight 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWishlist();
+      initScrollReveal();
+    });
+  </script>
   <script>
     // Search function
     function searchProducts() {

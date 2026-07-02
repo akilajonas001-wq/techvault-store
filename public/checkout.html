@@ -8,6 +8,7 @@
   <link rel="apple-touch-icon" href="/images/favicon.png">
   <link rel="stylesheet" href="/styles/main.css">
   <link rel="stylesheet" href="/styles/mobile.css">
+  <link rel="stylesheet" href="/styles/premium.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -686,14 +687,33 @@
               <i class="fas fa-truck" style="color: var(--primary); margin-right: 8px;"></i>
               <strong>Frete:</strong> Calculado baseado no CEP
             </p>
-            <p style="margin-bottom: 16px;">
+            
+            <!-- Payment Methods -->
+            <p style="margin-bottom: 12px;">
               <i class="fas fa-credit-card" style="color: var(--primary); margin-right: 8px;"></i>
-              <strong>Pagamento:</strong> InfinitePay (cartão de crédito/débito, PIX)
+              <strong>Formas de Pagamento:</strong>
             </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+              <span style="padding: 6px 12px; background: #f1f5f9; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748b;"><i class="fab fa-pix" style="color: #10b981; margin-right: 4px;"></i> PIX</span>
+              <span style="padding: 6px 12px; background: #f1f5f9; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748b;"><i class="far fa-credit-card" style="color: #1a73e8; margin-right: 4px;"></i> Crédito</span>
+              <span style="padding: 6px 12px; background: #f1f5f9; border-radius: 6px; font-size: 12px; font-weight: 600; color: #64748b;"><i class="far fa-credit-card" style="color: #1a73e8; margin-right: 4px;"></i> Débito</span>
+            </div>
+            
             <p style="margin-bottom: 16px;">
               <i class="fas fa-undo" style="color: var(--primary); margin-right: 8px;"></i>
               <strong>Devolução:</strong> 7 dias para devolução grátis
             </p>
+            
+            <!-- Security Badges -->
+            <div style="padding: 16px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(52, 211, 153, 0.05)); border-radius: 12px; margin-bottom: 16px;">
+              <p style="color: var(--success); font-weight: 700; font-size: 13px; margin-bottom: 8px;">
+                <i class="fas fa-shield-alt"></i> Compra 100% Segura
+              </p>
+              <p style="font-size: 12px; color: var(--text-light);">
+                <i class="fas fa-lock"></i> Seus dados são criptografados e protegidos
+              </p>
+            </div>
+            
             <div style="padding: 16px; background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05)); border-radius: 12px; margin-top: 12px;">
               <p style="color: var(--primary); font-weight: 600; font-size: 13px; margin-bottom: 8px;">
                 <i class="fas fa-gift"></i> Cupom de desconto

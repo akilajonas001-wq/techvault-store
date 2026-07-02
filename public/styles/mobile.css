@@ -189,4 +189,23 @@
   .empty-state { padding: 32px 12px !important; }
   .empty-state i { font-size: 40px !important; }
   .dashboard-grid { grid-template-columns: 1fr !important; }
+  
+  /* Premium mobile improvements */
+  .banner h1 { font-size: 22px !important; }
+  .banner p { font-size: 14px !important; }
+  .banner-button { padding: 12px 24px !important; font-size: 13px !important; }
+  .benefits-grid { grid-template-columns: 1fr !important; }
+  .benefit-card { flex-direction: row !important; padding: 14px !important; }
+  .benefit-icon { width: 44px !important; height: 44px !important; }
+  .benefit-icon i { font-size: 18px !important; }
+  .benefit-text h4 { font-size: 13px !important; }
+  .benefit-text p { font-size: 11px !important; }
+  .trust-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+  .trust-badge { padding: 16px 12px !important; }
+  .trust-badge i { font-size: 28px !important; }
+  .trust-badge span { font-size: 11px !important; }
+  .newsletter-content h3 { font-size: 20px !important; }
+  .newsletter-content p { font-size: 13px !important; }
+  .newsletter-form input { padding: 12px 16px !important; font-size: 13px !important; }
+  .newsletter-form button { padding: 12px 20px !important; font-size: 13px !important; }
 }
