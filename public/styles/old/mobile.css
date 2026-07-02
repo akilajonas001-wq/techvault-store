@@ -7,7 +7,12 @@
   /* ===========================================
      OVERFLOW PREVENTION - MOBILE
      =========================================== */
-  /* Overflow prevenido via main.css e inline styles */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100%;
+    max-width: 100%;
+    position: relative;
+  }
   
   /* ===========================================
      HEADER MOBILE
@@ -94,16 +99,14 @@
     backdrop-filter: blur(3px);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    max-width: 100vw;
     display: block;
-    pointer-events: none;
   }
   
   .mobile-overlay.active {
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.3s ease, visibility 0s linear 0s;
-    pointer-events: auto;
   }
   
   /* ===========================================
@@ -112,7 +115,7 @@
   .mobile-nav {
     position: fixed;
     top: 0;
-    right: -320px;
+    right: -280px;
     width: 280px;
     max-width: 85vw;
     height: 100vh;
@@ -123,17 +126,13 @@
     display: flex;
     flex-direction: column;
     box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
     overflow-x: hidden;
+    /* Critical: prevent any transform or left positioning */
     left: auto !important;
     transform: none !important;
-    visibility: hidden;
-  }
-
-  .mobile-nav.active {
-    right: 0;
-    visibility: visible;
+    max-width: 100vw;
   }
   
   .mobile-nav.active {
@@ -443,74 +442,6 @@
     flex-direction: column !important;
     gap: 12px !important;
     align-items: stretch !important;
-  }
-
-  /* Centralizar conteúdo mobile */
-  .section-title {
-    text-align: center;
-    justify-content: center;
-  }
-
-  .categories-section,
-  .products-section,
-  .offers-section,
-  .sellers-section,
-  .benefits-section,
-  .trust-section,
-  .newsletter-section,
-  .hero-banner {
-    padding: 0 12px !important;
-    text-align: center;
-  }
-
-  .benefit-card {
-    text-align: center;
-  }
-
-  .trust-badge {
-    text-align: center;
-  }
-
-  .trust-badge span {
-    text-align: center;
-  }
-
-  .product-card {
-    text-align: center;
-  }
-
-  .product-info {
-    text-align: center;
-  }
-
-  .product-shipping {
-    margin: 0 auto 12px;
-  }
-
-  .product-rating {
-    justify-content: center;
-  }
-
-  .header-menu {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .footer {
-    text-align: center;
-  }
-
-  .footer-content {
-    justify-items: center;
-  }
-
-  .newsletter-content {
-    text-align: center;
-  }
-
-  .newsletter-form {
-    justify-content: center;
   }
 }
 

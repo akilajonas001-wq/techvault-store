@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Produto - TechVault</title>
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="apple-touch-icon" href="/images/favicon.png">
@@ -1290,9 +1290,10 @@
       const nav = document.getElementById('mobileNav');
       const overlay = document.getElementById('mobileOverlay');
       const hamburger = document.querySelector('.hamburger');
+      if (!nav) return;
       nav.classList.toggle('active');
-      overlay.classList.toggle('active');
-      hamburger.classList.toggle('active');
+      if (overlay) overlay.classList.toggle('active');
+      if (hamburger) hamburger.classList.toggle('active');
       document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
     }
 

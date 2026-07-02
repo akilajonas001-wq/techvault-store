@@ -1,0 +1,617 @@
+/* CSS Base para o TechVault - Azul & Branco */
+
+/* RESET E PREVENÇÃO DE OVERFLOW - APLICADO PRIMEIRO */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden !important;
+  width: 100%;
+  position: relative;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  line-height: 1.6;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+html body {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
+body > * {
+  max-width: 100%;
+}
+
+/* Variáveis de cores */
+:root {
+  --primary: #1a73e8;
+  --primary-light: #4285f4;
+  --primary-dark: #1557b0;
+  --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  --secondary: #1e293b;
+  --text: #1e293b;
+  --text-light: #64748b;
+  --text-muted: #94a3b8;
+  --bg-light: #f8fafc;
+  --bg-cool: #f1f5f9;
+  --white: #ffffff;
+  --success: #10b981;
+  --error: #ef4444;
+  --border: #e2e8f0;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   HEADER STYLES
+   =========================================== */
+.header {
+  background: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-bottom: 1px solid var(--border);
+  width: 100%;
+  max-width: 100%;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.header-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.header-menu a,
+.header-menu .menu-link {
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-light);
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.header-menu a:hover,
+.header-menu .menu-link:hover {
+  color: var(--primary);
+}
+
+.cart-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.cart-icon:hover {
+  background: var(--bg-cool);
+}
+
+.cart-icon i {
+  font-size: 20px;
+  color: var(--primary);
+}
+
+.wishlist-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.wishlist-icon:hover {
+  background: var(--bg-cool);
+}
+
+.wishlist-icon i {
+  font-size: 20px;
+  color: var(--primary);
+}
+
+.wishlist-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.auth-buttons-desktop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.login-link,
+.register-link {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.login-link {
+  color: var(--primary);
+  background: rgba(26,115,232,0.08);
+}
+
+.login-link:hover {
+  background: rgba(26,115,232,0.15);
+  color: var(--primary-dark);
+}
+
+.register-link {
+  color: white;
+  background: var(--primary-gradient);
+  box-shadow: 0 2px 4px rgba(26,115,232,0.2);
+}
+
+.register-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(26,115,232,0.3);
+}
+
+#userMenu {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#userMenu a {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-light);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+#userMenu a:hover {
+  background: var(--bg-cool);
+  color: var(--text);
+}
+
+#notifBell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--text-light);
+  transition: background 0.2s, color 0.2s;
+}
+
+#notifBell:hover {
+  background: var(--bg-cool);
+  color: var(--text);
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  padding: 8px;
+  margin-left: 4px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.hamburger:hover {
+  background: var(--bg-cool);
+}
+
+.hamburger span {
+  width: 20px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* Search box */
+.search-box {
+  flex: 1;
+  max-width: 520px;
+  display: flex;
+  position: relative;
+  min-width: 0;
+}
+
+.search-box input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  background: var(--bg-light);
+  min-width: 0;
+}
+
+.search-box input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,115,232,0.08);
+}
+
+.search-box button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--primary-gradient);
+  color: white;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.search-box button:hover {
+  opacity: 0.9;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.logo img {
+  height: 36px;
+  width: auto;
+  max-width: 100%;
+}
+
+/* ===========================================
+   MOBILE NAV - DESKTOP (HIDDEN)
+   =========================================== */
+.mobile-nav {
+  display: none;
+}
+
+.mobile-overlay {
+  display: none;
+}
+
+/* ===========================================
+   CONTENT LAYOUT - PREVENIR OVERFLOW
+   =========================================== */
+
+/* Garantir que todas as seções não excedam a largura da tela */
+.categories-section,
+.products-section,
+.offers-section,
+.sellers-section,
+.benefits-section,
+.trust-section,
+.newsletter-section,
+.hero-banner,
+.footer {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  overflow-x: hidden;
+}
+
+/* Imagens e vídeos responsivos */
+img, video, iframe, svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Containers genéricos */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  overflow-x: hidden;
+}
+
+/* Grids responsivos */
+.categories-grid,
+.products-grid,
+.offers-grid,
+.sellers-grid,
+.benefits-grid,
+.trust-grid,
+.footer-content {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Cards e elementos internos */
+.category-card,
+.product-card,
+.offer-card,
+.seller-card,
+.benefit-card,
+.trust-badge {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* ===========================================
+   NOTIFICATIONS
+   =========================================== */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 16px 28px;
+  border-radius: 12px;
+  color: white;
+  z-index: 3000;
+  animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 40px);
+}
+
+.notification i {
+  font-size: 18px;
+}
+
+.notification-success {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.notification-error {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+}
+
+.notification-info {
+  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+/* ===========================================
+   TEXT SELECTION
+   =========================================== */
+::selection {
+  background: rgba(26, 115, 232, 0.2);
+  color: #1e293b;
+}
+
+/* ===========================================
+   SCROLLBAR PERSONALIZADA
+   =========================================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ===========================================
+   MODAIS E OVERLAYS
+   =========================================== */
+.cart-modal,
+.user-chat-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2000;
+  overflow: hidden;
+}
+
+.cart-modal-content,
+.user-chat-modal-content {
+  max-width: 100%;
+  max-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===========================================
+   RESPONSIVIDADE - TABLET & MOBILE
+   =========================================== */
+@media (max-width: 768px) {
+  /* Ajustar header */
+  .header-top {
+    padding: 10px 12px !important;
+    gap: 8px;
+  }
+  
+  .logo img {
+    height: 32px !important;
+  }
+  
+  /* Search box embaixo */
+  .search-box {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: 8px;
+    max-width: 100%;
+  }
+  
+  .search-box input {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .search-box button {
+    padding: 10px 14px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  
+  .search-box button span {
+    display: none;
+  }
+  
+  /* Esconder menu desktop */
+  .menu-link {
+    display: none;
+  }
+  
+  .auth-buttons-desktop {
+    display: none;
+  }
+  
+  #userMenu {
+    display: none !important;
+  }
+  
+  /* Mostrar hamburger */
+  .hamburger {
+    display: flex !important;
+    order: 2;
+    margin-left: auto;
+  }
+  
+  /* Manter ícones visíveis */
+  .wishlist-icon,
+  .cart-icon {
+    display: flex;
+    order: 1;
+  }
+}
+
+/* Mobile pequeno */
+@media (max-width: 480px) {
+  .categories-section,
+  .products-section,
+  .offers-section,
+  .sellers-section,
+  .benefits-section,
+  .trust-section,
+  .newsletter-section,
+  .hero-banner,
+  .footer,
+  .container {
+    padding: 0 12px !important;
+  }
+  
+  /* Ajustar grids para 2 colunas */
+  .products-grid,
+  .offers-grid,
+  .sellers-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  
+  .trust-grid,
+  .benefits-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .footer-content {
+    grid-template-columns: 1fr !important;
+  }
+}

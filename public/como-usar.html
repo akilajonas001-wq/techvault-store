@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Como Usar - TechVault</title>
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="apple-touch-icon" href="/images/favicon.png">
@@ -268,12 +268,12 @@
   </div>
   <script>
     function toggleMobileMenu() {
-      var n=document.getElementById('mobileNav'),o=document.getElementById('mobileOverlay'),h=document.querySelector('.hamburger');
-      n.classList.toggle('active');o.classList.toggle('active');h.classList.toggle('active');
+      var n=document.getElementById('mobileNav'),o=document.getElementById('mobileOverlay');
+      if(!n)return;
+      n.classList.toggle('active');if(o)o.classList.toggle('active');
+      var h=document.querySelector('.hamburger');if(h)h.classList.toggle('active');
       document.body.style.overflow=n.classList.contains('active')?'hidden':'';
     }
-    function mobileSearch(){var q=document.getElementById('mobileSearchInput').value;if(q.trim())window.location.href='/busca?q='+encodeURIComponent(q);}
-    document.getElementById('mobileSearchInput')?.addEventListener('keypress',function(e){if(e.key==='Enter')mobileSearch();});
   </script>
   <script src="/js/main.js?v=4"></script>
   <script>
