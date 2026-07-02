@@ -316,7 +316,7 @@ body {
 }
 
 .logo img {
-  height: 36px;
+  height: 46px;
   width: auto;
   max-width: 100%;
 }
@@ -501,6 +501,37 @@ img, video, iframe, svg {
   max-width: 100%;
   max-height: 100vh;
   overflow-x: hidden;
+}
+
+/* ===========================================
+   DESKTOP HEADER - REORDENAR ITENS
+   Ordem: Logo | Busca | Minha Conta | Nome |
+   Ofertas | Sino | Carrinho | Painel | Sair
+   =========================================== */
+@media (min-width: 769px) {
+  #authButtons {
+    order: 1;
+  }
+
+  #userMenu.shown {
+    display: contents;
+  }
+
+  .menu-link[href="#ofertas"] {
+    order: 3;
+  }
+
+  .cart-icon {
+    order: 5;
+  }
+
+  .wishlist-icon {
+    order: 8;
+  }
+
+  .hamburger {
+    display: none !important;
+  }
 }
 
 /* ===========================================

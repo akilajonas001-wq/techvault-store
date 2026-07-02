@@ -77,7 +77,11 @@ function showAuthButtons() {
 
   // Desktop
   if (authButtons) authButtons.style.display = 'flex';
-  if (userMenu) userMenu.style.display = 'none';
+  if (userMenu) {
+    userMenu.classList.remove('shown');
+    userMenu.innerHTML = '';
+    userMenu.style.display = 'none';
+  }
   
   // Mobile nav
   if (mobileUserInfo) mobileUserInfo.classList.remove('active');
@@ -99,20 +103,22 @@ function showUserMenu() {
   // Desktop
   if (authButtons) authButtons.style.display = 'none';
   if (userMenu) {
-    userMenu.style.display = 'flex';
+    userMenu.style.display = '';
+    userMenu.classList.add('shown');
+    const firstName = (currentUser?.nome || '').split(' ')[0];
     let adminLink = '';
     if (currentUser && currentUser.admin) {
-      adminLink = `<a href="/painel" style="font-size:13px;font-weight:600;color:#1a73e8;text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(26,115,232,0.08);transition:all .2s;"><i class="fas fa-shield-alt"></i> Painel</a>`;
+      adminLink = `<a href="/painel" style="order:6;font-size:13px;font-weight:600;color:#1a73e8;text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(26,115,232,0.08);transition:all .2s;white-space:nowrap;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
-      <span style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;"><i class="far fa-user" style="margin-right:4px;"></i>${currentUser?.nome || ''}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + currentUser.username + ')</span>' : ''}</span>
-      <a href="/conta" style="font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;">Minha Conta</a>
-      <div id="notifBell" style="position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
+      <a href="/conta" style="order:1;font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;white-space:nowrap;">Minha Conta</a>
+      <span style="order:2;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:4px;padding:5px 8px;">${firstName}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + currentUser.username + ')</span>' : ''}</span>
+      <div id="notifBell" style="order:4;position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
         <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ef4444;color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
       </div>
       ${adminLink}
-      <a href="#" onclick="logout()" style="font-size:13px;color:var(--text-light);text-decoration:none;padding:5px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;"><i class="fas fa-sign-out-alt"></i> Sair</a>
+      <a href="#" onclick="logout()" style="order:7;font-size:13px;color:var(--text-light);text-decoration:none;padding:5px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;white-space:nowrap;"><i class="fas fa-sign-out-alt"></i> Sair</a>
     `;
     checkNotifications();
   }
