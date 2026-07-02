@@ -1,32 +1,33 @@
 /* Mobile Nav - shared across all pages */
-.hamburger {
-  display: none;
-  background: none;
-  border: none;
-  flex-direction: column;
-  gap: 4px;
-  cursor: pointer;
-  padding: 8px;
-  margin-left: 4px;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-.hamburger:hover { background: #f1f5f9; }
-.hamburger span {
-  width: 20px;
-  height: 2px;
-  background: #1e293b;
-  border-radius: 2px;
-  transition: all 0.3s;
-}
-.hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-.hamburger.active span:nth-child(2) { opacity: 0; }
-.hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+/* IMPORTANT: All mobile-specific styles MUST be inside @media (max-width: 768px) */
 
-/* Mobile Nav - hidden by default on desktop */
 @media (max-width: 768px) {
-  .hamburger { display: flex; }
+  /* Hamburger button - only visible on mobile */
+  .hamburger {
+    display: flex;
+    background: none;
+    border: none;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    padding: 8px;
+    margin-left: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .hamburger:hover { background: #f1f5f9; }
+  .hamburger span {
+    width: 20px;
+    height: 2px;
+    background: #1e293b;
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
   
+  /* Mobile overlay */
   .mobile-overlay {
     position: fixed;
     top: 0;
@@ -40,6 +41,7 @@
   }
   .mobile-overlay.active { display: block; }
 
+  /* Mobile navigation panel */
   .mobile-nav {
     display: none;
     position: fixed;
@@ -139,6 +141,7 @@
     font-size: 15px;
   }
 
+  /* Header adjustments for mobile */
   .header-top { flex-wrap: wrap; gap: 0; padding: 10px 12px !important; justify-content: space-between; }
   .logo img { height: 38px !important; }
   .header-menu { gap: 6px; }
