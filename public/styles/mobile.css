@@ -10,6 +10,17 @@
   /* Overflow prevenido via main.css e inline styles */
   
   /* ===========================================
+     PREVENIR ARRASTAR MENU LATERAL
+     =========================================== */
+  html {
+    touch-action: pan-y;
+  }
+
+  body {
+    touch-action: pan-y;
+  }
+
+  /* ===========================================
      HEADER MOBILE
      =========================================== */
   .header-top {
