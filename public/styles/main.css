@@ -14,6 +14,7 @@ html {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior-x: none;
+  position: relative;
 }
 
 body {
