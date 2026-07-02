@@ -717,7 +717,7 @@
   }
 
   .logo {
-    order: 1;
+    order: 1 !important;
     flex-shrink: 0;
   }
 
@@ -728,7 +728,7 @@
 
   /* Search in same row, flex: 1 */
   .search-box {
-    order: 2;
+    order: 2 !important;
     flex: 1 1 auto !important;
     flex-basis: auto !important;
     margin-top: 0 !important;
@@ -761,7 +761,7 @@
   }
 
   .wishlist-icon {
-    order: 3;
+    order: 3 !important;
     display: flex !important;
     flex-shrink: 0;
     padding: 4px;
@@ -772,7 +772,7 @@
   }
 
   .cart-icon {
-    order: 4;
+    order: 4 !important;
     display: flex !important;
     flex-shrink: 0;
     padding: 4px;
@@ -783,7 +783,7 @@
   }
 
   .auth-buttons-desktop {
-    order: 5;
+    order: 5 !important;
     display: flex !important;
     gap: 2px;
     flex-shrink: 0;
@@ -801,7 +801,7 @@
   }
 
   .hamburger {
-    order: 6;
+    order: 6 !important;
     display: flex !important;
     flex-shrink: 0;
     margin-left: 0;
