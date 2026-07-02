@@ -7,12 +7,7 @@
   /* ===========================================
      OVERFLOW PREVENTION - MOBILE
      =========================================== */
-  html, body {
-    overflow-x: hidden !important;
-    width: 100%;
-    max-width: 100%;
-    position: relative;
-  }
+  /* Overflow prevenido via main.css e inline styles */
   
   /* ===========================================
      HEADER MOBILE
