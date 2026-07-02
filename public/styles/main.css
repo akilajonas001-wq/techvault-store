@@ -521,12 +521,12 @@ img, video, iframe, svg {
     order: 3;
   }
 
-  .cart-icon {
-    order: 5;
+  .wishlist-icon {
+    order: 4;
   }
 
-  .wishlist-icon {
-    order: 8;
+  .cart-icon {
+    order: 6;
   }
 
   .hamburger {
