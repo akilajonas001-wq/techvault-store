@@ -69,32 +69,35 @@ async function checkAuth() {
 function showAuthButtons() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
-  const mobileNavLinks = document.querySelectorAll('.mobile-nav a[href="/login"], .mobile-nav a[href="/registro"]');
-  const mobileAuthButtons = document.getElementById('mobileAuthButtons');
+  const mobileUserInfo = document.getElementById('mobileUserInfo');
+  const mobileAuthLinks = document.querySelectorAll('.mobile-auth-link');
+  const mobileMyAccount = document.querySelector('.mobile-myaccount');
+  const mobileLogout = document.querySelector('.mobile-logout');
+  const mobileAdminLink = document.querySelector('.mobile-admin-link');
 
+  // Desktop
   if (authButtons) authButtons.style.display = 'flex';
   if (userMenu) userMenu.style.display = 'none';
-  if (mobileAuthButtons) mobileAuthButtons.classList.remove('active');
-  mobileNavLinks.forEach(el => el.style.display = 'flex');
-  const mobileLogout = document.querySelector('.mobile-nav .mobile-logout');
-  if (mobileLogout) mobileLogout.remove();
-  const mobileMyAccount = document.querySelector('.mobile-nav .mobile-myaccount');
-  if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
-  const mobileAdminLink = document.querySelector('.mobile-admin-link');
-  if (mobileAdminLink) mobileAdminLink.remove();
-  const mobileNotif = document.querySelector('.mobile-notifications');
-  if (mobileNotif) mobileNotif.remove();
-  const mobileUserName = document.querySelector('.mobile-user-name');
-  if (mobileUserName) mobileUserName.remove();
+  
+  // Mobile nav
+  if (mobileUserInfo) mobileUserInfo.classList.remove('active');
+  mobileAuthLinks.forEach(el => el.style.display = 'flex');
+  if (mobileMyAccount) mobileMyAccount.style.display = 'none';
+  if (mobileLogout) mobileLogout.style.display = 'none';
+  if (mobileAdminLink) mobileAdminLink.style.display = 'none';
 }
 
 function showUserMenu() {
   const authButtons = document.getElementById('authButtons');
   const userMenu = document.getElementById('userMenu');
-  const mobileAuthButtons = document.getElementById('mobileAuthButtons');
+  const mobileUserInfo = document.getElementById('mobileUserInfo');
+  const mobileAuthLinks = document.querySelectorAll('.mobile-auth-link');
+  const mobileMyAccount = document.querySelector('.mobile-myaccount');
+  const mobileLogout = document.querySelector('.mobile-logout');
+  const mobileAdminLink = document.querySelector('.mobile-admin-link');
 
+  // Desktop
   if (authButtons) authButtons.style.display = 'none';
-  if (mobileAuthButtons) mobileAuthButtons.classList.add('active');
   if (userMenu) {
     userMenu.style.display = 'flex';
     let adminLink = '';
@@ -113,63 +116,18 @@ function showUserMenu() {
     `;
     checkNotifications();
   }
-
-  // Update mobile nav
-  const mobileNav = document.getElementById('mobileNav');
-  if (mobileNav) {
-    const loginLink = mobileNav.querySelector('a[href="/login"]');
-    const registerLink = mobileNav.querySelector('a[href="/registro"]');
-    const myAccountLink = mobileNav.querySelector('a[href="/conta"]');
-    const existingLogout = mobileNav.querySelector('.mobile-logout');
-    const existingAdminLink = mobileNav.querySelector('.mobile-admin-link');
-    const existingNotif = mobileNav.querySelector('.mobile-notifications');
-    const existingUserName = mobileNav.querySelector('.mobile-user-name');
-    if (loginLink) loginLink.style.display = 'none';
-    if (registerLink) registerLink.style.display = 'none';
-    if (myAccountLink) myAccountLink.style.display = 'flex';
-
-    // Add user greeting at top of mobile nav
-    if (!existingUserName) {
-      const userDiv = document.createElement('div');
-      userDiv.className = 'mobile-user-name';
-      userDiv.innerHTML = '<div style="padding:12px 16px;background:var(--bg-cool);border-radius:10px;margin-bottom:4px;font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;"><i class="fas fa-user-circle" style="color:var(--primary);font-size:20px;"></i> Olá, ' + (currentUser?.nome || '') + '</div>';
-      const logo = mobileNav.querySelector('.mobile-logo');
-      if (logo) logo.after(userDiv);
-    }
-
-    // Add notification bell to mobile nav
-    if (!existingNotif) {
-      const notifLink = document.createElement('a');
-      notifLink.href = '#';
-      notifLink.className = 'mobile-notifications';
-      notifLink.innerHTML = '<i class="far fa-bell"></i> Notificações <span id="mobileNotifBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:auto;">0</span>';
-      notifLink.onclick = (e) => { e.preventDefault(); toggleNotifs(); toggleMobileMenu(); };
-      myAccountLink?.after(notifLink);
-    }
-
-    if (currentUser && currentUser.admin && !existingAdminLink) {
-      const adminLink = document.createElement('a');
-      adminLink.href = '/painel';
-      adminLink.className = 'mobile-admin-link';
-      adminLink.innerHTML = '<i class="fas fa-shield-alt" style="color:#1a73e8"></i> Painel Admin';
-      adminLink.onclick = () => { toggleMobileMenu(); };
-      const notifLinkMobile = mobileNav.querySelector('.mobile-notifications');
-      (notifLinkMobile || myAccountLink)?.after(adminLink);
-    } else if (!currentUser || !currentUser.admin) {
-      if (existingAdminLink) existingAdminLink.remove();
-    }
-
-    if (!existingLogout) {
-      const logoutLink = document.createElement('a');
-      logoutLink.href = '#';
-      logoutLink.className = 'mobile-logout';
-      logoutLink.innerHTML = '<i class="fas fa-sign-out-alt"></i> Sair';
-      logoutLink.onclick = (e) => { e.preventDefault(); logout(); };
-      const adminLinkMobile = mobileNav.querySelector('.mobile-admin-link');
-      const notifLinkMobile = mobileNav.querySelector('.mobile-notifications');
-      (adminLinkMobile || notifLinkMobile || myAccountLink)?.after(logoutLink);
-    }
-
+  
+  // Mobile nav
+  if (mobileUserInfo) {
+    mobileUserInfo.classList.add('active');
+    document.getElementById('mobileUserName').textContent = currentUser?.nome || 'Usuário';
+    document.getElementById('mobileUserEmail').textContent = currentUser?.email || '';
+  }
+  mobileAuthLinks.forEach(el => el.style.display = 'none');
+  if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
+  if (mobileLogout) mobileLogout.style.display = 'flex';
+  if (mobileAdminLink && currentUser && currentUser.admin) {
+    mobileAdminLink.style.display = 'flex';
   }
 }
 

@@ -1299,29 +1299,75 @@
       </div>
     </div>
     
-    <!-- Mobile Auth Buttons (visible only on mobile) -->
-    <div class="mobile-auth-buttons" id="mobileAuthButtons">
-      <a href="/login" class="mobile-login-link"><i class="fas fa-sign-in-alt"></i> Login</a>
-      <a href="/registro" class="mobile-register-link"><i class="fas fa-user-plus"></i> Criar conta</a>
-    </div>
-    
     <nav class="mobile-nav" id="mobileNav">
-      <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar menu">
-        <i class="fas fa-times"></i>
-      </button>
-      <a href="/" class="mobile-logo">
-        <i class="fas fa-cube"></i> TechVault
-      </a>
+      <div class="mobile-nav-header">
+        <a href="/" class="mobile-logo">
+          <i class="fas fa-cube"></i> TechVault
+        </a>
+        <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar menu">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- User info section (shown when logged in) -->
+      <div class="mobile-user-info" id="mobileUserInfo">
+        <div class="user-name"><i class="fas fa-user-circle"></i> <span id="mobileUserName">Olá, Usuário</span></div>
+        <div class="user-email" id="mobileUserEmail"></div>
+      </div>
+      
+      <!-- Search bar -->
       <div class="mobile-search">
         <input type="text" id="mobileSearchInput" placeholder="Buscar produtos...">
         <button onclick="mobileSearch()"><i class="fas fa-search"></i></button>
       </div>
-      <a href="#" onclick="showOffers(); toggleMobileMenu()"><i class="fas fa-tag"></i> Ofertas</a>
-      <a href="/login" onclick="toggleMobileMenu()"><i class="fas fa-sign-in-alt"></i> Login</a>
-      <a href="/registro" onclick="toggleMobileMenu()"><i class="fas fa-user-plus"></i> Criar Conta</a>
-      <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount"><i class="fas fa-user"></i> Minha Conta</a>
-      <hr>
-      <a href="/central-ajuda" onclick="toggleMobileMenu()"><i class="fas fa-question-circle"></i> Ajuda</a>
+      
+      <!-- Navigation links -->
+      <div class="mobile-nav-links">
+        <a href="#" onclick="showOffers(); toggleMobileMenu()">
+          <i class="fas fa-tag"></i> Ofertas
+        </a>
+        
+        <!-- Auth links (shown when NOT logged in) -->
+        <a href="/login" onclick="toggleMobileMenu()" class="mobile-auth-link">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </a>
+        <a href="/registro" onclick="toggleMobileMenu()" class="mobile-auth-link">
+          <i class="fas fa-user-plus"></i> Criar Conta
+        </a>
+        
+        <!-- Account link (shown when logged in) -->
+        <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount">
+          <i class="fas fa-user"></i> Minha Conta
+        </a>
+        
+        <span class="mobile-nav-divider"></span>
+        
+        <a href="/central-ajuda" onclick="toggleMobileMenu()">
+          <i class="fas fa-question-circle"></i> Ajuda
+        </a>
+        <a href="/como-comprar" onclick="toggleMobileMenu()">
+          <i class="fas fa-shopping-bag"></i> Como Comprar
+        </a>
+        <a href="/frete-entrega" onclick="toggleMobileMenu()">
+          <i class="fas fa-shipping-fast"></i> Frete e Entrega
+        </a>
+        
+        <span class="mobile-nav-divider"></span>
+        
+        <a href="/favoritos" onclick="toggleMobileMenu()">
+          <i class="far fa-heart"></i> Favoritos
+        </a>
+        
+        <!-- Admin link (shown for admins) -->
+        <a href="/painel" onclick="toggleMobileMenu()" style="display:none" class="mobile-admin-link">
+          <i class="fas fa-shield-alt"></i> Painel Admin
+        </a>
+        
+        <!-- Logout link (shown when logged in) -->
+        <a href="#" onclick="logout(); toggleMobileMenu()" class="mobile-logout" style="display:none">
+          <i class="fas fa-sign-out-alt"></i> Sair
+        </a>
+      </div>
     </nav>
     <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
   </header>

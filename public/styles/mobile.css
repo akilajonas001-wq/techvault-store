@@ -1,256 +1,530 @@
-/* Mobile Nav - shared across all pages */
-/* IMPORTANT: All mobile-specific styles MUST be inside @media (max-width: 768px) */
+/* ===========================================
+   MOBILE STYLES - Only applied on screens <= 768px
+   =========================================== */
 
 @media (max-width: 768px) {
-  /* Hamburger button - only visible on mobile */
-  .hamburger {
-    display: flex;
-    background: none;
-    border: none;
-    flex-direction: column;
-    gap: 4px;
-    cursor: pointer;
-    padding: 8px;
-    margin-left: 4px;
-    border-radius: 8px;
-    transition: background 0.2s;
+  /* Header adjustments */
+  .header-top {
+    padding: 10px 12px !important;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
-  .hamburger:hover { background: #f1f5f9; }
-  .hamburger span {
-    width: 20px;
-    height: 2px;
-    background: #1e293b;
-    border-radius: 2px;
-    transition: all 0.3s;
-  }
-  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-  .hamburger.active span:nth-child(2) { opacity: 0; }
-  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
   
-  /* Mobile overlay */
+  .logo img {
+    height: 32px !important;
+  }
+  
+  /* Search box - full width below header items */
+  .search-box {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: 8px;
+    max-width: 100%;
+  }
+  
+  .search-box input {
+    font-size: 14px;
+    padding: 10px 14px;
+  }
+  
+  .search-box button {
+    padding: 10px 14px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  
+  .search-box button span {
+    display: none;
+  }
+  
+  /* Hide desktop menu links and auth buttons */
+  .menu-link {
+    display: none;
+  }
+  
+  .auth-buttons-desktop {
+    display: none;
+  }
+  
+  #userMenu {
+    display: none !important;
+  }
+  
+  /* Show hamburger only on mobile */
+  .hamburger {
+    display: flex !important;
+    order: 2;
+    margin-left: auto;
+  }
+  
+  /* Wishlist - keep visible on mobile header */
+  .wishlist-icon {
+    display: flex;
+    order: 1;
+  }
+  
+  /* Cart - keep visible on mobile header */
+  .cart-icon {
+    display: flex;
+    order: 1;
+  }
+  
+  /* Mobile Overlay */
   .mobile-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.4);
-    z-index: 9999;
-    backdrop-filter: blur(2px);
-    display: none;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
   }
-  .mobile-overlay.active { display: block; }
-
-  /* Mobile navigation panel */
+  
+  .mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  /* Mobile Navigation Panel */
   .mobile-nav {
-    display: none;
     position: fixed;
     top: 0;
-    right: -100%;
+    right: -280px;
     width: 280px;
-    max-width: 85%;
-    height: 100%;
-    background: #fff;
-    z-index: 10000;
-    padding: 20px 24px;
+    max-width: 85vw;
+    height: 100vh;
+    background: #ffffff;
+    z-index: 9999;
+    padding: 0;
+    display: flex;
     flex-direction: column;
-    gap: 4px;
-    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
+    overflow-x: hidden;
   }
-  .mobile-nav.active { right: 0; }
-
-  .mobile-nav .mobile-close {
-    align-self: flex-end;
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #64748b;
-    cursor: pointer;
-    padding: 8px;
-    margin-bottom: 4px;
-    width: 40px;
-    height: 40px;
+  
+  .mobile-nav.active {
+    right: 0;
+  }
+  
+  /* Mobile Nav Header */
+  .mobile-nav-header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    border-radius: 10px;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    position: sticky;
+    top: 0;
+    z-index: 1;
   }
-  .mobile-nav .mobile-close:hover { background: #f1f5f9; }
+  
   .mobile-nav .mobile-logo {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: #1a73e8;
     text-decoration: none;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 16px 0;
-    margin-bottom: 8px;
+    gap: 8px;
   }
+  
+  .mobile-nav .mobile-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .mobile-nav .mobile-close:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+  
+  /* User info section in mobile nav */
+  .mobile-user-info {
+    padding: 20px;
+    background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+    color: white;
+    display: none;
+  }
+  
+  .mobile-user-info.active {
+    display: block;
+  }
+  
+  .mobile-user-info .user-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  
+  .mobile-user-info .user-email {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+  
+  /* Mobile Nav Links */
+  .mobile-nav-links {
+    padding: 12px 0;
+    flex: 1;
+  }
+  
   .mobile-nav a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     padding: 14px 20px;
     color: #1e293b;
     text-decoration: none;
     font-size: 15px;
     font-weight: 500;
-    border-radius: 12px;
-    transition: background 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 14px;
+    transition: background 0.15s ease;
+    border-left: 3px solid transparent;
   }
-  .mobile-nav a:hover { background: #f1f5f9; }
+  
+  .mobile-nav a:hover {
+    background: #f1f5f9;
+    border-left-color: #1a73e8;
+  }
+  
   .mobile-nav a i {
     width: 22px;
     text-align: center;
     color: #64748b;
-    font-size: 17px;
+    font-size: 16px;
   }
-  .mobile-nav hr {
+  
+  .mobile-nav a.active-link {
+    border-left-color: #1a73e8;
+    background: rgba(26, 115, 232, 0.08);
+    color: #1a73e8;
+  }
+  
+  .mobile-nav a.active-link i {
+    color: #1a73e8;
+  }
+  
+  /* Mobile Nav Section Divider */
+  .mobile-nav-divider {
+    display: block;
     border: none;
     border-top: 1px solid #e2e8f0;
-    margin: 12px 0;
+    margin: 8px 0;
   }
-
+  
+  /* Mobile Nav Section Title */
+  .mobile-nav-title {
+    padding: 12px 20px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  /* Mobile Search in nav */
   .mobile-search {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
-    margin-bottom: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
   }
+  
   .mobile-search input {
     flex: 1;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 15px;
+    border-radius: 10px;
+    font-size: 14px;
     font-family: inherit;
     outline: none;
+    transition: border-color 0.2s;
   }
-  .mobile-search input:focus { border-color: #1a73e8; }
+  
+  .mobile-search input:focus {
+    border-color: #1a73e8;
+  }
+  
   .mobile-search button {
-    padding: 12px 16px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
     color: white;
     cursor: pointer;
-    font-size: 15px;
-  }
-
-  /* Header adjustments for mobile */
-  .header-top { flex-wrap: wrap; gap: 0; padding: 10px 12px !important; justify-content: space-between; }
-  .logo img { height: 38px !important; }
-  .header-menu { gap: 6px; }
-  .search-box { order: 3; flex-basis: 100%; margin-top: 10px; }
-  .search-box input { font-size: 14px; padding: 10px 14px; }
-  .search-box button { padding: 10px 14px; min-width: 44px; justify-content: center; }
-  .auth-buttons-desktop { display: none !important; }
-  #userMenu { display: none !important; }
-  
-  /* Mobile auth buttons (visible only on mobile, below header) */
-  .mobile-auth-buttons {
-    display: flex;
-    gap: 10px;
-    padding: 10px 12px;
-    background: #f1f5f9;
-    border-top: 1px solid #e2e8f0;
-    justify-content: center;
-  }
-  .mobile-auth-buttons.active { display: none; }
-  .mobile-login-link,
-  .mobile-register-link {
-    flex: 1;
-    max-width: 200px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    text-decoration: none;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: all 0.2s;
+    transition: transform 0.2s;
   }
-  .mobile-login-link {
-    color: #1a73e8;
-    background: rgba(26,115,232,0.1);
+  
+  .mobile-search button:active {
+    transform: scale(0.95);
   }
-  .mobile-login-link:hover {
-    background: rgba(26,115,232,0.15);
+  
+  /* Mobile Logout Button */
+  .mobile-logout {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 8px;
   }
-  .mobile-register-link {
-    color: white;
-    background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
-    box-shadow: 0 2px 4px rgba(26,115,232,0.2);
+  
+  .mobile-logout i {
+    color: #ef4444 !important;
   }
-  .mobile-register-link:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(26,115,232,0.3);
+  
+  /* Hide auth links in mobile nav when logged in */
+  .mobile-nav a[href="/login"],
+  .mobile-nav a[href="/registro"] {
+    display: flex;
   }
-  .cart-modal-content { max-width: 100% !important; padding: 24px 16px; }
-  .cart-modal-header h2 { font-size: 18px !important; }
-
-  .container { padding-left: 16px !important; padding-right: 16px !important; }
-  .breadcrumb { margin: 16px 0 !important; font-size: 13px !important; }
-
-  .account-content { padding: 20px 16px !important; }
-  .account-content h2 { font-size: 18px !important; margin-bottom: 16px !important; }
-  .account-nav-item { padding: 12px 14px !important; font-size: 13px !important; }
-
-  .order-card { padding: 14px !important; }
-  .order-total-price { font-size: 16px !important; }
-  .order-id { font-size: 14px !important; }
-
-  .form-group input { padding: 12px 14px !important; font-size: 14px !important; }
-  .btn { padding: 14px 24px !important; font-size: 14px !important; }
-  .btn-large { padding: 14px 24px !important; font-size: 15px !important; }
-
-  .empty-state { padding: 40px 16px !important; }
-  .empty-state i { font-size: 48px !important; }
-
-  .favorites-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  .order-date { font-size: 12px !important; }
-
-  .dashboard-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
-  .card-header { flex-direction: column !important; gap: 12px !important; align-items: stretch !important; }
+  
+  .mobile-nav .mobile-myaccount {
+    display: none;
+  }
+  
+  /* Cart Modal adjustments */
+  .cart-modal-content {
+    max-width: 100% !important;
+    padding: 20px 16px !important;
+  }
+  
+  .cart-modal-header h2 {
+    font-size: 18px !important;
+  }
+  
+  /* Page container adjustments */
+  .container {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  
+  .breadcrumb {
+    margin: 16px 0 !important;
+    font-size: 13px !important;
+  }
+  
+  /* Account page adjustments */
+  .account-content {
+    padding: 20px 16px !important;
+  }
+  
+  .account-content h2 {
+    font-size: 18px !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .account-nav-item {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+  
+  /* Order cards */
+  .order-card {
+    padding: 14px !important;
+  }
+  
+  .order-total-price {
+    font-size: 16px !important;
+  }
+  
+  .order-id {
+    font-size: 14px !important;
+  }
+  
+  /* Form inputs */
+  .form-group input {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+  
+  .btn {
+    padding: 14px 24px !important;
+    font-size: 14px !important;
+  }
+  
+  .btn-large {
+    padding: 14px 24px !important;
+    font-size: 15px !important;
+  }
+  
+  /* Empty state */
+  .empty-state {
+    padding: 40px 16px !important;
+  }
+  
+  .empty-state i {
+    font-size: 48px !important;
+  }
+  
+  /* Favorites grid */
+  .favorites-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  
+  /* Table wrapper for overflow */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .order-date {
+    font-size: 12px !important;
+  }
+  
+  /* Dashboard grid */
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .card-header {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
 }
 
+/* ===========================================
+   SMALL MOBILE - screens <= 480px
+   =========================================== */
+
 @media (max-width: 480px) {
-  .container { padding-left: 12px !important; padding-right: 12px !important; }
-  .account-content { padding: 16px 12px !important; }
-  .account-content h2 { font-size: 16px !important; }
-  .favorites-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-  .order-card { padding: 12px !important; }
-  .order-total-price { font-size: 14px !important; }
-  .empty-state { padding: 32px 12px !important; }
-  .empty-state i { font-size: 40px !important; }
-  .dashboard-grid { grid-template-columns: 1fr !important; }
+  .header-top {
+    padding: 8px 10px !important;
+  }
+  
+  .logo img {
+    height: 28px !important;
+  }
+  
+  .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  
+  .account-content {
+    padding: 16px 12px !important;
+  }
+  
+  .account-content h2 {
+    font-size: 16px !important;
+  }
+  
+  .favorites-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  
+  .order-card {
+    padding: 12px !important;
+  }
+  
+  .order-total-price {
+    font-size: 14px !important;
+  }
+  
+  .empty-state {
+    padding: 32px 12px !important;
+  }
+  
+  .empty-state i {
+    font-size: 40px !important;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
   
   /* Premium mobile improvements */
-  .banner h1 { font-size: 22px !important; }
-  .banner p { font-size: 14px !important; }
-  .banner-button { padding: 12px 24px !important; font-size: 13px !important; }
-  .benefits-grid { grid-template-columns: 1fr !important; }
-  .benefit-card { flex-direction: row !important; padding: 14px !important; }
-  .benefit-icon { width: 44px !important; height: 44px !important; }
-  .benefit-icon i { font-size: 18px !important; }
-  .benefit-text h4 { font-size: 13px !important; }
-  .benefit-text p { font-size: 11px !important; }
-  .trust-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-  .trust-badge { padding: 16px 12px !important; }
-  .trust-badge i { font-size: 28px !important; }
-  .trust-badge span { font-size: 11px !important; }
-  .newsletter-content h3 { font-size: 20px !important; }
-  .newsletter-content p { font-size: 13px !important; }
-  .newsletter-form input { padding: 12px 16px !important; font-size: 13px !important; }
-  .newsletter-form button { padding: 12px 20px !important; font-size: 13px !important; }
+  .banner h1 {
+    font-size: 22px !important;
+  }
+  
+  .banner p {
+    font-size: 14px !important;
+  }
+  
+  .banner-button {
+    padding: 12px 24px !important;
+    font-size: 13px !important;
+  }
+  
+  .benefits-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .benefit-card {
+    flex-direction: row !important;
+    padding: 14px !important;
+  }
+  
+  .benefit-icon {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  
+  .benefit-icon i {
+    font-size: 18px !important;
+  }
+  
+  .benefit-text h4 {
+    font-size: 13px !important;
+  }
+  
+  .benefit-text p {
+    font-size: 11px !important;
+  }
+  
+  .trust-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  .trust-badge {
+    padding: 16px 12px !important;
+  }
+  
+  .trust-badge i {
+    font-size: 28px !important;
+  }
+  
+  .trust-badge span {
+    font-size: 11px !important;
+  }
+  
+  .newsletter-content h3 {
+    font-size: 20px !important;
+  }
+  
+  .newsletter-content p {
+    font-size: 13px !important;
+  }
+  
+  .newsletter-form input {
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+  }
+  
+  .newsletter-form button {
+    padding: 12px 20px !important;
+    font-size: 13px !important;
+  }
 }
