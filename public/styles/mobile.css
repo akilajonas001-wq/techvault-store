@@ -134,19 +134,19 @@
     display: flex;
     flex-direction: column;
     box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
     overflow-y: auto;
     overflow-x: hidden;
     visibility: hidden;
-    transform: translateX(100%);
-    will-change: transform;
-    backface-visibility: hidden;
+    pointer-events: none;
+    clip-path: inset(0 0 0 100%);
+    transition: clip-path 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.35s;
   }
 
   .mobile-nav.active {
-    transform: translateX(0);
     visibility: visible;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
   }
   
   /* Mobile Nav Header */
@@ -677,5 +677,87 @@
   .newsletter-form button {
     padding: 12px 20px !important;
     font-size: 13px !important;
+  }
+}
+
+/* ===========================================
+   LANDSCAPE MOBILE
+   Manter layout mobile (hamburger, menu) em
+   orientacao paisagem em smartphones
+   =========================================== */
+@media (orientation: landscape) and (max-height: 500px) {
+  html, body {
+    touch-action: pan-y;
+  }
+
+  .hamburger {
+    display: flex !important;
+    order: 2;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .menu-link {
+    display: none;
+  }
+
+  .auth-buttons-desktop {
+    display: none;
+  }
+
+  #userMenu {
+    display: none !important;
+  }
+
+  .mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    display: block;
+    pointer-events: none;
+  }
+
+  .mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0s linear 0s;
+    pointer-events: auto;
+  }
+
+  .mobile-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100vh;
+    max-height: 100vh;
+    background: #ffffff;
+    z-index: 9999;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+    overflow-y: auto;
+    overflow-x: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    clip-path: inset(0 0 0 100%);
+    transition: clip-path 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.35s;
+  }
+
+  .mobile-nav.active {
+    visibility: visible;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
   }
 }

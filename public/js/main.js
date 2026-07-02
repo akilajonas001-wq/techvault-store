@@ -856,3 +856,26 @@ async function submitUsername() {
     error.style.display = 'block';
   }
 }
+
+// === PREVENT HORIZONTAL SWIPE ON MOBILE ===
+// Impede que o usuario arraste a tela para o lado
+// e revele o menu mobile ou crie barra de rolagem horizontal
+(function() {
+  if (!('ontouchstart' in window)) return;
+
+  let startX = 0, startY = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > dy * 1.5 && dx > 15) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+})();
