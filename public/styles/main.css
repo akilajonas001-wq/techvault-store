@@ -11,7 +11,7 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: hidden !important;
   width: 100%;
   position: relative;
 }
@@ -27,7 +27,13 @@ body {
   position: relative;
 }
 
-/* Prevenir que qualquer elemento vaze para fora da viewport */
+html body {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
+
 body > * {
   max-width: 100%;
 }
@@ -329,11 +335,11 @@ body > * {
    MOBILE NAV - DESKTOP (HIDDEN)
    =========================================== */
 .mobile-nav {
-  display: none !important;
+  display: none;
 }
 
 .mobile-overlay {
-  display: none !important;
+  display: none;
 }
 
 /* ===========================================

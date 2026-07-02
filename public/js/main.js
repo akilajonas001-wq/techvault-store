@@ -400,6 +400,33 @@ function isInWishlist(productId) {
   return getWishlist().includes(productId);
 }
 
+// === MOBILE MENU ===
+function toggleMobileMenu() {
+  const nav = document.getElementById('mobileNav');
+  const overlay = document.getElementById('mobileOverlay');
+  const hamburger = document.querySelector('.hamburger');
+  if (!nav || !overlay) return;
+  nav.classList.toggle('active');
+  overlay.classList.toggle('active');
+  if (hamburger) hamburger.classList.toggle('active');
+  document.body.style.overflow = nav.classList.contains('active') ? 'hidden' : '';
+}
+
+function mobileSearch() {
+  const input = document.getElementById('mobileSearchInput');
+  if (!input) return;
+  const query = input.value.trim();
+  if (query) {
+    window.location.href = `/busca?q=${encodeURIComponent(query)}`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('mobileSearchInput')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') mobileSearch();
+  });
+});
+
 // === CHAT DO USUÁRIO ===
 let userChatInterval = null;
 let userChatModalActive = false;
