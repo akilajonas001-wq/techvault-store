@@ -308,7 +308,7 @@ body {
 }
 
 .logo img {
-  height: 46px;
+  height: 70px;
   width: auto;
   max-width: 100%;
 }
@@ -537,7 +537,7 @@ img, video, iframe, svg {
   }
   
   .logo img {
-    height: 32px !important;
+    height: 48px !important;
   }
   
   /* Search box embaixo */
