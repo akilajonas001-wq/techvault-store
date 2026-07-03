@@ -483,7 +483,21 @@
   .newsletter-section,
   .hero-banner {
     padding: 0 12px !important;
+    margin: 0 auto !important;
     text-align: center;
+  }
+
+  .hero-banner .banner {
+    padding: 24px 20px;
+    min-height: auto;
+  }
+
+  .hero-banner .banner h1 {
+    font-size: 22px;
+  }
+
+  .hero-banner .banner p {
+    font-size: 13px;
   }
 
   /* Garantir que toda página use padding lateral e centralização */
@@ -515,7 +529,28 @@
   }
 
   .benefit-card {
+    flex-direction: column;
     text-align: center;
+    padding: 16px 12px;
+    gap: 10px;
+  }
+
+  .benefit-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+  }
+
+  .benefit-icon i {
+    font-size: 20px;
+  }
+
+  .benefit-text h4 {
+    font-size: 13px;
+  }
+
+  .benefit-text p {
+    font-size: 12px;
   }
 
   .trust-badge {
