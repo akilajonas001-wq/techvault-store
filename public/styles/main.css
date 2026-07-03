@@ -18,6 +18,8 @@ body {
   background: #f8fafc;
   color: #1e293b;
   line-height: 1.6;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Variáveis de cores */

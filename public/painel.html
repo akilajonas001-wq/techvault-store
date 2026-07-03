@@ -1072,6 +1072,11 @@
       document.getElementById('cpEditId').value = '';
       document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> Novo Produto';
       document.getElementById('createProductModal').classList.add('active');
+      document.body.dataset.scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + window.scrollY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
     }
     function openEditProductModal(productId) {
@@ -1138,11 +1143,23 @@
         });
       }
       document.getElementById('createProductModal').classList.add('active');
+      document.body.dataset.scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = '-' + window.scrollY + 'px';
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
     }
     function closeCreateProductModal() {
       document.getElementById('createProductModal').classList.remove('active');
+      var sy = parseInt(document.body.dataset.scrollY || '0');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
       document.body.style.overflow = '';
+      window.scrollTo(0, sy);
+      delete document.body.dataset.scrollY;
     }
 
     function addVariant() {

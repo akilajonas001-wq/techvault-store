@@ -268,11 +268,25 @@
   </div>
   <script>
     function toggleMobileMenu() {
-      var n=document.getElementById('mobileNav'),o=document.getElementById('mobileOverlay');
-      if(!n)return;
-      n.classList.toggle('active');if(o)o.classList.toggle('active');
+      var nav=document.getElementById('mobileNav'),overlay=document.getElementById('mobileOverlay');
+      if(!nav||!overlay)return;
+      var willOpen=!nav.classList.contains('active');
+      nav.classList.toggle('active');overlay.classList.toggle('active');
       var h=document.querySelector('.hamburger');if(h)h.classList.toggle('active');
-      document.body.style.overflow=n.classList.contains('active')?'hidden':'';
+      if(willOpen){
+        document.body.dataset.scrollY=window.scrollY;
+        document.body.style.position='fixed';
+        document.body.style.top='-'+window.scrollY+'px';
+        document.body.style.left='0';document.body.style.right='0';
+        document.body.style.overflow='hidden';
+      }else{
+        var sy=parseInt(document.body.dataset.scrollY||'0');
+        document.body.style.position='';document.body.style.top='';
+        document.body.style.left='';document.body.style.right='';
+        document.body.style.overflow='';
+        window.scrollTo(0,sy);
+        delete document.body.dataset.scrollY;
+      }
     }
   </script>
   <script src="/js/main.js?v=4"></script>
