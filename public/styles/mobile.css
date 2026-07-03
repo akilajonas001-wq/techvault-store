@@ -13,10 +13,14 @@
      PREVENIR ARRASTAR MENU LATERAL
      =========================================== */
   html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    position: relative;
     touch-action: pan-y;
   }
 
   body {
+    overflow-x: hidden;
     touch-action: pan-y;
   }
 
@@ -700,6 +704,12 @@
    orientacao paisagem em smartphones
    =========================================== */
 @media (orientation: landscape) and (max-height: 500px) {
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    position: relative;
+  }
+
   html, body {
     touch-action: pan-y;
   }
