@@ -487,6 +487,10 @@
     text-align: center;
   }
 
+  .hero-banner {
+    margin-top: 12px !important;
+  }
+
   .hero-banner .banner {
     padding: 24px 20px;
     min-height: auto;
