@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateCartCount();
   initScrollReveal();
   initBackToTop();
+  trackVisit();
 });
 
 function loadCart() {
@@ -895,6 +896,19 @@ async function submitUsername() {
 // === PREVENT HORIZONTAL SWIPE ON MOBILE ===
 // Impede que o usuario arraste a tela para o lado
 // e revele o menu mobile ou crie barra de rolagem horizontal
+function trackVisit() {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = 'techvault-visits-' + today;
+  const count = parseInt(localStorage.getItem(key) || '0', 10);
+  localStorage.setItem(key, count + 1);
+}
+
+function getTodayVisits() {
+  const today = new Date().toISOString().slice(0, 10);
+  const key = 'techvault-visits-' + today;
+  return parseInt(localStorage.getItem(key) || '0', 10);
+}
+
 (function() {
   if (!('ontouchstart' in window)) return;
 

@@ -358,6 +358,11 @@
         <div class="stat-value" id="statCarts">0</div>
         <div class="stat-label">Carrinhos Ativos</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><i class="fas fa-eye"></i></div>
+        <div class="stat-value" id="statVisits">0</div>
+        <div class="stat-label">Visitas (hoje)</div>
+      </div>
     </div>
 
     <div class="tab-nav">
@@ -696,6 +701,13 @@
       document.getElementById('statRevenue').textContent = 'R$ ' + revenue.toFixed(2).replace('.', ',');
       document.getElementById('statUsers').textContent = allUsers.length;
       document.getElementById('statCarts').textContent = allCarts.length;
+      document.getElementById('statVisits').textContent = getTodayVisits();
+    }
+
+    function getTodayVisits() {
+      const today = new Date().toISOString().slice(0, 10);
+      const key = 'techvault-visits-' + today;
+      return parseInt(localStorage.getItem(key) || '0', 10);
     }
 
     function renderOrders() {
