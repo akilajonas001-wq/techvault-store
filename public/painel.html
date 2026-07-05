@@ -701,13 +701,17 @@
       document.getElementById('statRevenue').textContent = 'R$ ' + revenue.toFixed(2).replace('.', ',');
       document.getElementById('statUsers').textContent = allUsers.length;
       document.getElementById('statCarts').textContent = allCarts.length;
-      document.getElementById('statVisits').textContent = getTodayVisits();
+      loadVisits();
     }
 
-    function getTodayVisits() {
-      const today = new Date().toISOString().slice(0, 10);
-      const key = 'techvault-visits-' + today;
-      return parseInt(localStorage.getItem(key) || '0', 10);
+    async function loadVisits() {
+      try {
+        const res = await fetch('/api/visits');
+        const data = await res.json();
+        document.getElementById('statVisits').textContent = data.count;
+      } catch {
+        document.getElementById('statVisits').textContent = '—';
+      }
     }
 
     function renderOrders() {

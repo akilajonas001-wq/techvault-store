@@ -156,6 +156,11 @@ async function initDb() {
       isDefault SMALLINT DEFAULT 0,
       createdAt TEXT DEFAULT (NOW())
     );
+    CREATE TABLE IF NOT EXISTS visits (
+      date TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      PRIMARY KEY (date, fingerprint)
+    );
   `);
   await migrateUserProfileColumns();
 }
@@ -873,6 +878,18 @@ async function deleteProductImages(productId) {
   await query(`DELETE FROM product_images WHERE product_id = $1`, [productId]);
 }
 
+async function trackVisit(date, fingerprint) {
+  await query(
+    `INSERT INTO visits (date, fingerprint) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    [date, fingerprint]
+  );
+}
+
+async function countVisits(date) {
+  const result = await query(`SELECT COUNT(*) as c FROM visits WHERE date = $1`, [date]);
+  return parseInt(result.rows[0].c, 10);
+}
+
 async function closeDb() {
   await pool.end();
 }
@@ -892,5 +909,6 @@ module.exports = {
   getCategories, searchProducts, productsByCategory, featuredProducts, offerProducts,
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
-  saveImage, getImage, deleteImage, deleteProductImages
+  saveImage, getImage, deleteImage, deleteProductImages,
+  trackVisit, countVisits
 };

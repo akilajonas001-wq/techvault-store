@@ -263,6 +263,7 @@ app.use('/api', require('./routes/shop'));
 app.use('/api', require('./routes/profile'));
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api', require('./routes/visits'));
 
 // ===================== CHAT ROUTES =====================
 // Key format: support:userId  → Atendimento
