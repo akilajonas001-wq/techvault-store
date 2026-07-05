@@ -78,7 +78,7 @@
   
   /* Show auth buttons on mobile compact */
   .auth-buttons-desktop {
-    display: flex !important;
+    display: flex;
     gap: 2px;
   }
   
@@ -858,7 +858,7 @@
 
   .auth-buttons-desktop {
     order: 5 !important;
-    display: flex !important;
+    display: flex;
     gap: 2px;
     flex-shrink: 0;
   }
