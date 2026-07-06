@@ -347,7 +347,12 @@
       <div class="stat-card">
         <div class="stat-icon blue"><i class="fas fa-shopping-bag"></i></div>
         <div class="stat-value" id="statOrders">0</div>
-        <div class="stat-label">Total de Pedidos</div>
+        <div class="stat-label">
+          <span class="visit-period active" data-period="day" onclick="setOrderPeriod('day')">Dia</span>
+          <span class="visit-period" data-period="week" onclick="setOrderPeriod('week')">Semana</span>
+          <span class="visit-period" data-period="month" onclick="setOrderPeriod('month')">Mês</span>
+          <span class="visit-period" data-period="year" onclick="setOrderPeriod('year')">Ano</span>
+        </div>
       </div>
       <div class="stat-card" id="revenueCard">
         <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
@@ -705,14 +710,58 @@
       }
     }
 
+    let ordersData = null;
+
+    function startOfWeek() {
+      const d = new Date(); d.setHours(0,0,0,0);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      return d;
+    }
+
+    function startOfMonth() {
+      const d = new Date(); d.setHours(0,0,0,0);
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    }
+
+    function startOfYear() {
+      const d = new Date(); d.setHours(0,0,0,0);
+      return new Date(d.getFullYear(), 0, 1);
+    }
+
+    function startOfDay() {
+      const d = new Date(); d.setHours(0,0,0,0);
+      return d;
+    }
+
     function updateStats() {
       const completedOrders = allOrders.filter(o => o.status === 'aprovado');
-      document.getElementById('statOrders').textContent = allOrders.length;
       const revenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
       document.getElementById('statRevenue').textContent = 'R$ ' + revenue.toFixed(2).replace('.', ',');
       document.getElementById('statUsers').textContent = allUsers.length;
       document.getElementById('statCarts').textContent = allCarts.length;
+
+      const today = startOfDay();
+      const week = startOfWeek();
+      const month = startOfMonth();
+      const year = startOfYear();
+
+      ordersData = {
+        day: allOrders.filter(o => new Date(o.createdAt) >= today).length,
+        week: allOrders.filter(o => new Date(o.createdAt) >= week).length,
+        month: allOrders.filter(o => new Date(o.createdAt) >= month).length,
+        year: allOrders.filter(o => new Date(o.createdAt) >= year).length
+      };
+      setOrderPeriod('day');
       loadVisits();
+    }
+
+    function setOrderPeriod(period) {
+      if (!ordersData) return;
+      document.querySelectorAll('.stat-card:first-child .visit-period').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.stat-card:first-child .visit-period[data-period="${period}"]`).classList.add('active');
+      document.getElementById('statOrders').textContent = ordersData[period];
     }
 
     let visitsData = null;
