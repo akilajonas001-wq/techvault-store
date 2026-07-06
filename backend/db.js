@@ -890,6 +890,14 @@ async function countVisits(date) {
   return parseInt(result.rows[0].c, 10);
 }
 
+async function countVisitsRange(startDate, endDate) {
+  const result = await query(
+    `SELECT COUNT(DISTINCT fingerprint) as c FROM visits WHERE date >= $1 AND date <= $2`,
+    [startDate, endDate]
+  );
+  return parseInt(result.rows[0].c, 10);
+}
+
 async function closeDb() {
   await pool.end();
 }
@@ -910,5 +918,5 @@ module.exports = {
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
   saveImage, getImage, deleteImage, deleteProductImages,
-  trackVisit, countVisits
+  trackVisit, countVisits, countVisitsRange
 };

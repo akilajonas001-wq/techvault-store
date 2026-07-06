@@ -114,6 +114,12 @@
     .stat-card .stat-icon.purple { background: rgba(139,92,246,0.1); color: #8b5cf6; }
     .stat-card .stat-value { font-size: 26px; font-weight: 800; color: var(--text); }
     .stat-card .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .visit-period {
+      cursor: pointer; margin: 0 4px; padding: 2px 8px; border-radius: 6px;
+      transition: background 0.2s; user-select: none;
+    }
+    .visit-period:hover { background: var(--bg-cool); }
+    .visit-period.active { background: var(--primary); color: #fff; }
     .card {
       background: var(--white); border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -361,7 +367,11 @@
       <div class="stat-card">
         <div class="stat-icon red"><i class="fas fa-eye"></i></div>
         <div class="stat-value" id="statVisits">0</div>
-        <div class="stat-label">Visitas (hoje)</div>
+        <div class="stat-label">
+          <span class="visit-period active" data-period="day" onclick="setVisitPeriod('day')">Dia</span>
+          <span class="visit-period" data-period="week" onclick="setVisitPeriod('week')">Semana</span>
+          <span class="visit-period" data-period="month" onclick="setVisitPeriod('month')">Mês</span>
+        </div>
       </div>
     </div>
 
@@ -704,14 +714,25 @@
       loadVisits();
     }
 
+    let visitsData = null;
+
     async function loadVisits() {
       try {
         const res = await fetch('/api/visits');
         const data = await res.json();
-        document.getElementById('statVisits').textContent = data.count;
+        visitsData = data;
+        setVisitPeriod('day');
       } catch {
         document.getElementById('statVisits').textContent = '—';
       }
+    }
+
+    function setVisitPeriod(period) {
+      if (!visitsData) return;
+      document.querySelectorAll('.visit-period').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.visit-period[data-period="${period}"]`).classList.add('active');
+      const values = { day: visitsData.count, week: visitsData.week, month: visitsData.month };
+      document.getElementById('statVisits').textContent = values[period];
     }
 
     function renderOrders() {
