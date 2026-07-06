@@ -371,6 +371,7 @@
           <span class="visit-period active" data-period="day" onclick="setVisitPeriod('day')">Dia</span>
           <span class="visit-period" data-period="week" onclick="setVisitPeriod('week')">Semana</span>
           <span class="visit-period" data-period="month" onclick="setVisitPeriod('month')">Mês</span>
+          <span class="visit-period" data-period="year" onclick="setVisitPeriod('year')">Ano</span>
         </div>
       </div>
     </div>
@@ -731,7 +732,7 @@
       if (!visitsData) return;
       document.querySelectorAll('.visit-period').forEach(el => el.classList.remove('active'));
       document.querySelector(`.visit-period[data-period="${period}"]`).classList.add('active');
-      const values = { day: visitsData.count, week: visitsData.week, month: visitsData.month };
+      const values = { day: visitsData.count, week: visitsData.week, month: visitsData.month, year: visitsData.year };
       document.getElementById('statVisits').textContent = values[period];
     }
 

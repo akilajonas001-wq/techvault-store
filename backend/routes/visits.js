@@ -30,6 +30,11 @@ function startOfMonth() {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function startOfYear() {
+  const d = new Date();
+  return new Date(d.getFullYear(), 0, 1).toISOString().slice(0, 10);
+}
+
 router.post('/visits/track', async (req, res) => {
   try {
     const today = todayISO();
@@ -49,14 +54,16 @@ router.get('/visits', async (req, res) => {
     const today = todayISO();
     const weekStart = startOfWeek();
     const monthStart = startOfMonth();
+    const yearStart = startOfYear();
 
-    const [dayCount, weekCount, monthCount] = await Promise.all([
+    const [dayCount, weekCount, monthCount, yearCount] = await Promise.all([
       db.countVisits(today),
       db.countVisitsRange(weekStart, today),
-      db.countVisitsRange(monthStart, today)
+      db.countVisitsRange(monthStart, today),
+      db.countVisitsRange(yearStart, today)
     ]);
 
-    res.json({ date: today, count: dayCount, week: weekCount, month: monthCount });
+    res.json({ date: today, count: dayCount, week: weekCount, month: monthCount, year: yearCount });
   } catch (err) {
     console.error('Erro ao consultar visitas:', err);
     res.status(500).json({ error: 'Erro interno' });
