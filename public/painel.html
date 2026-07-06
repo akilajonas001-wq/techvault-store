@@ -120,6 +120,35 @@
     }
     .visit-period:hover { background: var(--bg-cool); }
     .visit-period.active { background: var(--primary); color: #fff; }
+    .whatsapp-templates {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .template-btn {
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--white); cursor: pointer; font-size: 12px; font-weight: 600;
+      color: var(--text-light); transition: all 0.2s; font-family: inherit;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .template-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .template-btn.active {
+      background: #25D366; border-color: #25D366; color: #fff;
+    }
+    .whatsapp-user {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 8px;
+    }
+    .whatsapp-user-info { flex: 1; min-width: 0; }
+    .whatsapp-user-info strong { display: block; font-size: 14px; }
+    .whatsapp-user-info span { font-size: 12px; color: var(--text-muted); }
+    .whatsapp-user .wa-btn {
+      padding: 7px 14px; border: none; border-radius: 8px;
+      background: #25D366; color: #fff; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.2s; font-family: inherit;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .whatsapp-user .wa-btn:hover { opacity: 0.85; }
+    .whatsapp-user .wa-btn i { font-size: 14px; }
     .card {
       background: var(--white); border-radius: var(--radius);
       border: 1px solid var(--border);
@@ -389,6 +418,7 @@
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
       <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-gift"></i> Cupons</button>
+      <button class="tab-btn" data-tab="whatsapp" onclick="switchTab('whatsapp', this)"><i class="fab fa-whatsapp"></i> WhatsApp</button>
     </div>
 
     <div id="tab-pedidos" class="tab-content active">
@@ -591,6 +621,28 @@
         </div>
       </div>
     </div>
+
+    <div id="tab-whatsapp" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fab fa-whatsapp"></i> Disparo WhatsApp</h2>
+          <span id="whatsappCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div class="whatsapp-templates">
+          <button class="template-btn active" data-msg="abandono" onclick="selectTemplate('abandono')">
+            <i class="fas fa-shopping-cart"></i> Carrinho Abandonado
+          </button>
+          <button class="template-btn" data-msg="boleto" onclick="selectTemplate('boleto')">
+            <i class="fas fa-barcode"></i> Boleto Próximo
+          </button>
+          <button class="template-btn" data-msg="promocao" onclick="selectTemplate('promocao')">
+            <i class="fas fa-tag"></i> Promoção Exclusiva
+          </button>
+        </div>
+        <div id="whatsappContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+      </div>
+    </div>
+
   </div>
 
     <div class="modal-overlay" id="orderModal">
@@ -705,6 +757,7 @@
         renderProducts();
         renderUsers();
         renderNewsletter();
+        renderWhatsApp();
       } catch (err) {
         console.error('Erro ao carregar dados:', err);
       }
@@ -1826,6 +1879,48 @@
 
     async function deleteCurrentChat() {
       if (activeChatConvKey) await deleteSupportChat(activeChatConvKey);
+    }
+
+    const WHATSAPP_MSGS = {
+      abandono: 'Olá! 😊\n\nPercebemos que você deixou alguns produtos no carrinho e eles estão reservados para você. Se precisar de qualquer ajuda ou tiver alguma dúvida sobre o produto, é só responder esta mensagem. Ficaremos felizes em ajudar! 🛍️ Finalize sua compra antes que o estoque acabe e garanta seu pedido.',
+      boleto: 'Olá! 👋\n\nPassando para lembrar que o boleto do seu pedido está prestes a vencer. Se você ainda deseja concluir a compra, recomendamos realizar o pagamento o quanto antes para evitar o cancelamento automático do pedido. Caso já tenha efetuado o pagamento, desconsidere esta mensagem. Agradecemos pela preferência! 💙',
+      promocao: 'Olá! 😊\n\nTemos uma oferta especial disponível por tempo limitado. Selecionamos descontos exclusivos em produtos da nossa loja que podem interessar a você. ✨ Aproveite preços promocionais antes que a campanha termine. Caso tenha qualquer dúvida ou precise de ajuda para escolher o produto ideal, estamos à disposição. Boas compras! 🛒'
+    };
+
+    let activeWAMsg = 'abandono';
+
+    function selectTemplate(key) {
+      activeWAMsg = key;
+      document.querySelectorAll('.template-btn').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.template-btn[data-msg="${key}"]`).classList.add('active');
+    }
+
+    function renderWhatsApp() {
+      const container = document.getElementById('whatsappContainer');
+      const usersWithPhone = allUsers.filter(u => u.telefone && u.telefone.replace(/\D/g, '').length >= 10 && u.role !== 'funcionario' && !u.admin);
+      document.getElementById('whatsappCount').textContent = usersWithPhone.length + ' contato' + (usersWithPhone.length !== 1 ? 's' : '');
+
+      if (!usersWithPhone.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fab fa-whatsapp"></i><p>Nenhum contato com WhatsApp cadastrado</p></div>';
+        return;
+      }
+
+      container.innerHTML = '<div id="waList">' + usersWithPhone.map((u, i) => {
+        const phone = '55' + u.telefone.replace(/\D/g, '');
+        return '<div class="whatsapp-user" data-waphone="' + phone + '">' +
+          '<div class="whatsapp-user-info">' +
+            '<strong>' + (u.nome || 'Sem nome') + '</strong>' +
+            '<span>' + u.telefone + (u.email ? ' · ' + u.email : '') + '</span>' +
+          '</div>' +
+          '<a class="wa-btn" href="https://wa.me/' + phone + '" target="_blank" rel="noopener" onclick="event.preventDefault();openWA(\'' + phone + '\')"><i class="fab fa-whatsapp"></i> Enviar</a>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+
+    function openWA(phone) {
+      const msg = WHATSAPP_MSGS[activeWAMsg];
+      const url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+      window.open(url, '_blank');
     }
 
     // Override switchTab to load chats when the tab is selected
