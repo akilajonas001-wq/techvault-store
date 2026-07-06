@@ -1893,26 +1893,91 @@
       activeWAMsg = key;
       document.querySelectorAll('.template-btn').forEach(el => el.classList.remove('active'));
       document.querySelector(`.template-btn[data-msg="${key}"]`).classList.add('active');
+      renderWhatsApp();
+    }
+
+    function cleanPhone(p) {
+      return '55' + p.replace(/\D/g, '');
+    }
+
+    function getUserPhone(userId) {
+      const u = allUsers.find(x => x.id === userId);
+      return u && u.telefone && u.telefone.replace(/\D/g, '').length >= 10 ? cleanPhone(u.telefone) : null;
+    }
+
+    function formatItems(itens) {
+      if (!itens || !itens.length) return '';
+      return itens.slice(0, 3).map(i => i.nome || i.name || 'Item').join(', ') + (itens.length > 3 ? ' +' + (itens.length - 3) : '');
     }
 
     function renderWhatsApp() {
       const container = document.getElementById('whatsappContainer');
-      const usersWithPhone = allUsers.filter(u => u.telefone && u.telefone.replace(/\D/g, '').length >= 10 && u.role !== 'funcionario' && !u.admin);
-      document.getElementById('whatsappCount').textContent = usersWithPhone.length + ' contato' + (usersWithPhone.length !== 1 ? 's' : '');
+      const msg = WHATSAPP_MSGS[activeWAMsg];
+      let contacts = [];
+      let subtitle = '';
 
-      if (!usersWithPhone.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fab fa-whatsapp"></i><p>Nenhum contato com WhatsApp cadastrado</p></div>';
+      if (activeWAMsg === 'abandono') {
+        const cartUsers = allCarts.filter(c => c.items && c.items.length > 0);
+        cartUsers.forEach(c => {
+          const phone = getUserPhone(c.userId);
+          if (!phone) return;
+          contacts.push({
+            phone,
+            name: c.userName || 'Cliente',
+            info: c.items.length + ' item(ns): ' + formatItems(c.items),
+            detail: 'Carrinho #' + c.userId
+          });
+        });
+        subtitle = contacts.length + ' carrinho' + (contacts.length !== 1 ? 's' : '') + ' abandonado' + (contacts.length !== 1 ? 's' : '');
+      } else if (activeWAMsg === 'boleto') {
+        const boletoOrders = allOrders.filter(o =>
+          o.status === 'pendente' &&
+          o.pagamento && o.pagamento.toLowerCase().includes('boleto')
+        );
+        boletoOrders.forEach(o => {
+          const phone = (o.cliente && o.cliente.telefone) || (o.usuario && o.usuario.telefone) || getUserPhone(o.userId);
+          if (!phone || phone.replace(/\D/g, '').length < 10) return;
+          contacts.push({
+            phone: cleanPhone(phone),
+            name: (o.cliente && o.cliente.nome) || (o.usuario && o.usuario.nome) || 'Cliente',
+            info: 'Pedido #' + o.id + ' · R$ ' + (o.total || 0).toFixed(2).replace('.', ','),
+            detail: formatItems(o.itens)
+          });
+        });
+        subtitle = contacts.length + ' boleto' + (contacts.length !== 1 ? 's' : '') + ' pendente' + (contacts.length !== 1 ? 's' : '');
+      } else {
+        const usersWithPhone = allUsers.filter(u =>
+          u.telefone && u.telefone.replace(/\D/g, '').length >= 10 &&
+          u.role !== 'funcionario' && !u.admin
+        );
+        usersWithPhone.forEach(u => {
+          contacts.push({
+            phone: cleanPhone(u.telefone),
+            name: u.nome || 'Sem nome',
+            info: u.telefone + (u.email ? ' · ' + u.email : ''),
+            detail: ''
+          });
+        });
+        subtitle = contacts.length + ' contato' + (contacts.length !== 1 ? 's' : '');
+      }
+
+      document.getElementById('whatsappCount').textContent = subtitle;
+
+      if (!contacts.length) {
+        const emptyMsg = activeWAMsg === 'abandono' ? 'Nenhum carrinho abandonado encontrado' :
+                         activeWAMsg === 'boleto' ? 'Nenhum boleto pendente encontrado' :
+                         'Nenhum contato com WhatsApp cadastrado';
+        container.innerHTML = '<div class="empty-state"><i class="fab fa-whatsapp"></i><p>' + emptyMsg + '</p></div>';
         return;
       }
 
-      container.innerHTML = '<div id="waList">' + usersWithPhone.map((u, i) => {
-        const phone = '55' + u.telefone.replace(/\D/g, '');
-        return '<div class="whatsapp-user" data-waphone="' + phone + '">' +
+      container.innerHTML = '<div id="waList">' + contacts.map(c => {
+        return '<div class="whatsapp-user">' +
           '<div class="whatsapp-user-info">' +
-            '<strong>' + (u.nome || 'Sem nome') + '</strong>' +
-            '<span>' + u.telefone + (u.email ? ' · ' + u.email : '') + '</span>' +
+            '<strong>' + c.name + '</strong>' +
+            '<span>' + c.info + (c.detail ? '<br><span style="font-size:11px;color:var(--text-muted)">' + c.detail + '</span>' : '') + '</span>' +
           '</div>' +
-          '<a class="wa-btn" href="https://wa.me/' + phone + '" target="_blank" rel="noopener" onclick="event.preventDefault();openWA(\'' + phone + '\')"><i class="fab fa-whatsapp"></i> Enviar</a>' +
+          '<a class="wa-btn" href="#" onclick="event.preventDefault();openWA(\'' + c.phone + '\')"><i class="fab fa-whatsapp"></i> Enviar</a>' +
         '</div>';
       }).join('') + '</div>';
     }
