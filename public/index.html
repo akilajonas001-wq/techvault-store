@@ -255,15 +255,17 @@
       background: var(--primary-gradient);
     }
 
+    .banner {
+      display: grid;
+      place-items: center;
+    }
+
     .banner img {
       width: 100%;
       height: 100%;
       object-fit: contain;
       object-position: center;
-      display: flex;
-      position: absolute;
-      top: 0;
-      left: 0;
+      grid-area: 1 / 1;
       transition: opacity 0.8s ease;
     }
 
