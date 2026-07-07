@@ -165,6 +165,11 @@ router.post('/orders', requireAuth, async (req, res) => {
       estado: endereco?.estado || ''
     }).catch(e => console.error('Erro perfil:', e.message));
 
+    (itens || []).forEach(item => {
+      db.decrementStock(item.id || item.productId, item.quantidade || 1)
+        .catch(e => console.error('Erro ao decrementar estoque:', e.message));
+    });
+
     transporter.sendMail({
       from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
       to: 'akilajonas001@gmail.com',

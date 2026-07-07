@@ -190,6 +190,11 @@ async function migrateUserProfileColumns() {
     console.error('Erro ao adicionar frete:', e.message);
   }
   try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT -1`);
+  } catch (e) {
+    console.error('Erro ao adicionar stock:', e.message);
+  }
+  try {
     await query(`ALTER TABLE chats ADD COLUMN IF NOT EXISTS resolved SMALLINT DEFAULT 0`);
   } catch (e) {
     console.error('Erro ao adicionar resolved:', e.message);
@@ -468,7 +473,8 @@ const parseProduct = (p) => p ? {
   checkoutLink: p.checkoutlink || p.checkoutLink || '',
   paused: p.paused === 1 || p.paused === true,
   precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
-  destaque: p.destaque === 1 || p.destaque === true
+  destaque: p.destaque === 1 || p.destaque === true,
+  stock: p.stock != null ? p.stock : -1
 } : null;
 
 async function allProducts() {
@@ -503,10 +509,11 @@ async function updateProduct(id, data) {
 async function createProduct(data) {
   try {
     await query(
-      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
       [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
        data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
-       data.estoque || 'N/A', data.destaque ? 1 : 0, data.paused ? 1 : 0,
+       data.estoque || 'N/A', data.stock != null ? data.stock : -1,
+       data.destaque ? 1 : 0, data.paused ? 1 : 0,
        data.avaliacao || 0,
        data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
        data.frete || '', data.checkoutLink || '',
@@ -516,10 +523,11 @@ async function createProduct(data) {
     if (e.message && e.message.includes('checkoutlink')) {
       try { await query(`ALTER TABLE products ADD COLUMN checkoutLink TEXT DEFAULT ''`); } catch {}
       await query(
-        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)`,
+        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
         [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
          data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
-         data.estoque || 'N/A', data.destaque ? 1 : 0, data.paused ? 1 : 0,
+         data.estoque || 'N/A', data.stock != null ? data.stock : -1,
+         data.destaque ? 1 : 0, data.paused ? 1 : 0,
          data.avaliacao || 0,
          data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
          data.frete || '', data.checkoutLink || '',
@@ -530,6 +538,17 @@ async function createProduct(data) {
     }
   }
   return productById(data.id);
+}
+
+async function decrementStock(productId, quantity) {
+  const p = await productById(productId);
+  if (!p || p.stock === -1) return;
+  const newStock = Math.max(0, p.stock - (quantity || 1));
+  if (newStock <= 0) {
+    await query(`UPDATE products SET stock = 0, paused = 1 WHERE id = $1`, [productId]);
+  } else {
+    await query(`UPDATE products SET stock = $1 WHERE id = $2`, [newStock, productId]);
+  }
 }
 
 async function deleteProduct(id) {

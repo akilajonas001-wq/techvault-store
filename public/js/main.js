@@ -162,6 +162,10 @@ async function syncCartToServer() {
 }
 
 function addToCart(produto) {
+  if (produto.stock === 0) {
+    showNotification('Produto esgotado!', 'error');
+    return;
+  }
   const existingItem = cart.find(item => String(item.id) === String(produto.id));
 
   if (existingItem) {

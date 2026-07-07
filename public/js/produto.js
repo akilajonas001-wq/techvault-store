@@ -338,14 +338,14 @@ async function loadProduct(productId) {
           '<div class="price-section">' +
             '<div class="price" id="productPrice">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
             (product.frete === 'Grátis' ? '<div class="shipping-info"><i class="fas fa-truck"></i> Frete grátis</div>' : (product.frete ? '<div class="shipping-info">' + product.frete + '</div>' : '')) +
-            '<div class="stock-info"><i class="fas fa-check-circle" style="color: #00a650;"></i> ' + (product.estoque > 0 ? 'Em estoque (' + product.estoque + ' disponíveis)' : 'Produto esgotado') + '</div>' +
+            '<div class="stock-info"><i class="fas fa-check-circle" style="color: #00a650;"></i> ' + (product.stock === -1 ? 'Em estoque' : product.stock > 0 ? 'Em estoque (' + product.stock + ' disponíveis)' : '<span style="color:var(--danger);">Produto esgotado</span>') + '</div>' +
           '</div>' +
           variantHtml +
           '<div class="action-buttons">' +
-            '<button class="btn btn-primary" onclick="addToCartFromProduct()">' +
+            '<button class="btn btn-primary" onclick="addToCartFromProduct()"' + (product.stock === 0 ? ' disabled' : '') + '>' +
               '<i class="fas fa-cart-plus"></i> Adicionar ao carrinho' +
             '</button>' +
-            '<button class="btn btn-success" onclick="buyNow()">' +
+            '<button class="btn btn-success" onclick="buyNow()"' + (product.stock === 0 ? ' disabled' : '') + '>' +
               '<i class="fas fa-bolt"></i> Comprar agora' +
             '</button>' +
           '</div>' +
