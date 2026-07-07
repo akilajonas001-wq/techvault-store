@@ -636,7 +636,7 @@ async function getCart(userId) {
   const result = await query(`SELECT * FROM carts WHERE userId = $1`, [userId]);
   if (result.rows.length) {
     const c = result.rows[0];
-    return { userId: c.userId, items: JSON.parse(c.items || '[]'), updatedAt: c.updatedAt };
+    return { userId: c.userid, items: JSON.parse(c.items || '[]'), updatedAt: c.updatedat };
   }
   return { userId, items: [] };
 }
@@ -658,14 +658,14 @@ async function allCartsWithUsers() {
   for (const c of cartsResult.rows) {
     const items = JSON.parse(c.items || '[]');
     if (items.length === 0) continue;
-    const user = await userById(c.userId);
+    const user = await userById(c.userid);
     result.push({
-      userId: c.userId,
-      userName: user ? user.nome : 'Usuário #' + c.userId,
+      userId: c.userid,
+      userName: user ? user.nome : 'Usuário #' + c.userid,
       userEmail: user ? user.email : '',
       items,
       itemCount: items.reduce((s, i) => s + (i.quantidade || 1), 0),
-      updatedAt: c.updatedAt
+      updatedAt: c.updatedat
     });
   }
   return result;
