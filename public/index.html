@@ -247,74 +247,32 @@
     }
 
     .banner {
-      background: var(--primary-gradient);
-      border-radius: 20px;
-      padding: 48px;
-      color: var(--white);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      overflow: hidden;
       position: relative;
+      border-radius: 20px;
+      overflow: hidden;
       box-shadow: var(--shadow-xl);
-      min-height: 280px;
+      aspect-ratio: 1280 / 640;
+      background: var(--bg-cool);
     }
 
-    .banner::before {
-      content: '';
+    .banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
       position: absolute;
-      top: -50%;
-      right: -10%;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-      border-radius: 50%;
+      top: 0;
+      left: 0;
+      transition: opacity 0.8s ease;
     }
 
-    .banner-content {
-      flex: 1;
+    .banner img.active {
+      opacity: 1;
       z-index: 1;
     }
 
-    .banner h1 {
-      font-size: 42px;
-      font-weight: 800;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
-    }
-
-    .banner p {
-      font-size: 18px;
-      opacity: 0.95;
-      margin-bottom: 28px;
-      font-weight: 400;
-    }
-
-    .banner-button {
-      background: var(--white);
-      color: var(--primary);
-      padding: 14px 36px;
-      border-radius: 30px;
-      text-decoration: none;
-      font-weight: 700;
-      display: inline-block;
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow-md);
-      font-size: 15px;
-    }
-
-    .banner-button:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-xl);
-    }
-
-    .banner-shapes {
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 450px;
-      height: 100%;
-      opacity: 0.1;
+    .banner img:not(.active) {
+      opacity: 0;
       z-index: 0;
     }
 
@@ -988,17 +946,9 @@
       .hamburger { display: flex; }
 
       .banner {
-        padding: 28px 20px;
-        flex-direction: column;
-        text-align: center;
-        min-height: auto;
-        border-radius: 14px;
+        aspect-ratio: auto;
+        min-height: 180px;
       }
-
-      .banner h1 { font-size: 24px; }
-      .banner p { font-size: 14px; margin-bottom: 20px; }
-      .banner-button { padding: 10px 28px; font-size: 14px; }
-      .banner-shapes { display: none; }
       .banner-nav { width: 30px; height: 30px; font-size: 12px; }
       .banner-nav.prev { left: 6px; }
       .banner-nav.next { right: 6px; }
@@ -1101,8 +1051,6 @@
       .product-price { font-size: 15px; }
       .deal-price { font-size: 15px; }
       .offer-image { height: 60px; }
-      .banner h1 { font-size: 20px; }
-      .banner p { font-size: 12px; }
       .footer-content { grid-template-columns: 1fr; gap: 20px; }
     }
 
@@ -1200,21 +1148,6 @@
 
     .banner-nav.next {
       right: 8px;
-    }
-
-    @keyframes bannerFadeIn {
-      from {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    .banner.fade-in {
-      animation: bannerFadeIn 0.5s ease forwards;
     }
 
     /* Cart Modal Overlay Animation */
@@ -1372,20 +1305,11 @@
     <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
   </header>
 
-  <!-- Banner Principal - Carrossel -->
+  <!-- Banner Principal - Carrossel de Imagens -->
   <section class="hero-banner hero-carousel">
-    <div class="banner fade-in" id="heroBanner">
-      <div class="banner-content" id="bannerContent">
-        <h1 id="bannerTitle">Ofertas Imperdíveis!</h1>
-        <p id="bannerSubtitle">Até 70% off em milhares de produtos selecionados para você</p>
-        <a id="bannerLink" href="#ofertas" class="banner-button">Ver Ofertas</a>
-      </div>
-      <svg class="banner-shapes" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="200" cy="150" r="100" fill="white"/>
-        <circle cx="250" cy="100" r="80" fill="white"/>
-        <circle cx="150" cy="200" r="60" fill="white"/>
-        <circle cx="300" cy="180" r="50" fill="white"/>
-      </svg>
+    <div class="banner" id="heroBanner">
+      <img src="/images/banner1.jpg" alt="Banner 1" class="active" id="bannerImg0">
+      <img src="/images/banner2.jpg" alt="Banner 2" id="bannerImg1">
       <button class="banner-nav prev" onclick="prevBanner()" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
       <button class="banner-nav next" onclick="nextBanner()" aria-label="Próximo"><i class="fas fa-chevron-right"></i></button>
     </div>
@@ -1747,72 +1671,37 @@
       document.getElementById('ofertas').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Hero Banner Carousel
-    const banners = [
-      {
-        title: 'Ofertas Imperdíveis!',
-        subtitle: 'Até 70% off em milhares de produtos selecionados para você',
-        link: '#ofertas',
-        text: 'Ver Ofertas'
-      },
-      {
-        title: 'Produtos em Destaque',
-        subtitle: 'Os mais vendidos da semana com os melhores preços',
-        link: '/busca?ordem=mais-vendidos',
-        text: 'Ver Destaques'
-      },
-      {
-        title: 'Frete Grátis',
-        subtitle: 'Em compras acima de R$ 199,90 para todo o Brasil',
-        link: '/busca?ordem=menor-preco',
-        text: 'Comprar Agora'
-      }
-    ];
-
+    // Hero Banner Carrossel de Imagens
+    const totalBanners = 2;
     let currentBanner = 0;
 
     function showBanner(index) {
-      const banner = banners[index];
-      if (!banner) return;
-
-      const title = document.getElementById('bannerTitle');
-      const subtitle = document.getElementById('bannerSubtitle');
-      const link = document.getElementById('bannerLink');
-      const heroBanner = document.getElementById('heroBanner');
-
-      heroBanner.classList.remove('fade-in');
-      void heroBanner.offsetWidth;
-      heroBanner.classList.add('fade-in');
-
-      title.textContent = banner.title;
-      subtitle.textContent = banner.subtitle;
-      link.textContent = banner.text;
-      link.href = banner.link;
-
+      document.querySelectorAll('#heroBanner img').forEach((img, i) => {
+        img.classList.toggle('active', i === index);
+      });
       document.querySelectorAll('.banner-dot').forEach((dot, i) => {
         dot.classList.toggle('active', i === index);
       });
-
       currentBanner = index;
     }
 
     function nextBanner() {
-      showBanner((currentBanner + 1) % banners.length);
+      showBanner((currentBanner + 1) % totalBanners);
     }
 
     function prevBanner() {
-      showBanner((currentBanner - 1 + banners.length) % banners.length);
+      showBanner((currentBanner - 1 + totalBanners) % totalBanners);
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       const dotsContainer = document.getElementById('bannerDots');
-      banners.forEach((_, i) => {
+      for (let i = 0; i < totalBanners; i++) {
         const dot = document.createElement('button');
         dot.className = `banner-dot${i === 0 ? ' active' : ''}`;
         dot.setAttribute('aria-label', `Banner ${i + 1}`);
         dot.onclick = () => showBanner(i);
         dotsContainer.appendChild(dot);
-      });
+      }
 
       let bannerInterval = setInterval(nextBanner, 5000);
       document.addEventListener('visibilitychange', () => {
