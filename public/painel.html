@@ -2006,8 +2006,16 @@
       setInterval(loadSupportChatList, 15000);
     }
 
+    function initDashboardRefresh() {
+      setInterval(() => {
+        const token = localStorage.getItem('techvault-token');
+        if (token) loadAllData(token);
+      }, 10000);
+    }
+
     // Start polling
     initChatPolling();
+    initDashboardRefresh();
   </script>
 </body>
 </html>
