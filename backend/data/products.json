@@ -7,15 +7,21 @@
     "precoOriginal": null,
     "categoria": "Casa e Organização",
     "imagem": "",
-    "imagens": "[]",
+    "imagens": [],
     "estoque": "N/A",
     "destaque": false,
     "paused": true,
     "precoAlterado": false,
     "avaliacao": 0,
     "reviews": 0,
-    "specs": "{\"link_fornecedor\":\"https://shopee.com.br/search?keyword=organizador+gavetas+divisorias+ajustaveis\"}",
-    "variants": "[]",
+    "specs": {},
+    "variants": [
+      {
+        "nome": "",
+        "preco": 0,
+        "especificacoes": {}
+      }
+    ],
     "frete": "",
     "checkoutLink": "",
     "createdAt": "2026-07-07T00:39:11.795Z"
@@ -91,15 +97,21 @@
     "precoOriginal": null,
     "categoria": "Beleza e Bem-Estar",
     "imagem": "",
-    "imagens": "[]",
+    "imagens": [],
     "estoque": "N/A",
     "destaque": false,
     "paused": true,
     "precoAlterado": false,
     "avaliacao": 0,
     "reviews": 0,
-    "specs": "{\"link_fornecedor\":\"https://shopee.com.br/search?keyword=difusor+oleos+essenciais+ultrassonico+portatil\"}",
-    "variants": "[]",
+    "specs": {},
+    "variants": [
+      {
+        "nome": "",
+        "preco": 0,
+        "especificacoes": {}
+      }
+    ],
     "frete": "",
     "checkoutLink": "",
     "createdAt": "2026-07-07T00:39:14.224Z"
@@ -1157,7 +1169,7 @@
   {
     "id": 1783384763874,
     "nome": "Anel de luz (ring light) portátil para fotos",
-    "descricao": "Ring light portátil com suporte ajustável para celular, ideal para fotos profissionais ao vivo e vídeos. Iluminação LED com 3 temperatures de cor e 10 níveis de brilho. USB recarregável.",
+    "descricao": "Ring light portátil com suporte ajustável para celular, ideal para fotos profissionais e vídeos. Iluminação LED com 3 temperaturas de cor e 10 níveis de brilho. USB recarregável.",
     "preco": 85.86,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1220,7 +1232,7 @@
   {
     "id": 1783384764188,
     "nome": "Suporte de celular para carro (ventosa magnética)",
-    "descricao": "Suporte magnético para celular no carro com ventosa forte que fixa no painel ou para-brisa. Imã potente que segura o celular firmemente sem interferir no sinal. Rotação 360° para visualização em qualquer ângulo.",
+    "descricao": "Suporte magnético para celular no carro com ventosa forte que fixa no painel ou para-brisa. Imã potente que segura o celular firmemente. Rotação 360° para visualização em qualquer ângulo.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1262,7 +1274,7 @@
   {
     "id": 1783384764576,
     "nome": "Kit de bordado/crochê para iniciantes (com videoaula)",
-    "descricao": "Kit completo de bordado e crochê para iniciantes com linha, agulhas, bastidor e acessórios. Inclui acesso a videoaulas passo a passo para aprender do absoluto zero. Projetos simples e criativos para começar.",
+    "descricao": "Kit completo de bordado e crochê para iniciantes com linha, agulhas, bastidor e acessórios. Inclui acesso a videoaulas passo a passo para aprender do zero. Projetos simples e criativos para começar.",
     "preco": 96.62,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1283,7 +1295,7 @@
   {
     "id": 1783384764614,
     "nome": "Chapéu bucket (pescador) unissex",
-    "descricao": "Chapéu bucket unissex em algodão com proteção UV, leve e confortável para uso diário. Modelo clássico pescador com aba curta que protege do sol sem atrapalhar a visão. Disponível em várias cores.",
+    "descricao": "Chapéu bucket unissex em algodão com proteção UV, leve e confortável para uso diário. Modelo clássico pescador com aba curta que protege do sol. Disponível em várias cores.",
     "preco": 70.8,
     "precoOriginal": null,
     "categoria": "Acessórios e Moda",
@@ -1325,7 +1337,7 @@
   {
     "id": 1783384764873,
     "nome": "Limpador de teclado portátil (gel mágico)",
-    "descricao": "Gel mágico limpador que alcança sujeiras entre as teclas do teclado, painéis de carro, saídas de ar e fendas. Não tóxico, reutilizável e não deixa resíduos. Fácil de usar e leva em qualquer lugar.",
+    "descricao": "Gel mágico limpador que alcança sujeiras entre as teclas do teclado, painéis de carro e fendas. Não tóxico, reutilizável e não deixa resíduos. Fácil de usar e leva em qualquer lugar.",
     "preco": 32.06,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1367,7 +1379,7 @@
   {
     "id": 1783384765055,
     "nome": "Organizador de mesa acrílico (giratório)",
-    "descricao": "Organizador de mesa acrílico giratório com múltiplos compartimentos para canetas, clipes, post-its e acessórios. Design moderno e funcional que mantém sua mesa sempre arrumada. Gira 360° para fácil acesso.",
+    "descricao": "Organizador de mesa acrílico giratório com múltiplos compartimentos para canetas, clipes e acessórios. Design moderno que mantém sua mesa arrumada. Gira 360° para fácil acesso a tudo.",
     "preco": 96.62,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -1388,7 +1400,7 @@
   {
     "id": 1783384765118,
     "nome": "Jogo de tabuleiro em miniatura (viagem)",
-    "descricao": "Jogo de tabuleiro compacto no formato de estojo, ideal para levar em viagens e passeios. Inclui peças magnéticas que não se perdem e tabuleiro dobrável. Diversão garantida em qualquer lugar.",
+    "descricao": "Jogo de tabuleiro compacto no formato de estojo, ideal para levar em viagens. Inclui peças magnéticas que não se perdem e tabuleiro dobrável. Diversão garantida em qualquer lugar.",
     "preco": 75.1,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1430,7 +1442,7 @@
   {
     "id": 1783384765315,
     "nome": "Luminária de mesa com braço articulado e LED",
-    "descricao": "Luminária de mesa com braço articulado em alumínio e LED de alta luminosidade com ajuste de intensidade. Design moderno e funcional com base estável e pescoço flexível. Ideal para estudo e trabalho.",
+    "descricao": "Luminária de mesa com braço articulado em alumínio e LED de alta luminosidade com ajuste de intensidade. Design moderno com base estável e pescoço flexível. Ideal para estudo e trabalho.",
     "preco": 171.94,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -1451,7 +1463,7 @@
   {
     "id": 1783384765526,
     "nome": "Fita métrica digital a laser (pequena)",
-    "descricao": "Fita métrica digital a laser compacta que mede distâncias com precisão de até 40 metros. Display LCD iluminado com medição em metros/pés/polegadas. Ideal para reformas, decoração e marcenaria.",
+    "descricao": "Fita métrica digital a laser compacta que mede distâncias com precisão de até 40 metros. Display LCD iluminado com medição em metros e polegadas. Ideal para reformas, decoração e marcenaria.",
     "preco": 85.86,
     "precoOriginal": null,
     "categoria": "Ferramentas",
@@ -1493,7 +1505,7 @@
   {
     "id": 1783384765873,
     "nome": "Necessaire de viagem compacta",
-    "descricao": "Necessaire compacta em material impermeável com compartimento interno e alça para pendurar. Ideal para organizar cosméticos, escovas e itens de higiene em viagens. Leve, resistente e fácil de limpar.",
+    "descricao": "Necessaire compacta em material impermeável com compartimento interno e alça para pendurar. Ideal para organizar cosméticos e itens de higiene em viagens. Leve, resistente e fácil de limpar.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Acessórios e Moda",
@@ -1514,7 +1526,7 @@
   {
     "id": 1783384766185,
     "nome": "Mochila dobrável impermeável (sacola)",
-    "descricao": "Mochila dobrável impermeável que se compacta em um pequeno pouch para levar na bolsa. Feita em nylon resistente à água, ideal para emergências, viagens e compras. Capacidade de até 20 litros.",
+    "descricao": "Mochila dobrável impermeável que se compacta em um pequeno pouch para levar na bolsa. Nylon resistente à água, ideal para emergências, viagens e compras. Capacidade de até 20 litros.",
     "preco": 85.86,
     "precoOriginal": null,
     "categoria": "Acessórios e Moda",
@@ -1535,7 +1547,7 @@
   {
     "id": 1783384766317,
     "nome": "Coleira refletiva com luz LED",
-    "descricao": "Coleira ajustável com tira refletiva e luz LED recarregável para segurança do seu pet em passeios noturnos. Visível a longa distância, resistente à água e confortável para uso contínuo.",
+    "descricao": "Coleira ajustável com tira refletiva e luz LED recarregável para segurança do pet em passeios noturnos. Visível a longa distância e resistente à água. Confortável para uso contínuo.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Pets",
@@ -1556,7 +1568,7 @@
   {
     "id": 1783384766385,
     "nome": "Power bank fino 10.000mAh (fino e leve)",
-    "descricao": "Power bank ultrafino com capacidade de 10.000mAh, suficiente para carregar seu celular até 3 vezes. Design elegante em alumínio, entrada USB-C e saída rápida de 2.1A. Perfeito para o dia a dia.",
+    "descricao": "Power bank ultrafino com capacidade de 10.000mAh para carregar seu celular até 3 vezes. Design elegante em alumínio, entrada USB-C e saída rápida de 2.1A. Perfeito para o dia a dia.",
     "preco": 139.66,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1577,7 +1589,7 @@
   {
     "id": 1783384766451,
     "nome": "Kit de chaves Allen/hexagonais em formato compacto",
-    "descricao": "Kit de chaves Allen hexagonais em formato compacto tipo canivete com as bitolas mais usadas. Aço de alta resistência com cabo ergonômico. Ideal para montagem de móveis, bicicletas e reparos domésticos.",
+    "descricao": "Kit de chaves Allen hexagonais em formato compacto tipo canivete com as bitolas mais usadas. Aço de alta resistência com cabo ergonômico. Ideal para montagem de móveis e reparos.",
     "preco": 42.82,
     "precoOriginal": null,
     "categoria": "Ferramentas",
@@ -1598,7 +1610,7 @@
   {
     "id": 1783384767528,
     "nome": "Bolsa de água quente (elétrica e sem fio)",
-    "descricao": "Bolsa de água quente elétrica portátil com aquecimento rápido e desligamento automático sem necessidade de fio na hora do uso. Revestimento em flanela macia para maior conforto e segurança. Ideal para cólicas e dores musculares.",
+    "descricao": "Bolsa de água quente elétrica portátil com aquecimento rápido e desligamento automático. Revestimento em flanela macia para conforto e segurança. Ideal para cólicas e dores musculares.",
     "preco": 107.38,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1619,7 +1631,7 @@
   {
     "id": 1783384767579,
     "nome": "Mini ventilador USB recarregável",
-    "descricao": "Mini ventilador portátil recarregável via USB com 3 velocidades e base de mesa. Silencioso, compacto e com pás protegidas para segurança. Ideal para escritório, academia, acampamento e dias quentes.",
+    "descricao": "Mini ventilador portátil recarregável via USB com 3 velocidades e base de mesa. Silencioso, compacto e com pás protegidas. Ideal para escritório, academia e dias quentes.",
     "preco": 70.8,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1640,7 +1652,7 @@
   {
     "id": 1783384767609,
     "nome": "Caneta touch universal para tablets",
-    "descricao": "Caneta touch com ponta precisa e sensível compatível com todos os tablets e smartphones. Design fino similar a uma caneta comum, com clipe para prender no bolso. Leve e sem necessidade de pareamento.",
+    "descricao": "Caneta touch com ponta precisa compatível com todos os tablets e smartphones. Design fino similar a caneta comum com clipe para prender no bolso. Leve e sem necessidade de pareamento.",
     "preco": 42.82,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1661,7 +1673,7 @@
   {
     "id": 1783384767631,
     "nome": "Chave de fenda elétrica recarregável (mini)",
-    "descricao": "Chave de fenda elétrica recarregável compacta com pontas intercambiáveis armazenadas no corpo. Bateria de longa duração e LED na ponta para iluminar a área de trabalho. Ideal para eletrônicos e reparos delicados.",
+    "descricao": "Chave de fenda elétrica recarregável compacta com pontas intercambiáveis armazenadas no corpo. Bateria de longa duração e LED na ponta. Ideal para eletrônicos e reparos delicados.",
     "preco": 124.6,
     "precoOriginal": null,
     "categoria": "Ferramentas",
@@ -1682,7 +1694,7 @@
   {
     "id": 1783384767691,
     "nome": "Suporte de parede para mangueira de jardim",
-    "descricao": "Suporte de parede em metal resistente para organizar a mangueira de jardim sem enrolar. Instalação simples com parafusos e buchas inclusos. Mantém a mangueira sempre pronta para usar sem nós.",
+    "descricao": "Suporte de parede em metal resistente para organizar a mangueira de jardim. Instalação simples com parafusos e buchas inclusos. Mantém a mangueira sempre pronta para usar.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Ferramentas",
@@ -1703,7 +1715,7 @@
   {
     "id": 1783384767727,
     "nome": "Comedouro lento para cães (labirinto)",
-    "descricao": "Comedouro lento tipo labirinto que estimula a alimentação mais lenta, prevenindo engasgos, vômitos e obesidade. Design divertido e colorido em material atóxico. Lavável e resistente para cães de todos os portes.",
+    "descricao": "Comedouro lento tipo labirinto que estimula a alimentação mais lenta, prevenindo engasgos e obesidade. Design divertido em material atóxico. Lavável e resistente para cães de todos os portes.",
     "preco": 70.8,
     "precoOriginal": null,
     "categoria": "Pets",
@@ -1724,7 +1736,7 @@
   {
     "id": 1783384767786,
     "nome": "Cabo de carregamento magnético (tipo retrátil)",
-    "descricao": "Cabo magnético tipo retrátil com ponta magnética que se encaixa automaticamente, prolongando a vida útil do conector. Compatível com USB-C e Micro USB. Design que não embaraça e fácil de transportar.",
+    "descricao": "Cabo magnético tipo retrátil com ponta que se encaixa automaticamente. Compatível com USB-C e Micro USB. Design que não embaraça e fácil de transportar.",
     "preco": 53.58,
     "precoOriginal": null,
     "categoria": "Eletrônicos",
@@ -1745,7 +1757,7 @@
   {
     "id": 1783384767845,
     "nome": "Brinquedo interativo para gato (vara com pena)",
-    "descricao": "Brinquedo interativo com vara flexível e pena colorida que desperta o instinto de caça do seu gato. Estímulo ao exercício e ao vínculo entre tutor e pet. Leve, resistente e substituível.",
+    "descricao": "Brinquedo interativo com vara flexível e pena colorida que desperta o instinto de caça do gato. Estímulo ao exercício e ao vínculo entre tutor e pet. Leve e resistente.",
     "preco": 42.82,
     "precoOriginal": null,
     "categoria": "Pets",
@@ -1766,7 +1778,7 @@
   {
     "id": 1783384768679,
     "nome": "Cama de cachorro/gato aquecida (autoaquecível)",
-    "descricao": "Cama autoaduecível para pets com tecnologia que reflete o calor corporal, mantendo seu animal aquecido sem eletricidade. Confortável, lavável e com base antiderrapante. Ideal para dias frios.",
+    "descricao": "Cama autoaquecível para pets com tecnologia que reflete o calor corporal sem eletricidade. Confortável, lavável e com base antiderrapante. Ideal para dias frios.",
     "preco": 171.94,
     "precoOriginal": null,
     "categoria": "Pets",
@@ -1787,7 +1799,7 @@
   {
     "id": 1783384768716,
     "nome": "Tapete higiênico reutilizável lavável",
-    "descricao": "Tapete higiênico reutilizável para pets com camada impermeável que absorve a urina sem vazar. Lavável em máquina, ecológico e econômico comparado aos descartáveis. Ideal para filhotes e adestramento.",
+    "descricao": "Tapete higiênico reutilizável para pets com camada impermeável que absorve urina sem vazar. Lavável em máquina, ecológico e econômico. Ideal para filhotes e adestramento.",
     "preco": 85.86,
     "precoOriginal": null,
     "categoria": "Pets",
@@ -1808,7 +1820,7 @@
   {
     "id": 1783384768999,
     "nome": "Kit de desenho profissional (lápis + carvão) para iniciantes",
-    "descricao": "Kit de desenho profissional com lápis grafite, carvão vegetal, esfuminho e borracha. Estojo compacto ideal para iniciantes e artistas em desenvolvimento. Materiais de alta qualidade para sombreamento e detalhes.",
+    "descricao": "Kit de desenho profissional com lápis grafite, carvão vegetal, esfuminho e borracha. Estojo compacto para iniciantes e artistas. Materiais de alta qualidade para sombreamento e detalhes.",
     "preco": 107.38,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -1829,7 +1841,7 @@
   {
     "id": 1783384769066,
     "nome": "Abridor de garrafas automático (elétrico)",
-    "descricao": "Abridor de garrafas automático elétrico que remove rolhas com um toque. Funciona com pilhas e é compatível com a maioria dos tamanhos de rolha. Design elegante em aço escovado, presente ideal.",
+    "descricao": "Abridor de garrafas automático elétrico que remove rolhas com um toque. Funciona com pilhas e é compatível com a maioria dos tamanhos de rolha. Design elegante em aço escovado.",
     "preco": 107.38,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1850,7 +1862,7 @@
   {
     "id": 1783384769146,
     "nome": "Capa de chuva compacta (tamanho bolso)",
-    "descricao": "Capa de chuva compacta que cabe no bolso e se abre em segundos quando necessário. Feita em poliéster resistente à água com costura selada. Leve, descartável mas reutilizável, ideal para imprevistos.",
+    "descricao": "Capa de chuva compacta que cabe no bolso e se abre em segundos. Poliéster resistente à água com costura selada. Leve e ideal para imprevistos.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1871,7 +1883,7 @@
   {
     "id": 1783384769375,
     "nome": "Sensor de movimento com luz LED interna",
-    "descricao": "Sensor de movimento com luz LED embutida que acende automaticamente ao detectar presença. Instalação simples com fita adesiva ou parafusos. Perfeito para corredores, escadas, armários e garagens.",
+    "descricao": "Sensor de movimento com luz LED embutida que acende automaticamente ao detectar presença. Instalação simples com fita adesiva ou parafusos. Perfeito para corredores, escadas e garagens.",
     "preco": 70.8,
     "precoOriginal": null,
     "categoria": "Ferramentas",
@@ -1892,7 +1904,7 @@
   {
     "id": 1783384769457,
     "nome": "Luz de cabeceira 3D (efeito cubo flutuante)",
-    "descricao": "Luminária 3D com efeito cubo flutuante que cria ilusão de ótica com luzes LED coloridas. Controle remoto para mudança de cor e intensidade. Peça decorativa única para quarto e sala de estar.",
+    "descricao": "Luminária 3D com efeito cubo flutuante que cria ilusão de ótica com luzes LED coloridas. Controle remoto para mudança de cor e intensidade. Peça decorativa única para quarto e sala.",
     "preco": 96.62,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1913,7 +1925,7 @@
   {
     "id": 1783384769894,
     "nome": "Apoio de pulso para teclado em gel",
-    "descricao": "Apoio de pulso ergonômico em gel de memória que reduz a tensão e a fadiga durante a digitação. Base antiderrapante que não desliza na mesa. Compatível com teclados padrão e mecânicos.",
+    "descricao": "Apoio de pulso ergonômico em gel de memória que reduz tensão e fadiga durante a digitação. Base antiderrapante que não desliza. Compatível com teclados padrão e mecânicos.",
     "preco": 60.04,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -1934,7 +1946,7 @@
   {
     "id": 1783384769898,
     "nome": "Mini grampeador sem esforço",
-    "descricao": "Mini grampeador compacto com alavanca que reduz o esforço necessário para grampear. Design leve e portátil que cabe em qualquer estojo ou gaveta. Ideal para escritório, escola e uso doméstico.",
+    "descricao": "Mini grampeador compacto com alavanca que reduz o esforço necessário. Design leve e portátil que cabe em qualquer estojo. Ideal para escritório, escola e uso doméstico.",
     "preco": 42.82,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -1955,7 +1967,7 @@
   {
     "id": 1783384770171,
     "nome": "Caneca colorida que muda de cor com calor",
-    "descricao": "Caneca mágica que revela uma imagem ou mensagem escondida quando recebe líquido quente. Cerâmica de alta qualidade com capacidade de 300ml e acabamento brilhante. Presente criativo e divertido.",
+    "descricao": "Caneca mágica que revela imagem ou mensagem escondida quando recebe líquido quente. Cerâmica de alta qualidade com capacidade de 300ml. Presente criativo e divertido.",
     "preco": 70.8,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1976,7 +1988,7 @@
   {
     "id": 1783384770205,
     "nome": "Kit de culinária infantil (forma de moldar arroz/legumes)",
-    "descricao": "Kit divertido para transformar arroz, legumes e alimentos em formas lúdicas que incentivam as crianças a comer melhor. Moldes de material atóxico e seguros para alimentos. Fácil de usar e lavar.",
+    "descricao": "Kit divertido para transformar arroz e legumes em formas lúdicas que incentivam as crianças a comer melhor. Moldes de material atóxico e seguros. Fácil de usar e lavar.",
     "preco": 85.86,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -1997,7 +2009,7 @@
   {
     "id": 1783384770524,
     "nome": "Mini projetor de estrelas/galáxia no teto",
-    "descricao": "Mini projetor noturno que transforma o teto do quarto em um céu estrelado ou galáxia com cores vibrantes. Rotação automática e ajuste de foco. Ideal para relaxamento, meditação e quarto infantil.",
+    "descricao": "Mini projetor noturno que transforma o teto em um céu estrelado ou galáxia com cores vibrantes. Rotação automática e ajuste de foco. Ideal para relaxamento e quarto infantil.",
     "preco": 96.62,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -2018,7 +2030,7 @@
   {
     "id": 1783384770561,
     "nome": "Caderno inteligente (reutilizável) + caneta apagável",
-    "descricao": "Caderno inteligente com páginas reutilizáveis que podem ser apagadas com água ou pano úmido. Inclui caneta especial com tinta borrável. Reduz o desperdício de papel e é prático para anotações do dia a dia.",
+    "descricao": "Caderno inteligente com páginas reutilizáveis que podem ser apagadas com água ou pano úmido. Inclui caneta especial com tinta borrável. Reduz desperdício de papel e prático para anotações.",
     "preco": 103.08,
     "precoOriginal": null,
     "categoria": "Escritório e Papelaria",
@@ -2039,7 +2051,7 @@
   {
     "id": 1783384772378,
     "nome": "Fidget spinner de metal (gira e dura muito)",
-    "descricao": "Fidget spinner de metal com rolamento de cerâmica que gira por minutos sem parar. Design aerodinâmico e peso equilibrado para giros longos e suaves. Alivia estresse e melhora a concentração.",
+    "descricao": "Fidget spinner de metal com rolamento de cerâmica que gira por minutos sem parar. Design aerodinâmico e peso equilibrado. Alivia estresse e melhora a concentração.",
     "preco": 42.82,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -2060,7 +2072,7 @@
   {
     "id": 1783384772870,
     "nome": "Máquina de algodão-doce portátil (elétrica, pequena)",
-    "descricao": "Máquina elétrica portátil para fazer algodão-doce em casa em poucos minutos. Fácil de usar, limpar e guardar. Diversão garantida para festas, encontros e sobremesas criativas.",
+    "descricao": "Máquina elétrica portátil para fazer algodão-doce em casa em poucos minutos. Fácil de usar, limpar e guardar. Diversão garantida para festas e encontros.",
     "preco": 193.46,
     "precoOriginal": null,
     "categoria": "Diversos",
@@ -2081,7 +2093,7 @@
   {
     "id": 1783384880873,
     "nome": "Pente desembaraçador mágico",
-    "descricao": "Pente desembaraçador com cerdas flexíveis que deslizam pelos fios sem puxar ou quebrar. Design ergonômico com almofada que se adapta ao couro cabeludo. Ideal para todos os tipos de cabelo, inclusive úmido.",
+    "descricao": "Pente desembaraçador com cerdas flexíveis que deslizam pelos fios sem puxar ou quebrar. Design ergonômico com almofada que se adapta ao couro cabeludo. Ideal para todos os tipos de cabelo.",
     "preco": 53.58,
     "precoOriginal": null,
     "categoria": "Beleza e Bem-Estar",
