@@ -209,6 +209,11 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar infinitepayId:', e.message);
   }
+  try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS supplierLink TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar supplierLink:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -471,6 +476,7 @@ const parseProduct = (p) => p ? {
   variantes: JSON.parse(p.variants || '[]'),
   frete: p.frete || '',
   checkoutLink: p.checkoutlink || p.checkoutLink || '',
+  supplierLink: p.supplierlink || p.supplierLink || '',
   paused: p.paused === 1 || p.paused === true,
   precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
   destaque: p.destaque === 1 || p.destaque === true,
@@ -509,14 +515,14 @@ async function updateProduct(id, data) {
 async function createProduct(data) {
   try {
     await query(
-      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, supplierLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
       [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
        data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
        data.estoque || 'N/A', data.stock != null ? data.stock : -1,
        data.destaque ? 1 : 0, data.paused ? 1 : 0,
        data.avaliacao || 0,
        data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
-       data.frete || '', data.checkoutLink || '',
+       data.frete || '', data.checkoutLink || '', data.supplierLink || '',
        data.createdAt || new Date().toISOString()]
     );
   } catch (e) {
@@ -837,7 +843,7 @@ async function offerProducts(limit = 10) {
 }
 
 async function adminProducts(search, pausedFilter) {
-  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, checkoutLink FROM products WHERE 1=1`;
+  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, checkoutLink, supplierLink FROM products WHERE 1=1`;
   const params = [];
   let idx = 1;
   if (search) {
@@ -851,7 +857,8 @@ async function adminProducts(search, pausedFilter) {
   return result.rows.map(p => ({
     ...p, paused: p.paused === 1 || p.paused === true,
     precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
-  checkoutLink: p.checkoutlink || p.checkoutLink || '',
+    checkoutLink: p.checkoutlink || p.checkoutLink || '',
+    supplierLink: p.supplierlink || p.supplierLink || '',
     modified: (p.paused === 1 || p.paused === true) || (p.precoAlterado === 1 || p.precoAlterado === true)
   }));
 }

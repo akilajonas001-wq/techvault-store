@@ -549,6 +549,11 @@
               <input type="url" id="cpCheckoutLink" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
               <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Se deixar vazio, usará o link geral da loja.</span>
             </div>
+            <div class="cpFull" style="grid-column:1/-1;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Compra (Fornecedor)</label>
+              <input type="url" id="cpSupplierLink" placeholder="https://www.aliexpress.com/item/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Link onde você compra o produto. Será usado no botão "Comprar" nos pedidos.</span>
+            </div>
           </div>
 
           <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
@@ -870,10 +875,57 @@
             '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
             '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
             '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>' +
+            (() => {
+              const hasSupplierLink = o.itens.some(item => {
+                const product = allProducts.find(p => p.id == item.id);
+                return product && product.supplierLink;
+              });
+              return hasSupplierLink ? ' <button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar itens no fornecedor" style="border-color:var(--success);color:var(--success);"><i class="fas fa-shopping-cart"></i></button>' : '';
+            })() +
             (currentUserRole === 'admin' ? ' <button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir pedido" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>' : '') + '</td>' +
           '</tr>';
         }).join('') +
         '</tbody></table></div>';
+    }
+
+    function buyOrderItems(orderId) {
+      const order = allOrders.find(o => o.id == orderId);
+      if (!order) return;
+      const end = order.endereco || {};
+      const enderecoFormatado = [end.logradouro, end.numero, end.complemento, end.bairro, end.cidade, end.estado, end.cep].filter(Boolean).join(', ');
+
+      const links = order.itens.map(item => {
+        const product = allProducts.find(p => p.id == item.id);
+        return product && product.supplierLink ? { nome: item.nome, link: product.supplierLink } : null;
+      }).filter(Boolean);
+
+      if (!links.length) {
+        notify('Nenhum link de fornecedor encontrado para os itens deste pedido.', 'info');
+        return;
+      }
+
+      if (links.length === 1) {
+        notify('Abrindo página de compra para: ' + links[0].nome + '\nEndereço do cliente: ' + enderecoFormatado, 'info');
+        window.open(links[0].link, '_blank');
+        return;
+      }
+
+      const msg = 'Este pedido tem ' + links.length + ' itens com links de fornecedor:\n\n' +
+        links.map((l, i) => (i + 1) + '. ' + l.nome).join('\n') +
+        '\n\nEndereço do cliente: ' + enderecoFormatado +
+        '\n\nDeseja abrir todos os links?';
+      if (confirm(msg)) {
+        links.forEach(l => window.open(l.link, '_blank'));
+      }
+    }
+
+    function openSupplierLink(productId) {
+      const product = allProducts.find(p => p.id == productId);
+      if (product && product.supplierLink) {
+        window.open(product.supplierLink, '_blank');
+      } else {
+        notify('Link de fornecedor não cadastrado para este produto.', 'info');
+      }
     }
 
     function showOrderDetail(orderId) {
@@ -891,7 +943,10 @@
           const vals = Object.values(i.variantSpecs).filter(Boolean).join(' | ');
           if (vals) specs = '<br><span style="font-size:11px;color:var(--text-muted)">' + vals + '</span>';
         }
-        return '<div class="cart-item-row"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + specs + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
+        const product = allProducts.find(p => p.id == i.id);
+        const buyBtn = product && product.supplierLink ?
+          '<button onclick="openSupplierLink(' + i.id + ')" title="Comprar no fornecedor" style="background:var(--success);color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;margin-left:8px;"><i class="fas fa-shopping-cart"></i> Comprar</button>' : '';
+        return '<div class="cart-item-row"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + specs + buyBtn + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
       }).join('');
 
       const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', cancelado: 'badge-red', reembolsado: 'badge-gray' };
@@ -918,6 +973,19 @@
         <div class="detail-section">
           <div class="label">Itens</div>
           ${itemsHtml || 'Nenhum item'}
+          ${(() => {
+            const hasLinks = order.itens.some(item => {
+              const product = allProducts.find(p => p.id == item.id);
+              return product && product.supplierLink;
+            });
+            if (!hasLinks) return '';
+            const end = order.endereco || {};
+            const endStr = [end.logradouro, end.numero, end.complemento, end.bairro, end.cidade, end.estado, end.cep].filter(Boolean).join(', ');
+            return '<div style="margin-top:10px;padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;">' +
+              '<strong style="color:var(--success);"><i class="fas fa-map-marker-alt"></i> Endereço de entrega:</strong> ' + endStr +
+              '<br><button onclick="buyOrderItems(' + order.id + ')" style="margin-top:8px;background:var(--success);color:white;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;font-weight:600;"><i class="fas fa-shopping-cart"></i> Comprar Todos os Itens</button>' +
+              '</div>';
+          })()}
         </div>
         <div class="detail-section">
           <div class="label">Resumo Financeiro</div>
@@ -1235,6 +1303,7 @@
       document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
       document.getElementById('cpDestaque').checked = p.destaque;
       document.getElementById('cpCheckoutLink').value = p.checkoutLink || '';
+      document.getElementById('cpSupplierLink').value = p.supplierLink || '';
 
       // Rebuild variants
       const vc = document.getElementById('variantsContainer');
@@ -1420,6 +1489,7 @@
       });
 
       const checkoutLink = document.getElementById('cpCheckoutLink').value.trim();
+      const supplierLink = document.getElementById('cpSupplierLink').value.trim();
       const editId = document.getElementById('cpEditId').value;
 
       const productData = {
@@ -1436,7 +1506,8 @@
         reviews: 0,
         specs: specs,
         variants: variants,
-        checkoutLink: checkoutLink
+        checkoutLink: checkoutLink,
+        supplierLink: supplierLink
       };
 
       try {
@@ -1468,6 +1539,7 @@
           document.getElementById('cpImagens').value = '';
           document.getElementById('cpDestaque').checked = false;
           document.getElementById('cpCheckoutLink').value = '';
+          document.getElementById('cpSupplierLink').value = '';
           document.getElementById('cpEditId').value = '';
           document.getElementById('variantsContainer').innerHTML =
             '<div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">' +
