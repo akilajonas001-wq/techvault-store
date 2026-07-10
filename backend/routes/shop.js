@@ -236,9 +236,17 @@ router.post('/orders', requireAuth, async (req, res) => {
       if (customCheckoutFallback) {
         const separator = customCheckoutFallback.includes('?') ? '&' : '?';
         checkoutUrl = `${customCheckoutFallback}${separator}order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
+        console.log('Checkout fallback: usando link do produto:', checkoutUrl);
       } else {
         checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
+        console.log('Checkout fallback: usando link hardcoded:', checkoutUrl);
       }
+    } else {
+      console.log('Checkout: usando link da API InfinitePay:', checkoutUrl);
+    }
+
+    if (!checkoutUrl) {
+      console.error('Checkout URL é null! Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
     }
 
     res.json({

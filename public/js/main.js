@@ -104,7 +104,7 @@ function showUserMenu() {
   // Desktop
   if (authButtons) authButtons.style.display = 'none';
   if (userMenu) {
-    userMenu.style.display = '';
+    userMenu.style.display = 'contents';
     userMenu.classList.add('shown');
     const firstName = (currentUser?.nome || '').split(' ')[0];
     let adminLink = '';

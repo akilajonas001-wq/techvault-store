@@ -210,7 +210,9 @@ async function handleQuickCheckout() {
       window.location.href = data.checkout_url;
     } else {
       loadingOverlay.style.display = 'none';
-      errorMessage.textContent = data.error || 'Erro ao processar pedido';
+      let msg = data.error || 'Erro ao processar pedido';
+      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento. Tente novamente.';
+      errorMessage.textContent = msg;
       errorMessage.style.display = 'block';
     }
   } catch (error) {
@@ -361,7 +363,9 @@ async function handleCheckout(event) {
       window.location.href = data.checkout_url;
     } else {
       loadingOverlay.style.display = 'none';
-      errorMessage.textContent = data.error || 'Erro ao processar pedido';
+      let msg = data.error || 'Erro ao processar pedido';
+      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento. Tente novamente.';
+      errorMessage.textContent = msg;
       errorMessage.style.display = 'block';
     }
   } catch (error) {
