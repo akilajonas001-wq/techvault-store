@@ -216,11 +216,15 @@ router.post('/orders', requireAuth, async (req, res) => {
     };
 
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const apiRes = await fetch(INFINITE_PAY_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiPayload)
+        body: JSON.stringify(apiPayload),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       const apiData = await apiRes.json();
       if (apiRes.ok && apiData.url) {
         checkoutUrl = apiData.url;
@@ -254,7 +258,7 @@ router.post('/orders', requireAuth, async (req, res) => {
       message: 'Pedido criado! Redirecionando para o pagamento...',
       checkout_url: checkoutUrl
     });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao processar pedido' }); }
+  } catch (e) { console.error('ERRO PEDIDO:', e.message, e.stack); res.status(500).json({ error: 'Erro ao processar pedido: ' + (e.message || '') }); }
 });
 
 router.get('/orders/user/:userId', async (req, res) => {

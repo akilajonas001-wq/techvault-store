@@ -204,6 +204,7 @@ async function handleQuickCheckout() {
       body: JSON.stringify(orderData)
     });
     const data = await response.json();
+    console.log('Order response:', response.status, data);
     if (response.ok && data.success && data.checkout_url) {
       localStorage.removeItem('techvault-cart');
       fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
@@ -357,6 +358,7 @@ async function handleCheckout(event) {
       body: JSON.stringify(orderData)
     });
     const data = await response.json();
+    console.log('Order response:', response.status, data);
     if (response.ok && data.success && data.checkout_url) {
       localStorage.removeItem('techvault-cart');
       fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
