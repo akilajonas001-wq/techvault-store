@@ -428,7 +428,7 @@
           <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
           <div style="flex:1;display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
             <input type="text" id="orderSearchInput" placeholder="Buscar por nº pedido, nome, CPF, data..." oninput="renderOrders()" style="padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;min-width:220px;max-width:320px;">
-            <button class="order-detail-btn" onclick="generateOrdersPDF()" title="Gerar PDF de todos os pedidos filtrados" style="border-color:#dc2626;color:#dc2626;font-weight:600;font-size:12px;padding:6px 14px;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+            <button class="order-detail-btn" onclick="generateOrdersPDF()" title="Imprimir ou baixar PDF dos pedidos filtrados" style="border-color:#dc2626;color:#dc2626;font-weight:600;font-size:12px;padding:6px 14px;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Imprimir / PDF</button>
           </div>
         </div>
         <div id="ordersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando pedidos...</div>
@@ -878,6 +878,16 @@
       const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
       const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
       const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : 'badge-gray');
+      const hasSupplierLink = o.itens.some(item => {
+        const product = allProducts.find(p => p.id == item.id);
+        return product && product.supplierLink;
+      });
+      const btnStyle = 'display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;transition:all 0.15s;';
+      let actions = '<div style="display:flex;gap:4px;align-items:center;">';
+      actions += '<button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes" style="' + btnStyle + 'border-color:var(--primary);color:var(--primary);"><i class="fas fa-eye"></i></button>';
+      if (hasSupplierLink) actions += '<button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar no fornecedor" style="' + btnStyle + 'border-color:var(--success);color:var(--success);"><i class="fas fa-cart-shopping"></i></button>';
+      if (currentUserRole === 'admin') actions += '<button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir" style="' + btnStyle + 'border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>';
+      actions += '</div>';
       return '<tr>' +
         '<td><strong>#' + o.id + '</strong></td>' +
         '<td>' + (o.usuario?.nome || 'N/A') + '</td>' +
@@ -885,15 +895,7 @@
         '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
         '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
         '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-        '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>' +
-        (() => {
-          const hasSupplierLink = o.itens.some(item => {
-            const product = allProducts.find(p => p.id == item.id);
-            return product && product.supplierLink;
-          });
-          return hasSupplierLink ? ' <button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar itens no fornecedor" style="border-color:var(--success);color:var(--success);"><i class="fas fa-shopping-cart"></i></button>' : '';
-        })() +
-        (currentUserRole === 'admin' ? ' <button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir pedido" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>' : '') + '</td>' +
+        '<td>' + actions + '</td>' +
       '</tr>';
     }
 
@@ -944,68 +946,98 @@
     }
 
     function generateOrdersPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'mm', 'a4');
       const filtered = getFilteredOrders();
-      const pageW = doc.internal.pageSize.getWidth();
+      if (!filtered.length) { notify('Nenhum pedido para gerar PDF.', 'info'); return; }
 
-      doc.setFontSize(18);
-      doc.setFont(undefined, 'bold');
-      doc.text('TechVault - Relatorio de Pedidos', 14, 18);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(120);
-      doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR'), 14, 25);
-      doc.text('Total: ' + filtered.length + ' pedido' + (filtered.length !== 1 ? 's' : ''), 14, 30);
+      if (window.jspdf && window.jspdf.jsPDF) {
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF('p', 'mm', 'a4');
+          const pageW = doc.internal.pageSize.getWidth();
 
-      const totalGeral = filtered.reduce((s, o) => s + (o.total || 0), 0);
-      doc.setTextColor(0);
-      doc.text('Valor Total: R$ ' + totalGeral.toFixed(2).replace('.', ','), pageW - 14, 30, { align: 'right' });
+          doc.setFontSize(18);
+          doc.setFont(undefined, 'bold');
+          doc.text('TechVault - Relatorio de Pedidos', 14, 18);
+          doc.setFontSize(10);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(120);
+          doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR'), 14, 25);
+          doc.text('Total: ' + filtered.length + ' pedido' + (filtered.length !== 1 ? 's' : ''), 14, 30);
+          const totalGeral = filtered.reduce((s, o) => s + (o.total || 0), 0);
+          doc.setTextColor(0);
+          doc.text('Valor Total: R$ ' + totalGeral.toFixed(2).replace('.', ','), pageW - 14, 30, { align: 'right' });
 
-      let y = 37;
-      const groups = groupOrdersByMonth(filtered);
+          let y = 37;
+          const groups = groupOrdersByMonth(filtered);
+          groups.forEach(([key, group]) => {
+            if (y > 260) { doc.addPage(); y = 20; }
+            doc.setFillColor(248, 250, 252);
+            doc.rect(14, y - 4, pageW - 28, 8, 'F');
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(40);
+            doc.text(group.label.charAt(0).toUpperCase() + group.label.slice(1) + ' (' + group.orders.length + ' pedidos - R$ ' + group.orders.reduce((s, o) => s + (o.total || 0), 0).toFixed(2).replace('.', ',') + ')', 16, y + 1);
+            y += 10;
+            const rows = group.orders.map(o => [
+              '#' + o.id,
+              (o.usuario?.nome || 'N/A').substring(0, 30),
+              o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ').substring(0, 50),
+              'R$ ' + (o.total || 0).toFixed(2).replace('.', ','),
+              o.status || 'pendente',
+              o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '-'
+            ]);
+            doc.autoTable({
+              startY: y, margin: { left: 14, right: 14 },
+              head: [['Pedido', 'Cliente', 'Itens', 'Total', 'Status', 'Data']],
+              body: rows,
+              styles: { fontSize: 8, cellPadding: 2 },
+              headStyles: { fillColor: [26, 115, 232], fontSize: 8 },
+              columnStyles: { 0: { cellWidth: 18 }, 1: { cellWidth: 35 }, 2: { cellWidth: 60 }, 3: { cellWidth: 22 }, 4: { cellWidth: 22 }, 5: { cellWidth: 25 } },
+              didDrawPage: function(data) { y = data.cursor.y; }
+            });
+            y = doc.lastAutoTable.finalY + 6;
+          });
+          doc.save('pedidos-techvault-' + new Date().toISOString().split('T')[0] + '.pdf');
+          return;
+        } catch (e) {
+          console.error('Erro jsPDF:', e);
+        }
+      }
+      printOrders(filtered);
+    }
 
+    function printOrders(orders) {
+      const groups = groupOrdersByMonth(orders);
+      const totalGeral = orders.reduce((s, o) => s + (o.total || 0), 0);
+      let html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pedidos TechVault</title>';
+      html += '<style>body{font-family:Arial,sans-serif;padding:20px;color:#333;}';
+      html += 'h1{font-size:22px;margin-bottom:4px;} .sub{color:#666;font-size:13px;margin-bottom:20px;}';
+      html += 'h2{font-size:16px;background:#f1f5f9;padding:8px 12px;border-radius:6px;margin:20px 0 10px;text-transform:capitalize;}';
+      html += 'table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;}';
+      html += 'th{background:#1a73e8;color:white;padding:8px 10px;text-align:left;font-size:11px;}';
+      html += 'td{padding:7px 10px;border-bottom:1px solid #e5e7eb;}';
+      html += 'tr:nth-child(even){background:#f9fafb;} .total{font-weight:bold;color:#1a73e8;}';
+      html += '@media print{body{padding:10px;}} </style></head><body>';
+      html += '<h1>TechVault - Relatorio de Pedidos</h1>';
+      html += '<div class="sub">Gerado em: ' + new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR') + ' | Total: ' + orders.length + ' pedidos | Valor Total: R$ ' + totalGeral.toFixed(2).replace('.', ',') + '</div>';
       groups.forEach(([key, group]) => {
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setFillColor(248, 250, 252);
-        doc.rect(14, y - 4, pageW - 28, 8, 'F');
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(40);
-        doc.text(group.label.charAt(0).toUpperCase() + group.label.slice(1) + ' (' + group.orders.length + ' pedidos - R$ ' + group.orders.reduce((s, o) => s + (o.total || 0), 0).toFixed(2).replace('.', ',') + ')', 16, y + 1);
-        y += 10;
-
-        const rows = group.orders.map(o => [
-          '#' + o.id,
-          (o.usuario?.nome || 'N/A').substring(0, 30),
-          o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ').substring(0, 50),
-          'R$ ' + (o.total || 0).toFixed(2).replace('.', ','),
-          o.status || 'pendente',
-          o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '-'
-        ]);
-
-        doc.autoTable({
-          startY: y,
-          margin: { left: 14, right: 14 },
-          head: [['Pedido', 'Cliente', 'Itens', 'Total', 'Status', 'Data']],
-          body: rows,
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [26, 115, 232], fontSize: 8 },
-          columnStyles: {
-            0: { cellWidth: 18 },
-            1: { cellWidth: 35 },
-            2: { cellWidth: 60 },
-            3: { cellWidth: 22 },
-            4: { cellWidth: 22 },
-            5: { cellWidth: 25 }
-          },
-          didDrawPage: function(data) { y = data.cursor.y; }
+        const totalGroup = group.orders.reduce((s, o) => s + (o.total || 0), 0);
+        html += '<h2>' + group.label + ' (' + group.orders.length + ' pedidos - R$ ' + totalGroup.toFixed(2).replace('.', ',') + ')</h2>';
+        html += '<table><thead><tr><th>#</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Data</th></tr></thead><tbody>';
+        group.orders.forEach(o => {
+          const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
+          const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
+          html += '<tr><td><strong>#' + o.id + '</strong></td><td>' + (o.usuario?.nome || 'N/A') + '</td>';
+          html += '<td>' + items + '</td><td class="total">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</td>';
+          html += '<td>' + (o.status || 'pendente') + '</td><td>' + date + '</td></tr>';
         });
-
-        y = doc.lastAutoTable.finalY + 6;
+        html += '</tbody></table>';
       });
-
-      doc.save('pedidos-techvault-' + new Date().toISOString().split('T')[0] + '.pdf');
+      html += '</body></html>';
+      const w = window.open('', '_blank');
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { w.print(); }, 500);
     }
 
     function buyOrderItems(orderId) {
