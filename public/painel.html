@@ -423,9 +423,13 @@
 
     <div id="tab-pedidos" class="tab-content active">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px;">
           <h2><i class="fas fa-box"></i> Todos os Pedidos</h2>
           <span id="ordersCount" style="font-size: 13px; color: var(--text-muted);"></span>
+          <div style="flex:1;display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="orderSearchInput" placeholder="Buscar por nº pedido, nome, CPF, data..." oninput="renderOrders()" style="padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;min-width:220px;max-width:320px;">
+            <button class="order-detail-btn" onclick="generateOrdersPDF()" title="Gerar PDF de todos os pedidos filtrados" style="border-color:#dc2626;color:#dc2626;font-weight:600;font-size:12px;padding:6px 14px;display:flex;align-items:center;gap:5px;"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+          </div>
         </div>
         <div id="ordersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando pedidos...</div>
       </div>
@@ -844,48 +848,164 @@
       document.getElementById('statVisits').textContent = values[period];
     }
 
+    function getFilteredOrders() {
+      const q = (document.getElementById('orderSearchInput')?.value || '').trim().toLowerCase();
+      if (!q) return allOrders;
+      return allOrders.filter(o => {
+        const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '';
+        const dateISO = o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '';
+        const cpf = o.cliente?.cpf || o.usuario?.cpf || '';
+        const nome = (o.usuario?.nome || '').toLowerCase();
+        const id = String(o.id);
+        return id.includes(q) || nome.includes(q) || cpf.includes(q) || dateStr.includes(q) || dateISO.includes(q);
+      });
+    }
+
+    function groupOrdersByMonth(orders) {
+      const groups = {};
+      orders.forEach(o => {
+        const d = new Date(o.createdAt);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        if (!groups[key]) groups[key] = { label, orders: [] };
+        groups[key].orders.push(o);
+      });
+      const sorted = Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+      return sorted;
+    }
+
+    function renderOrderRow(o) {
+      const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
+      const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
+      const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : 'badge-gray');
+      return '<tr>' +
+        '<td><strong>#' + o.id + '</strong></td>' +
+        '<td>' + (o.usuario?.nome || 'N/A') + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + items.replace(/"/g, '&quot;') + '">' + items + '</td>' +
+        '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
+        '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
+        '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>' +
+        (() => {
+          const hasSupplierLink = o.itens.some(item => {
+            const product = allProducts.find(p => p.id == item.id);
+            return product && product.supplierLink;
+          });
+          return hasSupplierLink ? ' <button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar itens no fornecedor" style="border-color:var(--success);color:var(--success);"><i class="fas fa-shopping-cart"></i></button>' : '';
+        })() +
+        (currentUserRole === 'admin' ? ' <button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir pedido" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>' : '') + '</td>' +
+      '</tr>';
+    }
+
     function renderOrders() {
       const container = document.getElementById('ordersContainer');
-      document.getElementById('ordersCount').textContent = allOrders.length + ' pedido' + (allOrders.length !== 1 ? 's' : '');
+      const filtered = getFilteredOrders();
+      document.getElementById('ordersCount').textContent = filtered.length + ' pedido' + (filtered.length !== 1 ? 's' : '') + (filtered.length !== allOrders.length ? ' de ' + allOrders.length : '');
 
-      if (!allOrders.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>Nenhum pedido realizado ainda</p></div>';
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>' + (allOrders.length ? 'Nenhum pedido encontrado para essa busca.' : 'Nenhum pedido realizado ainda.') + '</p></div>';
         return;
       }
 
-      container.innerHTML = '<div class="table-wrap"><table>' +
-        '<thead><tr>' +
-          '<th>Pedido #</th>' +
-          '<th>Cliente</th>' +
-          '<th>Itens</th>' +
-          '<th>Total</th>' +
-          '<th>Status</th>' +
-          '<th>Data</th>' +
-          '<th></th>' +
-        '</tr></thead><tbody>' +
-        allOrders.map(o => {
-          const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
-          const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
-          const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : 'badge-gray');
-          return '<tr>' +
-            '<td><strong>#' + o.id + '</strong></td>' +
-            '<td>' + (o.usuario?.nome || 'N/A') + '</td>' +
-            '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + items.replace(/"/g, '&quot;') + '">' + items + '</td>' +
-            '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
-            '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
-            '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
-            '<td><button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes do pedido"><i class="fas fa-eye"></i></button>' +
-            (() => {
-              const hasSupplierLink = o.itens.some(item => {
-                const product = allProducts.find(p => p.id == item.id);
-                return product && product.supplierLink;
-              });
-              return hasSupplierLink ? ' <button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar itens no fornecedor" style="border-color:var(--success);color:var(--success);"><i class="fas fa-shopping-cart"></i></button>' : '';
-            })() +
-            (currentUserRole === 'admin' ? ' <button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir pedido" style="border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>' : '') + '</td>' +
-          '</tr>';
-        }).join('') +
-        '</tbody></table></div>';
+      const groups = groupOrdersByMonth(filtered);
+      const thead = '<thead><tr><th>Pedido #</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Data</th><th></th></tr></thead>';
+
+      let html = '';
+      groups.forEach(([key, group], idx) => {
+        const totalGroup = group.orders.reduce((s, o) => s + (o.total || 0), 0);
+        const collapsed = idx > 0 ? 'collapsed' : '';
+        html += '<div class="order-group">';
+        html += '<div class="order-group-header" onclick="toggleOrderGroup(this)" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#f8fafc;border-bottom:2px solid var(--border);cursor:pointer;user-select:none;">';
+        html += '<span style="display:flex;align-items:center;gap:8px;"><i class="fas fa-chevron-down order-group-arrow" style="font-size:12px;color:var(--text-muted);transition:transform 0.2s;' + (collapsed ? 'transform:rotate(-90deg);' : '') + '"></i>';
+        html += '<strong style="font-size:14px;text-transform:capitalize;">' + group.label + '</strong>';
+        html += '<span style="font-size:12px;color:var(--text-muted);">(' + group.orders.length + ' pedido' + (group.orders.length !== 1 ? 's' : '') + ')</span></span>';
+        html += '<span style="font-size:13px;font-weight:600;color:var(--primary);">Total: R$ ' + totalGroup.toFixed(2).replace('.', ',') + '</span>';
+        html += '</div>';
+        html += '<div class="order-group-body" style="' + (collapsed ? 'display:none;' : '') + '">';
+        html += '<div class="table-wrap"><table>' + thead + '<tbody>';
+        group.orders.forEach(o => { html += renderOrderRow(o); });
+        html += '</tbody></table></div>';
+        html += '</div></div>';
+      });
+
+      container.innerHTML = html;
+    }
+
+    function toggleOrderGroup(header) {
+      const body = header.nextElementSibling;
+      const arrow = header.querySelector('.order-group-arrow');
+      if (body.style.display === 'none') {
+        body.style.display = '';
+        arrow.style.transform = '';
+      } else {
+        body.style.display = 'none';
+        arrow.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function generateOrdersPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const filtered = getFilteredOrders();
+      const pageW = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('TechVault - Relatorio de Pedidos', 14, 18);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(120);
+      doc.text('Gerado em: ' + new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR'), 14, 25);
+      doc.text('Total: ' + filtered.length + ' pedido' + (filtered.length !== 1 ? 's' : ''), 14, 30);
+
+      const totalGeral = filtered.reduce((s, o) => s + (o.total || 0), 0);
+      doc.setTextColor(0);
+      doc.text('Valor Total: R$ ' + totalGeral.toFixed(2).replace('.', ','), pageW - 14, 30, { align: 'right' });
+
+      let y = 37;
+      const groups = groupOrdersByMonth(filtered);
+
+      groups.forEach(([key, group]) => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFillColor(248, 250, 252);
+        doc.rect(14, y - 4, pageW - 28, 8, 'F');
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(40);
+        doc.text(group.label.charAt(0).toUpperCase() + group.label.slice(1) + ' (' + group.orders.length + ' pedidos - R$ ' + group.orders.reduce((s, o) => s + (o.total || 0), 0).toFixed(2).replace('.', ',') + ')', 16, y + 1);
+        y += 10;
+
+        const rows = group.orders.map(o => [
+          '#' + o.id,
+          (o.usuario?.nome || 'N/A').substring(0, 30),
+          o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ').substring(0, 50),
+          'R$ ' + (o.total || 0).toFixed(2).replace('.', ','),
+          o.status || 'pendente',
+          o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '-'
+        ]);
+
+        doc.autoTable({
+          startY: y,
+          margin: { left: 14, right: 14 },
+          head: [['Pedido', 'Cliente', 'Itens', 'Total', 'Status', 'Data']],
+          body: rows,
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [26, 115, 232], fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 18 },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 60 },
+            3: { cellWidth: 22 },
+            4: { cellWidth: 22 },
+            5: { cellWidth: 25 }
+          },
+          didDrawPage: function(data) { y = data.cursor.y; }
+        });
+
+        y = doc.lastAutoTable.finalY + 6;
+      });
+
+      doc.save('pedidos-techvault-' + new Date().toISOString().split('T')[0] + '.pdf');
     }
 
     function buyOrderItems(orderId) {
@@ -2090,5 +2210,7 @@
     initChatPolling();
     initDashboardRefresh();
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 </body>
 </html>
