@@ -843,7 +843,7 @@ async function offerProducts(limit = 10) {
 }
 
 async function adminProducts(search, pausedFilter) {
-  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, checkoutLink, supplierLink FROM products WHERE 1=1`;
+  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, stock, checkoutLink, supplierLink FROM products WHERE 1=1`;
   const params = [];
   let idx = 1;
   if (search) {

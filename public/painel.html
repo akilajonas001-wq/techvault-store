@@ -1466,7 +1466,7 @@
       const descricao = document.getElementById('cpDescricao').value.trim();
       const precoOriginal = document.getElementById('cpPrecoOriginal').value ? parseFloat(document.getElementById('cpPrecoOriginal').value) : null;
       const categoria = document.getElementById('cpCategoria').value.trim() || 'outros';
-      const stock = parseInt(document.getElementById('cpEstoque').value) || -1;
+      const stock = document.getElementById('cpEstoque').value !== '' ? parseInt(document.getElementById('cpEstoque').value) : -1;
       const imagem = document.getElementById('cpImagem').value.trim() || '';
       const imagens = document.getElementById('cpImagens').value.trim().split('\n').filter(Boolean);
       const destaque = document.getElementById('cpDestaque').checked;
