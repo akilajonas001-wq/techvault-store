@@ -945,6 +945,6 @@ module.exports = {
   getCategories, searchProducts, productsByCategory, featuredProducts, offerProducts,
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
-  saveImage, getImage, deleteImage, deleteProductImages,
+  saveImage, getImage, deleteImage, deleteProductImages, decrementStock,
   trackVisit, countVisits, countVisitsRange
 };
