@@ -23,6 +23,7 @@ async function checkAuth() {
     const data = await response.json();
     if (data.authenticated) {
       currentUser = data.user;
+      if (typeof showUserMenu === 'function') showUserMenu();
     } else {
       localStorage.removeItem('techvault-token');
       window.location.href = '/login?redirect=checkout';
