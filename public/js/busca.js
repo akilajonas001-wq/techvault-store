@@ -233,6 +233,22 @@ function applyPriceFilter() {
   
   currentFilters.referencePrice = referencePrice;
   currentFilters.priceOrder = order;
+
+  if (referencePrice > 0) {
+    if (order === 'maior') {
+      currentFilters.precoMin = referencePrice;
+      currentFilters.precoMax = '';
+    } else if (order === 'menor') {
+      currentFilters.precoMax = referencePrice;
+      currentFilters.precoMin = '';
+    } else {
+      currentFilters.precoMin = '';
+      currentFilters.precoMax = '';
+    }
+  } else {
+    currentFilters.precoMin = '';
+    currentFilters.precoMax = '';
+  }
   
   closePriceFilterModal();
   

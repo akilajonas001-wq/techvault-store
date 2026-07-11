@@ -68,9 +68,15 @@ router.delete('/orders/:id', async (req, res) => {
 
 router.put('/orders/:id/status', async (req, res) => {
   try {
-    await db.updateOrderStatus(parseInt(req.params.id), req.body.status);
+    const order = await db.orderById(parseInt(req.params.id));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    const { status } = req.body;
+    if (!['pendente', 'aprovado', 'cancelado', 'reembolsado'].includes(status)) {
+      return res.status(400).json({ error: 'Status inválido' });
+    }
+    await db.updateOrderStatus(parseInt(req.params.id), status);
     res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar pedido' }); }
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar status' }); }
 });
 
 // ========== PRODUTOS ==========
@@ -259,21 +265,6 @@ router.post('/coupons/create', async (req, res) => {
 router.get('/newsletter', async (req, res) => {
   try { res.json(await db.allNewsletters()); }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar emails' }); }
-});
-
-// ========== ORDER STATUS (admin) ==========
-
-router.put('/orders/:id/status', async (req, res) => {
-  try {
-    const order = await db.orderById(parseInt(req.params.id));
-    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
-    const { status } = req.body;
-    if (!['pendente', 'aprovado', 'cancelado', 'reembolsado'].includes(status)) {
-      return res.status(400).json({ error: 'Status inválido' });
-    }
-    await db.updateOrderStatus(parseInt(req.params.id), status);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar status' }); }
 });
 
 module.exports = router;

@@ -142,6 +142,14 @@ router.post('/orders', requireAuth, async (req, res) => {
     const { endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
     const user = req.user;
 
+    // Verificar estoque antes de criar o pedido
+    for (const item of (itens || [])) {
+      const product = await db.productById(item.id || item.productId);
+      if (product && product.stock >= 0 && product.stock < (item.quantidade || 1)) {
+        return res.status(400).json({ error: 'Estoque insuficiente para "' + (product.nome || 'Produto') + '". Disponível: ' + product.stock });
+      }
+    }
+
     const newOrder = await db.createOrder({
       id: Date.now(), userId: user.id,
       usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
@@ -362,13 +370,17 @@ router.post('/cart/clear', requireAuth, async (req, res) => {
 
 // ========== LISTA DE DESEJOS ==========
 
-router.get('/wishlist/:userId', async (req, res) => {
-  try { res.json(await db.getWishlist(parseInt(req.params.userId) || req.params.userId)); }
+router.get('/wishlist/:userId', requireAuth, async (req, res) => {
+  try {
+    if (parseInt(req.params.userId) !== req.user.id) return res.status(403).json({ error: 'Acesso negado' });
+    res.json(await db.getWishlist(parseInt(req.params.userId) || req.params.userId));
+  }
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar favoritos' }); }
 });
 
-router.post('/wishlist/:userId', async (req, res) => {
+router.post('/wishlist/:userId', requireAuth, async (req, res) => {
   try {
+    if (parseInt(req.params.userId) !== req.user.id) return res.status(403).json({ error: 'Acesso negado' });
     const userId = parseInt(req.params.userId) || req.params.userId;
     const { productId } = req.body;
     const added = await db.toggleWishlist(userId, productId);

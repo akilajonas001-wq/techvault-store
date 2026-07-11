@@ -173,18 +173,6 @@ app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' })
   }
 });
 
-app.get('/api/debug/webhook-logs', (req, res) => {
-  const html = webhookLogs.map((log, i) => `
-    <div style="border:1px solid #ccc;margin:8px 0;padding:12px;border-radius:8px;background:#f8fafc;">
-      <strong>#${i+1}</strong> ${log.timestamp}
-      <pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;overflow-x:auto;font-size:12px;margin-top:8px;">${escapeHtml(JSON.stringify(JSON.parse(log.parsed || '{}'), null, 2))}</pre>
-      ${log.raw ? `<details><summary style="cursor:pointer;color:#1a73e8;font-size:13px;">Raw body</summary><pre style="background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;overflow-x:auto;font-size:12px;margin-top:4px;">${escapeHtml(log.raw)}</pre></details>` : ''}
-    </div>
-  `).join('');
-  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Webhooks - TechVault</title><style>body{font-family:Inter,sans-serif;background:#f1f5f9;padding:24px;max-width:800px;margin:0 auto;}h1{color:#1e293b;}</style></head><body><h1>📡 Webhooks Recebidos (${webhookLogs.length})</h1>${html || '<p style="color:#94a3b8;">Nenhum webhook recebido ainda.</p>'}<p style="color:#94a3b8;font-size:12px;margin-top:24px;">Endpoint: POST /api/webhooks/infinitepay</p></body></html>`);
-  function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-});
-
 // ===================== PUBLIC CONFIRM PAYMENT =====================
 // InfinitePay can redirect here after payment to auto-confirm the order
 // URL: /api/confirm-payment/:paymentRef
@@ -342,7 +330,7 @@ app.post('/api/chat/read/:convKey(*)', async (req, res) => {
 
 // --- ADMIN ROUTES ---
 
-app.get('/api/admin/chat/support', async (req, res) => {
+app.get('/api/admin/chat/support', adminAuth, async (req, res) => {
   try {
     const chats = await db.allChats();
     const result = [];

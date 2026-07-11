@@ -27,16 +27,16 @@ function isInWishlist(id) {
   const saved = localStorage.getItem('techvault-wishlist');
   if (!saved) return false;
   const wishlist = JSON.parse(saved);
-  return wishlist.some(p => p.id === id);
+  return wishlist.some(p => (typeof p === 'object' ? p.id : p) === id);
 }
 
 function toggleWishlist(id, btn) {
   const saved = localStorage.getItem('techvault-wishlist') || '[]';
   let wishlist = JSON.parse(saved);
-  const exists = wishlist.some(p => p.id === id);
+  const exists = wishlist.some(p => (typeof p === 'object' ? p.id : p) === id);
 
   if (exists) {
-    wishlist = wishlist.filter(p => p.id !== id);
+    wishlist = wishlist.filter(p => (typeof p === 'object' ? p.id : p) !== id);
     if (btn) {
       btn.classList.remove('active');
       btn.querySelector('i').classList.replace('fas', 'far');
@@ -44,21 +44,13 @@ function toggleWishlist(id, btn) {
     }
     showToast('Removido dos favoritos');
   } else {
-    // Fetch product details
-    fetch(`/api/products/${id}`)
-      .then(r => r.json())
-      .then(p => {
-        wishlist.push({ id: p.id, nome: p.nome, imagem: p.imagem, preco: p.preco });
-        localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
-        if (btn) {
-          btn.classList.add('active');
-          btn.querySelector('i').classList.replace('far', 'fas');
-          btn.setAttribute('title', 'Remover dos favoritos');
-        }
-        updateWishlistCount();
-        showToast('Adicionado aos favoritos! ❤️');
-      });
-    return;
+    wishlist.push(id);
+    if (btn) {
+      btn.classList.add('active');
+      btn.querySelector('i').classList.replace('far', 'fas');
+      btn.setAttribute('title', 'Remover dos favoritos');
+    }
+    showToast('Adicionado aos favoritos!');
   }
 
   localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
