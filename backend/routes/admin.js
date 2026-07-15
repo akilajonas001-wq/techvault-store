@@ -81,12 +81,15 @@ router.put('/orders/:id/status', async (req, res) => {
 
 router.put('/orders/:id/tracking', async (req, res) => {
   try {
-    const order = await db.orderById(parseInt(req.params.id));
+    const orderId = parseInt(req.params.id);
+    if (isNaN(orderId)) return res.status(400).json({ error: 'ID de pedido inválido' });
+    const order = await db.orderById(orderId);
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
     const { trackingNumber, trackingStatus } = req.body;
-    await db.updateOrderTracking(parseInt(req.params.id), trackingNumber || '', trackingStatus);
-    res.json({ success: true });
-  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar rastreio' }); }
+    await db.updateOrderTracking(orderId, trackingNumber || '', trackingStatus || []);
+    const updated = await db.orderById(orderId);
+    res.json({ success: true, order: updated });
+  } catch (e) { console.error('Erro ao salvar rastreio:', e); res.status(500).json({ error: 'Erro ao atualizar rastreio: ' + e.message }); }
 });
 
 // ========== PRODUTOS ==========

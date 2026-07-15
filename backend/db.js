@@ -79,6 +79,8 @@ async function initDb() {
       taxas TEXT DEFAULT '{}',
       pagamento TEXT DEFAULT 'PicPay PIX',
       status TEXT DEFAULT 'pendente',
+      trackingNumber TEXT DEFAULT '',
+      trackingStatus TEXT DEFAULT '[]',
       createdAt TEXT DEFAULT (NOW())
     );
     CREATE TABLE IF NOT EXISTS comments (
@@ -571,23 +573,29 @@ async function deleteProduct(id) {
   await query(`DELETE FROM products WHERE id = $1`, [id]);
 }
 
-const parseOrder = (o) => o ? {
-  ...o,
-  id: o.id,
-  userId: o.userid,
-  paymentRef: o.paymentref || o.paymentRef || null,
-  infinitepayId: o.infinitepayid || o.infinitepayId || null,
-  totalOriginal: o.totaloriginal,
-  createdAt: o.createdat || o.createdAt,
-  trackingNumber: o.trackingnumber || o.trackingNumber || '',
-  trackingStatus: JSON.parse(o.trackingstatus || o.trackingStatus || '[]'),
-  usuario: JSON.parse(o.usuario || '{}'),
-  endereco: JSON.parse(o.endereco || '{}'),
-  itens: JSON.parse(o.itens || '[]'),
-  cupom: o.cupom ? JSON.parse(o.cupom) : null,
-  cliente: JSON.parse(o.cliente || '{}'),
-  taxas: JSON.parse(o.taxas || '{}')
-} : null;
+const parseOrder = (o) => {
+  if (!o) return null;
+  let trackingStatus = [];
+  try { trackingStatus = JSON.parse(o.trackingstatus || o.trackingStatus || '[]'); } catch(e) {}
+  if (!Array.isArray(trackingStatus)) trackingStatus = [];
+  return {
+    ...o,
+    id: o.id,
+    userId: o.userid,
+    paymentRef: o.paymentref || o.paymentRef || null,
+    infinitepayId: o.infinitepayid || o.infinitepayId || null,
+    totalOriginal: o.totaloriginal,
+    createdAt: o.createdat || o.createdAt,
+    trackingNumber: o.trackingnumber || o.trackingNumber || '',
+    trackingStatus: trackingStatus,
+    usuario: JSON.parse(o.usuario || '{}'),
+    endereco: JSON.parse(o.endereco || '{}'),
+    itens: JSON.parse(o.itens || '[]'),
+    cupom: o.cupom ? JSON.parse(o.cupom) : null,
+    cliente: JSON.parse(o.cliente || '{}'),
+    taxas: JSON.parse(o.taxas || '{}')
+  };
+};
 
 async function allOrders() {
   const result = await query(`SELECT * FROM orders ORDER BY createdAt DESC`);
@@ -626,7 +634,13 @@ async function updateOrderStatus(id, status) {
 }
 
 async function updateOrderTracking(id, trackingNumber, trackingStatus) {
-  await query(`UPDATE orders SET trackingNumber = $1, trackingStatus = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+  try {
+    await query(`UPDATE orders SET "trackingNumber" = $1, "trackingStatus" = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+  } catch (e) {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS "trackingNumber" TEXT DEFAULT ''`);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS "trackingStatus" TEXT DEFAULT '[]'`);
+    await query(`UPDATE orders SET "trackingNumber" = $1, "trackingStatus" = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+  }
 }
 
 async function orderByPaymentRef(ref) {

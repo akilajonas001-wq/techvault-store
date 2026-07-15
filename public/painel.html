@@ -2286,9 +2286,10 @@
 
         // ========== RASTREIO ==========
         function openTrackingModal(orderId) {
-      const order = allOrders.find(o => o.id === orderId);
+      const id = Number(orderId);
+      const order = allOrders.find(o => Number(o.id) === id);
       if (!order) return;
-      document.getElementById('trackingOrderId').value = orderId;
+      document.getElementById('trackingOrderId').value = id;
       document.getElementById('trackingNumberInput').value = order.trackingNumber || '';
       const trackingStatus = Array.isArray(order.trackingStatus) ? order.trackingStatus : [];
       document.querySelectorAll('.tracking-stage').forEach(cb => {
@@ -2302,7 +2303,7 @@
     }
 
     async function saveTracking() {
-      const orderId = parseInt(document.getElementById('trackingOrderId').value);
+      const orderId = Number(document.getElementById('trackingOrderId').value);
       const trackingNumber = document.getElementById('trackingNumberInput').value.trim();
       const trackingStatus = Array.from(document.querySelectorAll('.tracking-stage:checked')).map(cb => cb.value);
       const token = localStorage.getItem('techvault-token');
@@ -2316,19 +2317,20 @@
         });
         const data = await res.json();
         if (data.success) {
-          const order = allOrders.find(o => o.id === orderId);
+          const order = allOrders.find(o => Number(o.id) === orderId);
           if (order) {
             order.trackingNumber = trackingNumber;
             order.trackingStatus = trackingStatus;
           }
           closeTrackingModal();
           showToast('Rastreio atualizado com sucesso!', 'success');
+          renderOrders();
         } else {
-          showError(data.error || 'Erro ao atualizar rastreio');
+          showToast(data.error || 'Erro ao atualizar rastreio', 'error');
         }
       } catch (err) {
         console.error(err);
-        showError('Erro de conexão ao salvar rastreio');
+        showToast('Erro de conexão ao salvar rastreio', 'error');
       }
     }
   </script>

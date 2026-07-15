@@ -731,8 +731,9 @@
                     ? '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-file-invoice"></i> Comprovante</span>'
                     : '';
                   const hasTracking = o.trackingNumber && o.trackingNumber.trim() !== '';
+                  const trackingStatusArr = Array.isArray(o.trackingStatus) ? o.trackingStatus : (typeof o.trackingStatus === 'string' ? JSON.parse(o.trackingStatus || '[]') : []);
                   const trackingBtn = hasTracking
-                    ? '<span class="order-action-btn" onclick="event.stopPropagation();showOrderTracking(' + o.id + ', \'' + (o.trackingNumber || '').replace(/'/g, "\\'") + '\', ' + JSON.stringify(o.trackingStatus || []) + ')"><i class="fas fa-shipping-fast"></i> Rastrear</span>'
+                    ? '<span class="order-action-btn" onclick="event.stopPropagation();showOrderTracking(' + o.id + ', \'' + (o.trackingNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\', ' + JSON.stringify(trackingStatusArr) + ')"><i class="fas fa-shipping-fast"></i> Rastrear</span>'
                     : '';
                   return '<div class="order-card" style="cursor:pointer;" onclick="window.location.href=\'/comprovante/' + o.id + '\'">' +
                     '<div class="order-header">' +
@@ -880,6 +881,10 @@
   <script>
     function showOrderTracking(orderId, trackingNumber, trackingStatus) {
       document.getElementById("trackingNumberDisplay").textContent = trackingNumber || "Não informado";
+      if (typeof trackingStatus === "string") {
+        try { trackingStatus = JSON.parse(trackingStatus); } catch(e) { trackingStatus = []; }
+      }
+      if (!Array.isArray(trackingStatus)) trackingStatus = [];
       const stages = {
         "saiu_entrega": { icon: "fa-truck", label: "O pedido saiu para a entrega", color: "#8b5cf6" },
         "chegou_cidade": { icon: "fa-map-marker-alt", label: "O pedido chegou na sua cidade", color: "#2563eb" },
