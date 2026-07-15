@@ -2288,7 +2288,7 @@
         function openTrackingModal(orderId) {
       const id = Number(orderId);
       const order = allOrders.find(o => Number(o.id) === id);
-      if (!order) return;
+      if (!order) { console.error('Pedido nao encontrado:', id, 'total:', allOrders.length); return; }
       document.getElementById('trackingOrderId').value = id;
       document.getElementById('trackingNumberInput').value = order.trackingNumber || '';
       const trackingStatus = Array.isArray(order.trackingStatus) ? order.trackingStatus : [];
@@ -2306,31 +2306,33 @@
       const orderId = Number(document.getElementById('trackingOrderId').value);
       const trackingNumber = document.getElementById('trackingNumberInput').value.trim();
       const trackingStatus = Array.from(document.querySelectorAll('.tracking-stage:checked')).map(cb => cb.value);
-      const token = localStorage.getItem('techvault-token');
-      if (!token) return;
+      const token = getToken();
+      if (!token) { showToast('Faça login novamente', 'error'); return; }
+
+      const btn = document.querySelector('[onclick="saveTracking()"]');
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
 
       try {
         const res = await fetch('/api/admin/orders/' + orderId + '/tracking', {
           method: 'PUT',
           headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trackingNumber, trackingStatus })
+          body: JSON.stringify({ trackingNumber: trackingNumber, trackingStatus: trackingStatus })
         });
         const data = await res.json();
-        if (data.success) {
-          const order = allOrders.find(o => Number(o.id) === orderId);
-          if (order) {
-            order.trackingNumber = trackingNumber;
-            order.trackingStatus = trackingStatus;
-          }
+        console.log('[Rastreio] Resposta:', res.status, data);
+
+        if (res.ok && data.success) {
           closeTrackingModal();
-          showToast('Rastreio atualizado com sucesso!', 'success');
-          renderOrders();
+          showToast('Rastreio salvo com sucesso!', 'success');
+          loadAllData(token);
         } else {
-          showToast(data.error || 'Erro ao atualizar rastreio', 'error');
+          showToast('Erro: ' + (data.error || 'Resposta inesperada do servidor'), 'error');
         }
       } catch (err) {
-        console.error(err);
+        console.error('[Rastreio] Erro:', err);
         showToast('Erro de conexão ao salvar rastreio', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Salvar Rastreio'; }
       }
     }
   </script>
