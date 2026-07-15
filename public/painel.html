@@ -360,7 +360,6 @@
       <a href="/"><i class="fas fa-store"></i> Loja</a>
       <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
     </div>
-    </div>
   </header>
 
   <div class="container">
@@ -2323,7 +2322,7 @@
             order.trackingStatus = trackingStatus;
           }
           closeTrackingModal();
-          showSuccess('Rastreio atualizado com sucesso!');
+          showToast('Rastreio atualizado com sucesso!', 'success');
         } else {
           showError(data.error || 'Erro ao atualizar rastreio');
         }

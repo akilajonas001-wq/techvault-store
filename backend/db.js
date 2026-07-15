@@ -579,6 +579,8 @@ const parseOrder = (o) => o ? {
   infinitepayId: o.infinitepayid || o.infinitepayId || null,
   totalOriginal: o.totaloriginal,
   createdAt: o.createdat || o.createdAt,
+  trackingNumber: o.trackingnumber || o.trackingNumber || '',
+  trackingStatus: JSON.parse(o.trackingstatus || o.trackingStatus || '[]'),
   usuario: JSON.parse(o.usuario || '{}'),
   endereco: JSON.parse(o.endereco || '{}'),
   itens: JSON.parse(o.itens || '[]'),
