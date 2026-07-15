@@ -726,15 +726,11 @@
                   const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
                   const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
                   const statusClass = (o.status || 'pendente').toLowerCase();
-                  const isAprovado = (o.status || '').toLowerCase() === 'aprovado';
-                  const comprovanteBtn = isAprovado
-                    ? '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-file-invoice"></i> Comprovante</span>'
-                    : '';
-                  const hasTracking = o.trackingNumber && o.trackingNumber.trim() !== '';
-                  const trackingStatusArr = Array.isArray(o.trackingStatus) ? o.trackingStatus : (typeof o.trackingStatus === 'string' ? JSON.parse(o.trackingStatus || '[]') : []);
-                  const trackingBtn = hasTracking
-                    ? '<span class="order-action-btn" onclick="event.stopPropagation();showOrderTracking(' + o.id + ', \'' + (o.trackingNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\', ' + JSON.stringify(trackingStatusArr) + ')"><i class="fas fa-shipping-fast"></i> Rastrear</span>'
-                    : '';
+                  const trackingStatusArr = Array.isArray(o.trackingStatus) ? o.trackingStatus : (typeof o.trackingStatus === 'string' ? (function(){try{return JSON.parse(o.trackingStatus||'[]')}catch(e){return[]}})() : []);
+                  const hasTrackingSteps = trackingStatusArr.length > 0;
+                  const trackingLabel = hasTrackingSteps ? 'Acompanhar' : 'Rastrear';
+                  const trackingIcon = hasTrackingSteps ? 'fa-truck' : 'fa-shipping-fast';
+                  const trackingBtn = '<span class="order-action-btn" onclick="event.stopPropagation();showOrderTracking(' + o.id + ', \'' + (o.trackingNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\', ' + JSON.stringify(trackingStatusArr) + ')"><i class="fas ' + trackingIcon + '"></i> ' + trackingLabel + '</span>';
                   return '<div class="order-card" style="cursor:pointer;" onclick="window.location.href=\'/comprovante/' + o.id + '\'">' +
                     '<div class="order-header">' +
                       '<div><span class="order-id">Pedido #' + o.id + '</span><span class="order-date"> - ' + date + '</span></div>' +
@@ -743,7 +739,6 @@
                     '<div class="order-items">' + items + '</div>' +
                     '<div class="order-total-price">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</div>' +
                     '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
-                      comprovanteBtn +
                       trackingBtn +
                       '<span class="order-action-btn" onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-eye"></i> Ver Pedido</span>' +
                     '</div>' +
@@ -864,14 +859,14 @@
   <div class="addr-modal-overlay" id="trackingModal" style="z-index:6000;">
     <div class="addr-modal" style="max-width:500px;">
       <button class="close-addr" onclick="closeTrackingModal()">&times;</button>
-      <h3><i class="fas fa-shipping-fast" style="color:#8b5cf6;"></i> Rastrear Pedido</h3>
+      <h3><i class="fas fa-shipping-fast" style="color:#8b5cf6;"></i> Acompanhar Entrega</h3>
       <div id="trackingModalContent">
         <div style="margin-bottom:16px;">
           <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Código de Rastreio</div>
           <div id="trackingNumberDisplay" style="font-size:18px;font-weight:700;color:var(--primary);font-family:monospace;background:var(--bg-cool);padding:12px;border-radius:8px;"></div>
         </div>
         <div style="margin-bottom:8px;">
-          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Etapas do Rastreio</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Status da Entrega</div>
           <div id="trackingStagesList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </div>
@@ -880,28 +875,28 @@
 
   <script>
     function showOrderTracking(orderId, trackingNumber, trackingStatus) {
-      document.getElementById("trackingNumberDisplay").textContent = trackingNumber || "Não informado";
+      document.getElementById("trackingNumberDisplay").textContent = trackingNumber || "Aguardando envio";
       if (typeof trackingStatus === "string") {
         try { trackingStatus = JSON.parse(trackingStatus); } catch(e) { trackingStatus = []; }
       }
       if (!Array.isArray(trackingStatus)) trackingStatus = [];
-      const stages = {
-        "saiu_entrega": { icon: "fa-truck", label: "O pedido saiu para a entrega", color: "#8b5cf6" },
-        "chegou_cidade": { icon: "fa-map-marker-alt", label: "O pedido chegou na sua cidade", color: "#2563eb" },
-        "entregue": { icon: "fa-check-circle", label: "O pedido foi entregue", color: "#22c55e" }
-      };
+      const allStages = [
+        { key: "saiu_entrega", icon: "fa-truck", label: "Saiu da distribuidora", color: "#8b5cf6" },
+        { key: "chegou_cidade", icon: "fa-map-marker-alt", label: "Chegou na sua cidade", color: "#2563eb" },
+        { key: "entregue", icon: "fa-check-circle", label: "Pedido entregue", color: "#22c55e" }
+      ];
       const container = document.getElementById("trackingStagesList");
-      if (!trackingStatus || trackingStatus.length === 0) {
-        container.innerHTML = "<p style='color:var(--text-muted);font-size:13px;'>Nenhuma etapa registrada ainda.</p>";
-      } else {
-        container.innerHTML = trackingStatus.map(function(stage) {
-          var s = stages[stage] || { icon: "fa-box", label: stage, color: "#64748b" };
-          return "<div style='display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-cool);border-radius:10px;'>" +
-            "<i class='fas " + s.icon + "' style='color:" + s.color + ";font-size:20px;width:24px;text-align:center;'></i>" +
-            "<span style='font-size:14px;font-weight:500;color:var(--text);'>" + s.label + "</span>" +
-            "</div>";
-        }).join("");
-      }
+      container.innerHTML = allStages.map(function(s) {
+        var done = trackingStatus.indexOf(s.key) !== -1;
+        var bg = done ? "background:" + s.color + "11;border:1px solid " + s.color + "33;" : "background:var(--bg-cool);opacity:0.5;";
+        var iconColor = done ? s.color : "#94a3b8";
+        var check = done ? "<i class='fas fa-check-circle' style='color:" + s.color + ";font-size:11px;margin-left:auto;'></i>" : "<span style='margin-left:auto;font-size:11px;color:#94a3b8;'>Pendente</span>";
+        return "<div style='display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;" + bg + "'>" +
+          "<i class='fas " + s.icon + "' style='color:" + iconColor + ";font-size:20px;width:24px;text-align:center;'></i>" +
+          "<span style='font-size:14px;font-weight:500;color:var(--text);'>" + s.label + "</span>" +
+          check +
+          "</div>";
+      }).join("");
       document.getElementById("trackingModal").classList.add("active");
     }
     function closeTrackingModal() {
