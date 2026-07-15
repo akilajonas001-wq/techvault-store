@@ -217,14 +217,14 @@ async function migrateUserProfileColumns() {
     console.error('Erro ao adicionar supplierLink:', e.message);
   }
   try {
-    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingNumber TEXT DEFAULT ''`);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingnumber TEXT DEFAULT ''`);
   } catch (e) {
-    console.error('Erro ao adicionar trackingNumber:', e.message);
+    console.error('Erro ao adicionar trackingnumber:', e.message);
   }
   try {
-    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingStatus TEXT DEFAULT '[]'`);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingstatus TEXT DEFAULT '[]'`);
   } catch (e) {
-    console.error('Erro ao adicionar trackingStatus:', e.message);
+    console.error('Erro ao adicionar trackingstatus:', e.message);
   }
 }
 
@@ -635,11 +635,11 @@ async function updateOrderStatus(id, status) {
 
 async function updateOrderTracking(id, trackingNumber, trackingStatus) {
   try {
-    await query(`UPDATE orders SET "trackingNumber" = $1, "trackingStatus" = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+    await query(`UPDATE orders SET trackingnumber = $1, trackingstatus = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
   } catch (e) {
-    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS "trackingNumber" TEXT DEFAULT ''`);
-    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS "trackingStatus" TEXT DEFAULT '[]'`);
-    await query(`UPDATE orders SET "trackingNumber" = $1, "trackingStatus" = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingnumber TEXT DEFAULT ''`);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingstatus TEXT DEFAULT '[]'`);
+    await query(`UPDATE orders SET trackingnumber = $1, trackingstatus = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
   }
 }
 
