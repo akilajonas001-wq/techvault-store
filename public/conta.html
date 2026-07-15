@@ -730,7 +730,8 @@
                   const hasTrackingSteps = trackingStatusArr.length > 0;
                   const trackingLabel = hasTrackingSteps ? 'Acompanhar' : 'Rastrear';
                   const trackingIcon = hasTrackingSteps ? 'fa-truck' : 'fa-shipping-fast';
-                  const trackingBtn = '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();showOrderTracking(' + o.id + ', \'' + (o.trackingNumber || '').replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\', ' + JSON.stringify(trackingStatusArr) + ')"><i class="fas ' + trackingIcon + '"></i> ' + trackingLabel + '</span>';
+                  const trackingJson = JSON.stringify(trackingStatusArr).replace(/"/g, '&quot;');
+                  const trackingBtn = '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();showOrderTracking(' + o.id + ',\'' + (o.trackingNumber || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\',\'' + trackingJson + '\')"><i class="fas ' + trackingIcon + '"></i> ' + trackingLabel + '</span>';
                   return '<div class="order-card" style="cursor:pointer;" onclick="if(!event.target.closest(\'[data-no-nav]\'))window.location.href=\'/comprovante/' + o.id + '\'">' +
                     '<div class="order-header">' +
                       '<div><span class="order-id">Pedido #' + o.id + '</span><span class="order-date"> - ' + date + '</span></div>' +
