@@ -79,6 +79,16 @@ router.put('/orders/:id/status', async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar status' }); }
 });
 
+router.put('/orders/:id/tracking', async (req, res) => {
+  try {
+    const order = await db.orderById(parseInt(req.params.id));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    const { trackingNumber, trackingStatus } = req.body;
+    await db.updateOrderTracking(parseInt(req.params.id), trackingNumber || '', trackingStatus);
+    res.json({ success: true });
+  } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao atualizar rastreio' }); }
+});
+
 // ========== PRODUTOS ==========
 
 router.get('/products', async (req, res) => {

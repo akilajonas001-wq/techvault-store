@@ -214,6 +214,16 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar supplierLink:', e.message);
   }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingNumber TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar trackingNumber:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingStatus TEXT DEFAULT '[]'`);
+  } catch (e) {
+    console.error('Erro ao adicionar trackingStatus:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -613,6 +623,10 @@ async function updateOrderStatus(id, status) {
   await query(`UPDATE orders SET status = $1 WHERE id = $2`, [status, id]);
 }
 
+async function updateOrderTracking(id, trackingNumber, trackingStatus) {
+  await query(`UPDATE orders SET trackingNumber = $1, trackingStatus = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
+}
+
 async function orderByPaymentRef(ref) {
   const result = await query(`SELECT * FROM orders WHERE paymentRef = $1`, [ref]);
   return result.rows.length ? parseOrder(result.rows[0]) : null;
@@ -934,7 +948,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById, updateOrderTracking,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,

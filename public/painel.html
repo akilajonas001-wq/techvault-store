@@ -664,6 +664,48 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="trackingModal">
+      <div class="modal-content" style="max-width:550px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-shipping-fast"></i> Rastreio do Pedido</h3>
+          <button class="modal-close" onclick="closeTrackingModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="trackingContent" style="padding:8px 0;">
+          <input type="hidden" id="trackingOrderId">
+          <div class="form-group" style="margin-bottom:20px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px;">Número de Rastreio</label>
+            <input type="text" id="trackingNumberInput" placeholder="Digite o código de rastreio dos correios/transportadora" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+            <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Ex: ABC123456789BR</span>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:12px;">Etapas do Rastreio</label>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='rgba(139,92,246,0.02)'" onmouseleave="this.style.background=''">
+                <input type="checkbox" class="tracking-stage" value="saiu_entrega" style="width:18px;height:18px;">
+                <i class="fas fa-truck" style="color:#8b5cf6;font-size:16px;"></i>
+                <span style="font-size:14px;">O pedido saiu para a entrega</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='rgba(139,92,246,0.02)'" onmouseleave="this.style.background=''">
+                <input type="checkbox" class="tracking-stage" value="chegou_cidade" style="width:18px;height:18px;">
+                <i class="fas fa-map-marker-alt" style="color:#8b5cf6;font-size:16px;"></i>
+                <span style="font-size:14px;">O pedido chegou na sua cidade</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.2s;" onmouseenter="this.style.background='rgba(139,92,246,0.02)'" onmouseleave="this.style.background=''">
+                <input type="checkbox" class="tracking-stage" value="entregue" style="width:18px;height:18px;">
+                <i class="fas fa-check-circle" style="color:#22c55e;font-size:16px;"></i>
+                <span style="font-size:14px;">O pedido foi entregue</span>
+              </label>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted);margin-top:8px;display:block;">Marque as etapas já concluídas. O cliente verá essas informações no perfil.</span>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+            <button class="order-detail-btn" onclick="closeTrackingModal()" style="border-color:var(--text-muted);color:var(--text-muted);">Cancelar</button>
+            <button class="order-detail-btn" onclick="saveTracking()" style="border-color:#8b5cf6;color:#8b5cf6;background:#8b5cf6;color:white;font-weight:600;padding:10px 24px;"><i class="fas fa-save"></i> Salvar Rastreio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="chatModal">
       <div class="modal-content" style="max-width:500px;">
         <div class="modal-header">
@@ -885,6 +927,7 @@
       const btnStyle = 'display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border);background:white;cursor:pointer;font-size:11px;transition:all 0.15s;';
       let actions = '<div style="display:flex;gap:4px;align-items:center;">';
       actions += '<button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes" style="' + btnStyle + 'border-color:var(--primary);color:var(--primary);"><i class="fas fa-eye"></i></button>';
+      actions += '<button class="order-detail-btn" onclick="openTrackingModal(' + o.id + ')" title="Rastreio" style="' + btnStyle + 'border-color:#8b5cf6;color:#8b5cf6;"><i class="fas fa-shipping-fast"></i></button>';
       if (hasSupplierLink) actions += '<button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar no fornecedor" style="' + btnStyle + 'border-color:var(--success);color:var(--success);"><i class="fas fa-cart-shopping"></i></button>';
       if (currentUserRole === 'admin') actions += '<button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir" style="' + btnStyle + 'border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>';
       actions += '</div>';
@@ -2240,7 +2283,55 @@
 
     // Start polling
     initChatPolling();
-    initDashboardRefresh();
+        initDashboardRefresh();
+
+        // ========== RASTREIO ==========
+        function openTrackingModal(orderId) {
+      const order = allOrders.find(o => o.id === orderId);
+      if (!order) return;
+      document.getElementById('trackingOrderId').value = orderId;
+      document.getElementById('trackingNumberInput').value = order.trackingNumber || '';
+      const trackingStatus = Array.isArray(order.trackingStatus) ? order.trackingStatus : [];
+      document.querySelectorAll('.tracking-stage').forEach(cb => {
+        cb.checked = trackingStatus.includes(cb.value);
+      });
+      document.getElementById('trackingModal').classList.add('active');
+    }
+
+    function closeTrackingModal() {
+      document.getElementById('trackingModal').classList.remove('active');
+    }
+
+    async function saveTracking() {
+      const orderId = parseInt(document.getElementById('trackingOrderId').value);
+      const trackingNumber = document.getElementById('trackingNumberInput').value.trim();
+      const trackingStatus = Array.from(document.querySelectorAll('.tracking-stage:checked')).map(cb => cb.value);
+      const token = localStorage.getItem('techvault-token');
+      if (!token) return;
+
+      try {
+        const res = await fetch('/api/admin/orders/' + orderId + '/tracking', {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackingNumber, trackingStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const order = allOrders.find(o => o.id === orderId);
+          if (order) {
+            order.trackingNumber = trackingNumber;
+            order.trackingStatus = trackingStatus;
+          }
+          closeTrackingModal();
+          showSuccess('Rastreio atualizado com sucesso!');
+        } else {
+          showError(data.error || 'Erro ao atualizar rastreio');
+        }
+      } catch (err) {
+        console.error(err);
+        showError('Erro de conexão ao salvar rastreio');
+      }
+    }
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
