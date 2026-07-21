@@ -319,15 +319,23 @@ async function loadProduct(productId) {
       variantHtml += '</div></div>';
     }
     
+    const allImages = (product.imagens && product.imagens.length > 0) ? product.imagens : [product.imagem];
+    const thumbsHtml = allImages.map((img, i) =>
+      '<div class="thumb-item' + (i === 0 ? ' active' : '') + '" onclick="changeMainImage(\'' + img + '\', this)">' +
+        '<img src="' + img + '" alt="' + product.nome + ' ' + (i+1) + '">' +
+      '</div>'
+    ).join('');
+
     document.getElementById('productContent').innerHTML = 
       '<div class="product-detail">' +
         '<div class="product-gallery">' +
           '<div class="main-image">' +
-            '<img src="' + product.imagem + '" alt="' + product.nome + '">' +
+            '<img id="mainProductImage" src="' + product.imagem + '" alt="' + product.nome + '">' +
             '<button class="wishlist-btn product-wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)" title="' + (inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '">' +
               '<i class="' + (inWish ? 'fas' : 'far') + ' fa-heart"></i>' +
             '</button>' +
           '</div>' +
+          (allImages.length > 1 ? '<div class="thumbs-row">' + thumbsHtml + '</div>' : '') +
         '</div>' +
         '<div class="product-info-section">' +
           '<h1>' + product.nome + '</h1>' +
@@ -439,6 +447,13 @@ function getSelectedVariantData() {
     quantidade: 1,
     categoria: currentProduct.categoria
   };
+}
+
+function changeMainImage(src, thumbEl) {
+  const mainImg = document.getElementById('mainProductImage');
+  if (mainImg) mainImg.src = src;
+  document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
+  if (thumbEl) thumbEl.classList.add('active');
 }
 
 function addToCartFromProduct() {
