@@ -374,6 +374,12 @@ async function loadProduct(productId) {
               '<i class="fas fa-bolt"></i> Comprar agora' +
             '</button>' +
           '</div>' +
+          '<div class="benefits-panel">' +
+            '<div class="benefit-item"><i class="fas fa-truck"></i><div><strong>Frete grátis</strong><span>Disponível para este produto</span></div></div>' +
+            '<div class="benefit-item"><i class="fas fa-undo"></i><div><strong>Devolução grátis</strong><span>Até 7 dias a partir do recebimento</span></div></div>' +
+            '<div class="benefit-item"><i class="fas fa-shield-alt"></i><div><strong>Compra garantida</strong><span>Saia satisfeito ou devolvemos seu dinheiro</span></div></div>' +
+            '<div class="benefit-item"><i class="fas fa-fire"></i><div><strong>Mais vendido</strong><span>Entre os produtos da coleção</span></div></div>' +
+          '</div>' +
           specsHtml +
           '<div class="description-section">' +
             '<h2>Descrição do Produto</h2>' +
