@@ -1094,6 +1094,10 @@
         height: 300px;
       }
 
+      .carousel-container {
+        height: 300px;
+      }
+
       .product-wishlist-btn {
         width: 36px;
         height: 36px;
@@ -1110,9 +1114,19 @@
         flex-direction: column;
       }
 
+      .action-buttons .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
       .product-detail {
+        grid-template-columns: 1fr;
         padding: 16px;
         gap: 24px;
+      }
+
+      .product-gallery {
+        position: static;
       }
 
       .product-info-section h1 {
@@ -1181,7 +1195,8 @@
     }
 
     @media (max-width: 400px) {
-      .main-image { height: 220px; }
+      .carousel-container { height: 240px; }
+      .main-image { height: 240px; }
       .product-info-section h1 { font-size: 18px; }
       .price { font-size: 26px; }
       .product-detail { padding: 12px; }

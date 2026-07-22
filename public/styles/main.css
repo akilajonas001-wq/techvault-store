@@ -532,6 +532,12 @@ img, video, iframe, svg {
    RESPONSIVIDADE - TABLET & MOBILE
    =========================================== */
 @media (max-width: 768px) {
+  /* Fix overflow */
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
+
   /* Ajustar header */
   .header-top {
     padding: 10px 12px !important;
