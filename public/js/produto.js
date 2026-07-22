@@ -345,7 +345,7 @@ async function loadProduct(productId) {
             '</div>' +
             (allImages.length > 1 ?
               '<button class="carousel-arrow carousel-prev" onclick="prevSlide()" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>' +
-              '<button class="carousel-arrow carousel-next" onclick="nextSlide()" aria-label="Próximo"><i class="fas fa-chevron-right"></i></button>' +
+              '<button class="carousel-arrow carousel-next" onclick="nextSlide()" aria-label="Próximo"><i class="fas fa-chevron-right"></i></button>' :
             '') +
             '<div class="carousel-counter" id="carouselCounter">1 / ' + allImages.length + '</div>' +
             '<button class="wishlist-btn product-wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)" title="' + (inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '">' +
