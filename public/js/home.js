@@ -143,7 +143,7 @@ async function loadFeaturedProducts() {
         </div>
         <div class="product-info">
           <div class="product-price">R$ ${product.preco.toFixed(2).replace('.', ',')}</div>
-          ${product.frete === 'Grátis' ? '<div class="product-shipping"><i class="fas fa-truck"></i> Frete grátis</div>' : ''}
+          <div class="product-shipping"><span class="old-shipping-card">R$ 14,99</span> <span class="free-shipping-badge-card"><i class="fas fa-truck"></i> Frete Grátis</span></div>
           <div class="product-name">${product.nome}</div>
           <div class="product-rating">
             <i class="fas fa-star"></i>

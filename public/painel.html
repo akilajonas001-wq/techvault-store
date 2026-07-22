@@ -524,8 +524,11 @@
               <input type="text" id="cpCategoria" placeholder="Ex: Celulares e Smartphones" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
             </div>
             <div>
-              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Estoque (-1 = ilimitado)</label>
-              <input type="number" id="cpEstoque" value="-1" min="-1" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Disponibilidade</label>
+              <select id="cpEstoque" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:var(--white);">
+                <option value="1">Disponível</option>
+                <option value="0">Indisponível</option>
+              </select>
             </div>
             <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagem Principal</label>
@@ -1493,7 +1496,7 @@
       document.getElementById('cpPreco').value = p.preco || '';
       document.getElementById('cpPrecoOriginal').value = p.precoOriginal || '';
       document.getElementById('cpCategoria').value = p.categoria || '';
-      document.getElementById('cpEstoque').value = p.stock != null ? p.stock : -1;
+      document.getElementById('cpEstoque').value = p.stock != null ? (p.stock > 0 ? '1' : '0') : '1';
       document.getElementById('cpImagem').value = p.imagem || '';
       document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
       document.getElementById('cpDestaque').checked = p.destaque;
@@ -1661,7 +1664,7 @@
       const descricao = document.getElementById('cpDescricao').value.trim();
       const precoOriginal = document.getElementById('cpPrecoOriginal').value ? parseFloat(document.getElementById('cpPrecoOriginal').value) : null;
       const categoria = document.getElementById('cpCategoria').value.trim() || 'outros';
-      const stock = document.getElementById('cpEstoque').value !== '' ? parseInt(document.getElementById('cpEstoque').value) : -1;
+      const stock = document.getElementById('cpEstoque').value !== '' ? parseInt(document.getElementById('cpEstoque').value) : 1;
       const imagem = document.getElementById('cpImagem').value.trim() || '';
       const imagens = document.getElementById('cpImagens').value.trim().split('\n').filter(Boolean);
       const destaque = document.getElementById('cpDestaque').checked;
@@ -1729,7 +1732,7 @@
           document.getElementById('cpPreco').value = '';
           document.getElementById('cpPrecoOriginal').value = '';
           document.getElementById('cpCategoria').value = '';
-          document.getElementById('cpEstoque').value = '';
+          document.getElementById('cpEstoque').value = '1';
           document.getElementById('cpImagem').value = '';
           document.getElementById('cpImagens').value = '';
           document.getElementById('cpDestaque').checked = false;
