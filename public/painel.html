@@ -1156,7 +1156,8 @@
           <div class="label">Cliente</div>
           <strong>${order.usuario?.nome || 'N/A'}</strong><br>
           Email: ${order.usuario?.email || 'N/A'}<br>
-          Telefone: ${order.cliente?.telefone || order.usuario?.telefone || 'N/A'}
+          Telefone: ${order.cliente?.telefone || order.usuario?.telefone || 'N/A'}<br>
+          CPF: ${order.cliente?.cpf || 'Não informado'}
         </div>
         <div class="detail-section">
           <div class="label">Endereço de Entrega</div>
