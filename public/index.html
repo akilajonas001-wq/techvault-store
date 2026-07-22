@@ -247,38 +247,13 @@
     }
 
     .banner {
-      position: relative;
       border-radius: 20px;
       overflow: hidden;
       box-shadow: var(--shadow-xl);
-      aspect-ratio: 1280 / 490;
-    }
-
-    .banner img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      transition: opacity 0.8s ease;
     }
 
     @media (min-width: 769px) {
-      .banner {
-        max-height: 580px;
-      }
-    }
-
-    .banner img.active {
-      opacity: 1;
-      z-index: 1;
-    }
-
-    .banner img:not(.active) {
-      opacity: 0;
-      z-index: 0;
+      .banner { max-height: 580px; }
     }
 
     /* Categorias */
@@ -1049,9 +1024,6 @@
       .banner img {
         object-fit: cover;
       }
-      .banner-nav { width: 30px; height: 30px; font-size: 12px; }
-      .banner-nav.prev { left: 6px; }
-      .banner-nav.next { right: 6px; }
 
       .categories-section { margin: 32px auto; padding: 0 12px; }
 
@@ -1138,7 +1110,6 @@
       .order-total { font-size: 18px; }
 
       .hero-banner { margin: 12px; padding: 0; }
-      .banner-dots { margin-top: 8px; }
     }
 
     @media (max-width: 400px) {
@@ -1184,68 +1155,6 @@
       background: var(--primary-gradient);
       color: var(--white);
       transform: scale(1.1) !important;
-    }
-
-    /* Hero Banner Carousel */
-    .hero-carousel {
-      position: relative;
-    }
-
-    .banner-dots {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
-    .banner-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--border);
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      padding: 0;
-    }
-
-    .banner-dot.active {
-      background: var(--primary);
-      width: 28px;
-      border-radius: 5px;
-    }
-
-    .banner-nav {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(4px);
-      border: none;
-      color: var(--white);
-      font-size: 14px;
-      cursor: pointer;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s ease;
-    }
-
-    .banner-nav:hover {
-      background: rgba(255,255,255,0.35);
-      transform: translateY(-50%) scale(1.1);
-    }
-
-    .banner-nav.prev {
-      left: 8px;
-    }
-
-    .banner-nav.next {
-      right: 8px;
     }
 
     /* Cart Modal Overlay Animation */
@@ -1403,15 +1312,11 @@
     <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
   </header>
 
-  <!-- Banner Principal - Carrossel de Imagens -->
-  <section class="hero-banner hero-carousel">
-    <div class="banner" id="heroBanner">
-      <img src="/images/banner1.jpg" alt="Banner 1" class="active" id="bannerImg0">
-      <img src="/images/banner2.jpg" alt="Banner 2" id="bannerImg1">
-      <button class="banner-nav prev" onclick="prevBanner()" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
-      <button class="banner-nav next" onclick="nextBanner()" aria-label="Próximo"><i class="fas fa-chevron-right"></i></button>
+  <!-- Banner Principal -->
+  <section class="hero-banner">
+    <div class="banner">
+      <img src="/images/ok.png" alt="TechVault - Promoção" style="width:100%;height:auto;border-radius:16px;object-fit:cover;">
     </div>
-    <div class="banner-dots" id="bannerDots"></div>
   </section>
 
   <!-- Categorias -->
@@ -1788,48 +1693,6 @@
     function showOffers() {
       document.getElementById('ofertas').scrollIntoView({ behavior: 'smooth' });
     }
-
-    // Hero Banner Carrossel de Imagens
-    const totalBanners = 2;
-    let currentBanner = 0;
-
-    function showBanner(index) {
-      document.querySelectorAll('#heroBanner img').forEach((img, i) => {
-        img.classList.toggle('active', i === index);
-      });
-      document.querySelectorAll('.banner-dot').forEach((dot, i) => {
-        dot.classList.toggle('active', i === index);
-      });
-      currentBanner = index;
-    }
-
-    function nextBanner() {
-      showBanner((currentBanner + 1) % totalBanners);
-    }
-
-    function prevBanner() {
-      showBanner((currentBanner - 1 + totalBanners) % totalBanners);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const dotsContainer = document.getElementById('bannerDots');
-      for (let i = 0; i < totalBanners; i++) {
-        const dot = document.createElement('button');
-        dot.className = `banner-dot${i === 0 ? ' active' : ''}`;
-        dot.setAttribute('aria-label', `Banner ${i + 1}`);
-        dot.onclick = () => showBanner(i);
-        dotsContainer.appendChild(dot);
-      }
-
-      let bannerInterval = setInterval(nextBanner, 5000);
-      document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-          clearInterval(bannerInterval);
-        } else {
-          bannerInterval = setInterval(nextBanner, 5000);
-        }
-      });
-    });
   </script>
 </body>
 </html>
