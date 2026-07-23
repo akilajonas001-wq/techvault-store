@@ -949,7 +949,7 @@
     }
 
     async function toggleProcessado(orderId) {
-      const order = allOrders.find(o => o.id === orderId);
+      const order = allOrders.find(o => o.id == orderId);
       if (!order) return;
       const newVal = !(order.processado === 1 || order.processado === true);
       try {
