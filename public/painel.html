@@ -952,10 +952,11 @@
       const order = allOrders.find(o => o.id == orderId);
       if (!order) return;
       const newVal = !(order.processado === 1 || order.processado === true);
+      const token = localStorage.getItem('techvault-token');
       try {
-        const res = await adminFetch('/api/admin/orders/' + orderId + '/processado', {
+        const res = await fetch('/api/admin/orders/' + orderId + '/processado', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({ processado: newVal })
         });
         if (res.ok) {
