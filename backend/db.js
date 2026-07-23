@@ -226,6 +226,11 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar trackingstatus:', e.message);
   }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS processado SMALLINT DEFAULT 0`);
+  } catch (e) {
+    console.error('Erro ao adicionar processado:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -593,7 +598,8 @@ const parseOrder = (o) => {
     itens: JSON.parse(o.itens || '[]'),
     cupom: o.cupom ? JSON.parse(o.cupom) : null,
     cliente: JSON.parse(o.cliente || '{}'),
-    taxas: JSON.parse(o.taxas || '{}')
+    taxas: JSON.parse(o.taxas || '{}'),
+    processado: o.processado || 0
   };
 };
 
@@ -641,6 +647,10 @@ async function updateOrderTracking(id, trackingNumber, trackingStatus) {
     await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingstatus TEXT DEFAULT '[]'`);
     await query(`UPDATE orders SET trackingnumber = $1, trackingstatus = $2 WHERE id = $3`, [trackingNumber, JSON.stringify(trackingStatus || []), id]);
   }
+}
+
+async function updateOrderProcessado(id, processado) {
+  await query(`UPDATE orders SET processado = $1 WHERE id = $2`, [processado ? 1 : 0, id]);
 }
 
 async function orderByPaymentRef(ref) {
@@ -964,7 +974,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById, updateOrderTracking,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById, updateOrderTracking, updateOrderProcessado,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,

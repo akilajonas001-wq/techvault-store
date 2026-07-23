@@ -92,6 +92,18 @@ router.put('/orders/:id/tracking', async (req, res) => {
   } catch (e) { console.error('Erro ao salvar rastreio:', e); res.status(500).json({ error: 'Erro ao atualizar rastreio: ' + e.message }); }
 });
 
+router.put('/orders/:id/processado', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    if (isNaN(orderId)) return res.status(400).json({ error: 'ID de pedido inválido' });
+    const order = await db.orderById(orderId);
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    const { processado } = req.body;
+    await db.updateOrderProcessado(orderId, processado);
+    res.json({ success: true });
+  } catch (e) { console.error('Erro ao atualizar processado:', e); res.status(500).json({ error: 'Erro ao atualizar processado: ' + e.message }); }
+});
+
 // ========== PRODUTOS ==========
 
 router.get('/products', async (req, res) => {
