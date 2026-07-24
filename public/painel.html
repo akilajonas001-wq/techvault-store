@@ -186,6 +186,16 @@
       background: var(--white); color: var(--primary);
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
+    .tab-count-badge {
+      display: none;
+      background: rgba(99,102,241,0.15);
+      color: var(--primary);
+      border-radius: 10px;
+      padding: 1px 8px;
+      font-size: 11px;
+      margin-left: 4px;
+      font-weight: 700;
+    }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -410,13 +420,13 @@
     </div>
 
     <div class="tab-nav">
-      <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
-      <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
-      <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
-      <button class="tab-btn" data-tab="devolucoes" onclick="switchTab('devolucoes', this)"><i class="fas fa-undo"></i> Devolução e Cancelamento <span id="returnsBadge" style="display:none;background:#f59e0b;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
-      <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
-      <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
-      <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
+      <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos <span id="pedidosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos <span id="carrinhosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" class="tab-count-badge" style="background:rgba(239,68,68,0.15);color:#ef4444;"></span></button>
+      <button class="tab-btn" data-tab="devolucoes" onclick="switchTab('devolucoes', this)"><i class="fas fa-undo"></i> Devolução e Cancelamento <span id="returnsBadge" class="tab-count-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;"></span></button>
+      <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários <span id="funcionariosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos <span id="produtosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários <span id="usuariosBadge" class="tab-count-badge"></span></button>
       <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-gift"></i> Cupons</button>
       <button class="tab-btn" data-tab="whatsapp" onclick="switchTab('whatsapp', this)"><i class="fab fa-whatsapp"></i> WhatsApp</button>
     </div>
@@ -815,13 +825,14 @@
 
     async function loadAllData(token) {
       try {
-        const [ordersRes, usersRes, cartsRes, staffRes, productsRes, newsletterRes] = await Promise.all([
+        const [ordersRes, usersRes, cartsRes, staffRes, productsRes, newsletterRes, returnsRes] = await Promise.all([
           fetch('/api/admin/orders', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/carts', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/staff', { headers: { 'Authorization': 'Bearer ' + token } }),
           fetch('/api/admin/products', { headers: { 'Authorization': 'Bearer ' + token } }),
-          fetch('/api/admin/newsletter', { headers: { 'Authorization': 'Bearer ' + token } })
+          fetch('/api/admin/newsletter', { headers: { 'Authorization': 'Bearer ' + token } }),
+          fetch('/api/admin/returns', { headers: { 'Authorization': 'Bearer ' + token } })
         ]);
 
         allOrders = await ordersRes.json();
@@ -830,8 +841,13 @@
         allStaff = await staffRes.json();
         allProducts = await productsRes.json();
         allNewsletter = await newsletterRes.json();
+        const allReturns = await returnsRes.json();
 
         updateStats();
+        updateTabBadges();
+        const returnsBadge = document.getElementById('returnsBadge');
+        if (allReturns.length > 1) { returnsBadge.style.display = 'inline'; returnsBadge.textContent = allReturns.length; }
+        else { returnsBadge.style.display = 'none'; }
         renderOrders();
         renderCarts();
         renderStaff();
@@ -889,6 +905,20 @@
       };
       setOrderPeriod('day');
       loadVisits();
+    }
+
+    function updateTabBadges() {
+      function setBadge(id, count) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (count > 1) { el.style.display = 'inline'; el.textContent = count; }
+        else { el.style.display = 'none'; }
+      }
+      setBadge('pedidosBadge', allOrders.length);
+      setBadge('carrinhosBadge', allCarts.length);
+      setBadge('funcionariosBadge', allStaff.length);
+      setBadge('produtosBadge', allProducts.length);
+      setBadge('usuariosBadge', allUsers.length);
     }
 
     function setOrderPeriod(period) {
@@ -2383,7 +2413,7 @@
         const container = document.getElementById('returnsContainer');
         document.getElementById('returnsCount').textContent = orders.length + ' chamado' + (orders.length !== 1 ? 's' : '');
         const badge = document.getElementById('returnsBadge');
-        if (orders.length > 0) { badge.style.display = 'inline'; badge.textContent = orders.length; }
+        if (orders.length > 1) { badge.style.display = 'inline'; badge.textContent = orders.length; }
         else { badge.style.display = 'none'; }
         if (!orders.length) {
           container.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhum chamado pendente.</p></div>';
