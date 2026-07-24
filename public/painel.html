@@ -914,7 +914,7 @@
         if (count > 1) { el.style.display = 'inline'; el.textContent = count; }
         else { el.style.display = 'none'; }
       }
-      setBadge('pedidosBadge', allOrders.length);
+      setBadge('pedidosBadge', allOrders.filter(o => o.processado !== 1 && o.processado !== true).length);
       setBadge('carrinhosBadge', allCarts.length);
       setBadge('funcionariosBadge', allStaff.length);
       setBadge('produtosBadge', allProducts.length);
