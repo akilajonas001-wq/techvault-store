@@ -583,6 +583,12 @@ const parseOrder = (o) => {
   let trackingStatus = [];
   try { trackingStatus = JSON.parse(o.trackingstatus || o.trackingStatus || '[]'); } catch(e) {}
   if (!Array.isArray(trackingStatus)) trackingStatus = [];
+  let cancelledItems = [];
+  try { cancelledItems = JSON.parse(o.cancelleditems || o.cancelledItems || '[]'); } catch(e) {}
+  if (!Array.isArray(cancelledItems)) cancelledItems = [];
+  let returnedItems = [];
+  try { returnedItems = JSON.parse(o.returneditems || o.returnedItems || '[]'); } catch(e) {}
+  if (!Array.isArray(returnedItems)) returnedItems = [];
   return {
     ...o,
     id: o.id,
@@ -591,8 +597,11 @@ const parseOrder = (o) => {
     infinitepayId: o.infinitepayid || o.infinitepayId || null,
     totalOriginal: o.totaloriginal,
     createdAt: o.createdat || o.createdAt,
+    deliveredAt: o.deliveredat || o.deliveredAt || null,
     trackingNumber: o.trackingnumber || o.trackingNumber || '',
     trackingStatus: trackingStatus,
+    cancelledItems: cancelledItems,
+    returnedItems: returnedItems,
     usuario: JSON.parse(o.usuario || '{}'),
     endereco: JSON.parse(o.endereco || '{}'),
     itens: JSON.parse(o.itens || '[]'),
@@ -651,6 +660,30 @@ async function updateOrderTracking(id, trackingNumber, trackingStatus) {
 
 async function updateOrderProcessado(id, processado) {
   await query(`UPDATE orders SET processado = $1 WHERE id = $2`, [processado ? 1 : 0, id]);
+}
+
+async function cancelOrderItem(id, itemId) {
+  const order = await orderById(id);
+  if (!order) return null;
+  const cancelled = (order.cancelledItems || []).map(String);
+  const strItemId = String(itemId);
+  if (!cancelled.includes(strItemId)) cancelled.push(strItemId);
+  await query(`UPDATE orders SET cancelleditems = $1 WHERE id = $2`, [JSON.stringify(cancelled), id]);
+  return { ...order, cancelledItems: cancelled };
+}
+
+async function returnOrderItem(id, itemId) {
+  const order = await orderById(id);
+  if (!order) return null;
+  const returned = (order.returnedItems || []).map(String);
+  const strItemId = String(itemId);
+  if (!returned.includes(strItemId)) returned.push(strItemId);
+  await query(`UPDATE orders SET returneditems = $1 WHERE id = $2`, [JSON.stringify(returned), id]);
+  return { ...order, returnedItems: returned };
+}
+
+async function setOrderDelivered(id) {
+  await query(`UPDATE orders SET deliveredat = $1 WHERE id = $2`, [new Date().toISOString(), id]);
 }
 
 async function orderByPaymentRef(ref) {
@@ -975,6 +1008,7 @@ module.exports = {
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
   allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById, updateOrderTracking, updateOrderProcessado,
+  cancelOrderItem, returnOrderItem, setOrderDelivered,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
   getChatMessages, saveChatMessages, resolveChat, getChatResolved, deleteChat, allChats,

@@ -100,6 +100,8 @@
     .order-status.enviado { background: rgba(26,115,232,0.1); color: var(--primary); }
     .order-status.entregue { background: rgba(16,185,129,0.1); color: var(--success); }
     .order-status.cancelado { background: rgba(239,68,68,0.1); color: var(--error); }
+    .order-status.chamado\ de\ devolução, .order-status.devolucao { background: rgba(245,158,11,0.1); color: #d97706; }
+    .order-status.chamado\ de\ cancelamento, .order-status.cancelamento { background: rgba(239,68,68,0.1); color: #ef4444; }
     .order-items { font-size: 13px; color: var(--text-light); margin-bottom: 8px; line-height: 1.6; }
     .order-total-price { font-size: 18px; font-weight: 800; color: var(--text); }
     .order-action-btn {
@@ -346,6 +348,9 @@
             <a class="account-nav-item" data-tab="comprovantes" onclick="switchTab('comprovantes')">
               <i class="fas fa-file-invoice"></i> Comprovantes
             </a>
+            <a class="account-nav-item" data-tab="chats" onclick="switchTab('chats')">
+              <i class="fas fa-comments"></i> Chats
+            </a>
             <a class="account-nav-item" onclick="logout()">
               <i class="fas fa-sign-out-alt"></i> Sair
             </a>
@@ -401,6 +406,18 @@
                 <i class="fas fa-receipt"></i>
                 <h3>Nenhum comprovante</h3>
                 <p>Seus comprovantes aparecerão aqui após a confirmação do pagamento.</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-chats" class="tab-content">
+            <h2><i class="fas fa-comments"></i> Meus Chats</h2>
+            <p style="color:#64748b;margin-bottom:20px;">Conversas com o suporte sobre devoluções e atendimento.</p>
+            <div id="userChatsList">
+              <div class="empty-state">
+                <i class="fas fa-comment-dots"></i>
+                <h3>Nenhuma conversa</h3>
+                <p>Suas conversas aparecerão aqui.</p>
               </div>
             </div>
           </div>
@@ -729,7 +746,6 @@
         }
         container.innerHTML = orders.map(o => {
                   const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
-                  const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
                   const statusClass = (o.status || 'pendente').toLowerCase();
                   const trackingStatusArr = Array.isArray(o.trackingStatus) ? o.trackingStatus : (typeof o.trackingStatus === 'string' ? (function(){try{return JSON.parse(o.trackingStatus||'[]')}catch(e){return[]}})() : []);
                   const hasTrackingSteps = trackingStatusArr.length > 0;
@@ -737,22 +753,92 @@
                   const trackingIcon = hasTrackingSteps ? 'fa-truck' : 'fa-shipping-fast';
                   const trackingJson = JSON.stringify(trackingStatusArr).replace(/"/g, '&quot;');
                   const trackingBtn = '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();showOrderTracking(' + o.id + ',\'' + (o.trackingNumber || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\',\'' + trackingJson + '\')"><i class="fas ' + trackingIcon + '"></i> ' + trackingLabel + '</span>';
-                  return '<div class="order-card" style="cursor:pointer;" onclick="if(!event.target.closest(\'[data-no-nav]\'))window.location.href=\'/comprovante/' + o.id + '\'">' +
+                  const firstProductId = o.itens && o.itens.length > 0 ? (o.itens[0].id || o.itens[0].productId || '') : '';
+                  const productUrl = firstProductId ? '/produto/' + firstProductId : '/';
+
+                  const now = new Date();
+                  const created = new Date(o.createdAt);
+                  const hoursSinceCreation = (now - created) / (1000 * 60 * 60);
+                  const canCancel = hoursSinceCreation <= 24;
+                  const deliveredAt = o.deliveredAt ? new Date(o.deliveredAt) : null;
+                  const canReturn = deliveredAt ? ((now - deliveredAt) / (1000 * 60 * 60 * 24)) <= 7 : false;
+                  const cancelledItems = o.cancelledItems || [];
+                  const returnedItems = o.returnedItems || [];
+
+                  const itemsHtml = o.itens.map(item => {
+                    const itemId = item.id || item.productId;
+                    const isCancelled = cancelledItems.includes(itemId);
+                    const isReturned = returnedItems.includes(itemId);
+                    let badge = '';
+                    if (isCancelled) badge = '<span style="background:rgba(239,68,68,0.1);color:#ef4444;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;margin-left:8px;">Cancelado</span>';
+                    else if (isReturned) badge = '<span style="background:rgba(245,158,11,0.1);color:#d97706;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;margin-left:8px;">Devolvido</span>';
+
+                    let actionBtns = '';
+                    if (!isCancelled && !isReturned && canCancel) {
+                      actionBtns += '<span class="order-action-btn" data-no-nav data-token="' + token + '" data-order="' + o.id + '" data-item="' + itemId + '" style="font-size:12px;color:#ef4444;border-color:rgba(239,68,68,0.3);" onclick="event.stopPropagation();cancelOrderItem(this)"><i class="fas fa-times-circle"></i> Cancelar</span>';
+                    }
+                    if (!isCancelled && !isReturned && canReturn) {
+                      actionBtns += '<span class="order-action-btn" data-no-nav data-token="' + token + '" data-order="' + o.id + '" data-item="' + itemId + '" style="font-size:12px;color:#d97706;border-color:rgba(245,158,11,0.3);" onclick="event.stopPropagation();returnOrderItem(this)"><i class="fas fa-undo"></i> Devolver</span>';
+                    }
+
+                    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">' +
+                      '<span style="font-size:14px;">' + item.quantidade + 'x ' + item.nome + badge + '</span>' +
+                      '<div style="display:flex;gap:4px;flex-shrink:0;">' + actionBtns + '</div>' +
+                    '</div>';
+                  }).join('');
+
+                  return '<div class="order-card" style="cursor:pointer;" onclick="if(!event.target.closest(\'[data-no-nav]\'))window.location.href=\'' + productUrl + '\'">' +
                     '<div class="order-header">' +
                       '<div><span class="order-id">Pedido #' + o.id + '</span><span class="order-date"> - ' + date + '</span></div>' +
                       '<span class="order-status ' + statusClass + '">' + (o.status || 'Pendente') + '</span>' +
                     '</div>' +
-                    '<div class="order-items">' + items + '</div>' +
+                    '<div class="order-items" style="border:none;padding:0;">' + itemsHtml + '</div>' +
                     '<div class="order-total-price">R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</div>' +
                     '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
                       trackingBtn +
-                      '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();window.location.href=\'/comprovante/' + o.id + '\'"><i class="fas fa-eye"></i> Ver Pedido</span>' +
+                      (returnedItems.length > 0 ? '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();openUserReturnChat(' + o.id + ',\'return\')"><i class="fas fa-comments"></i> Chat Devolução</span>' : '') +
+                      (cancelledItems.length > 0 ? '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();openUserReturnChat(' + o.id + ',\'cancel\')"><i class="fas fa-comments"></i> Chat Cancelamento</span>' : '') +
+                      '<span class="order-action-btn" data-no-nav onclick="event.stopPropagation();window.location.href=\'' + productUrl + '\'"><i class="fas fa-eye"></i> Ver Pedido</span>' +
                     '</div>' +
                   '</div>';
                 }).join('');
       } catch (err) {
         console.error('Erro ao carregar pedidos:', err);
       }
+    }
+
+    async function cancelOrderItem(el) {
+      if (!confirm('Tem certeza que deseja cancelar este item?')) return;
+      const token = el.dataset.token;
+      const orderId = el.dataset.order;
+      const itemId = el.dataset.item;
+      try {
+        const res = await fetch('/api/orders/' + orderId + '/cancel-item', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ itemId })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Erro ao cancelar'); return; }
+        loadOrders(token, null);
+      } catch (e) { console.error(e); alert('Erro ao cancelar item'); }
+    }
+
+    async function returnOrderItem(el) {
+      if (!confirm('Tem certeza que deseja devolver este item?')) return;
+      const token = el.dataset.token;
+      const orderId = el.dataset.order;
+      const itemId = el.dataset.item;
+      try {
+        const res = await fetch('/api/orders/' + orderId + '/return-item', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ itemId })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Erro ao devolver'); return; }
+        loadOrders(token, null);
+      } catch (e) { console.error(e); alert('Erro ao devolver item'); }
     }
 
     async function loadFavorites(token, userId) {
@@ -840,6 +926,9 @@
       if (tab === 'comprovantes') {
         if (token) loadComprovantes(token);
       }
+      if (tab === 'chats') {
+        if (token) loadUserChats(token);
+      }
     }
 
     function logout() {
@@ -908,6 +997,120 @@
     function closeTrackingModal() {
       document.getElementById("trackingModal").classList.remove("active");
     }
+
+    // ========== RETURN CHAT ==========
+    let activeReturnChatOrderId = null;
+    let activeReturnChatType = null;
+    let userReturnChatPoll = null;
+
+    async function loadUserChats(token) {
+      try {
+        const ordersRes = await fetch('/api/orders/my', { headers: { 'Authorization': 'Bearer ' + token } });
+        const orders = await ordersRes.json();
+        const chatOrders = orders.filter(o => (o.returnedItems || []).length > 0 || (o.cancelledItems || []).length > 0);
+        const container = document.getElementById('userChatsList');
+        if (!chatOrders.length) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-comment-dots"></i><h3>Nenhuma conversa</h3><p>Suas conversas aparecerão aqui.</p></div>';
+          return;
+        }
+        container.innerHTML = chatOrders.map(o => {
+          const hasReturn = (o.returnedItems || []).length > 0;
+          const hasCancel = (o.cancelledItems || []).length > 0;
+          const type = hasReturn ? 'return' : 'cancel';
+          const itemNames = o.itens.filter(i => (o.returnedItems || []).includes(i.id || i.productId) || (o.cancelledItems || []).includes(i.id || i.productId)).map(i => i.nome).join(', ');
+          const typeLabel = hasReturn && hasCancel ? 'Devolução + Cancelamento' : hasReturn ? 'Devolução' : 'Cancelamento';
+          const typeColor = hasReturn ? '#d97706' : '#ef4444';
+          const isActive = o.status === 'chamado de devolução' || o.status === 'chamado de cancelamento';
+          const statusLabel = isActive ? '<span style="background:rgba(' + (hasReturn ? '245,158,11' : '239,68,68') + ',0.1);color:' + typeColor + ';font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;">Chamado aberto — ' + typeLabel + '</span>' : '<span style="background:rgba(16,185,129,0.1);color:#22c55e;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;">' + (o.status || 'Resolvido') + '</span>';
+          return '<div class="order-card" style="cursor:pointer;" onclick="openUserReturnChat(' + o.id + ',\'' + type + '\')">' +
+            '<div class="order-header">' +
+              '<div><span class="order-id">Pedido #' + o.id + '</span></div>' +
+              statusLabel +
+            '</div>' +
+            '<div class="order-items">' + itemNames + '</div>' +
+            '<div style="margin-top:8px;"><span class="order-action-btn" onclick="event.stopPropagation();openUserReturnChat(' + o.id + ',\'' + type + '\')"><i class="fas fa-comments"></i> Abrir Chat</span></div>' +
+          '</div>';
+        }).join('');
+      } catch (e) { console.error(e); }
+    }
+
+    function openUserReturnChat(orderId, type) {
+      activeReturnChatOrderId = orderId;
+      activeReturnChatType = type || 'return';
+      const convKey = activeReturnChatType + ':' + orderId;
+      document.getElementById('returnUserChatModal').classList.add('active');
+      loadUserReturnChatMessages(convKey);
+      if (userReturnChatPoll) clearInterval(userReturnChatPoll);
+      userReturnChatPoll = setInterval(() => loadUserReturnChatMessages(convKey, true), 8000);
+    }
+
+    function closeUserReturnChatModal() {
+      document.getElementById('returnUserChatModal').classList.remove('active');
+      if (userReturnChatPoll) { clearInterval(userReturnChatPoll); userReturnChatPoll = null; }
+      activeReturnChatOrderId = null;
+      activeReturnChatType = null;
+    }
+
+    async function loadUserReturnChatMessages(convKey, silent) {
+      try {
+        const token = localStorage.getItem('techvault-token');
+        const parts = convKey.split(':');
+        const type = parts[0];
+        const orderId = parts[1];
+        const res = await fetch('/api/return-chat/messages/' + orderId + '?type=' + type, { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        const msgs = data.messages || [];
+        const container = document.getElementById('returnUserChatMessages');
+        if (!msgs.length) {
+          container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-comment-dots" style="font-size:24px;margin-bottom:8px;display:block;"></i><p>Aguardando resposta do suporte...</p></div>';
+          return;
+        }
+        container.innerHTML = msgs.map(m => {
+          const isUser = m.from === 'user';
+          const isSystem = m.from === 'system';
+          const align = isUser ? 'flex-end' : 'flex-start';
+          const bg = isUser ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;' : isSystem ? 'background:var(--bg-cool);color:var(--text-muted);font-style:italic;' : 'background:white;border:1px solid var(--border);';
+          const name = isUser ? 'Você' : isSystem ? 'Sistema' : 'Suporte';
+          const time = m.createdAt ? new Date(m.createdAt).toLocaleString('pt-BR') : '';
+          return '<div style="display:flex;flex-direction:column;align-items:' + align + ';gap:2px;"><span style="font-size:10px;color:var(--text-muted);">' + name + ' — ' + time + '</span><div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;' + bg + '">' + (m.message || '') + '</div></div>';
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+        fetch('/api/return-chat/read/' + orderId + '?type=' + type, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
+      } catch (e) { if (!silent) console.error(e); }
+    }
+
+    async function sendUserReturnChatMessage() {
+      const input = document.getElementById('returnUserChatInput');
+      const message = input.value.trim();
+      if (!message || !activeReturnChatOrderId) return;
+      const token = localStorage.getItem('techvault-token');
+      const type = activeReturnChatType || 'return';
+      try {
+        await fetch('/api/return-chat/send/' + activeReturnChatOrderId + '?type=' + type, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ message })
+        });
+        input.value = '';
+        loadUserReturnChatMessages(type + ':' + activeReturnChatOrderId);
+      } catch (e) { console.error(e); }
+    }
   </script>
+
+  <div class="addr-modal-overlay" id="returnUserChatModal" style="z-index:7000;">
+    <div class="addr-modal" style="max-width:500px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="margin:0;"><i class="fas fa-comments" style="color:var(--primary);"></i> Chat — Devolução / Cancelamento</h3>
+        <button class="close-addr" onclick="closeUserReturnChatModal()">&times;</button>
+      </div>
+      <div id="returnUserChatMessages" style="max-height:350px;overflow-y:auto;padding:12px;background:var(--bg-cool);border-radius:12px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;margin-bottom:12px;">
+        <div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-comment-dots" style="font-size:24px;margin-bottom:8px;display:block;"></i><p>Aguardando mensagem...</p></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <input type="text" id="returnUserChatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter')sendUserReturnChatMessage()" style="flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;outline:none;">
+        <button class="btn btn-primary" onclick="sendUserReturnChatMessage()" style="padding:12px 20px;"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

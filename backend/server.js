@@ -405,6 +405,97 @@ app.delete('/api/admin/chat/:convKey(*)', adminAuth, async (req, res) => {
   } catch { res.status(500).json({ error: 'Erro ao deletar conversa' }); }
 });
 
+// ===================== RETURN REQUESTS =====================
+
+app.get('/api/admin/returns', adminAuth, async (req, res) => {
+  try {
+    const allOrders = await db.allOrders();
+    const returnOrders = allOrders.filter(o => (o.returnedItems || []).length > 0 || (o.cancelledItems || []).length > 0);
+    res.json(returnOrders);
+  } catch { res.status(500).json({ error: 'Erro ao carregar chamados' }); }
+});
+
+app.post('/api/admin/returns/send', adminAuth, async (req, res) => {
+  try {
+    const { conversationKey, message } = req.body;
+    if (!conversationKey || !message) return res.status(400).json({ error: 'Dados incompletos' });
+    const chatData = await db.getChatMessages(conversationKey);
+    const msgs = chatData ? chatData.messages : [];
+    msgs.push({
+      from: 'admin',
+      adminUserId: req.adminUser.id,
+      adminName: req.adminUser.nome,
+      message,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+    await db.saveChatMessages(conversationKey, msgs);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
+});
+
+app.get('/api/return-chat/messages/:orderId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const orderId = parseInt(req.params.orderId);
+    const type = req.query.type || 'return';
+    const convKey = type + ':' + orderId;
+    const chatData = await db.getChatMessages(convKey);
+    if (!chatData) return res.json({ messages: [], resolved: false });
+    res.json(chatData);
+  } catch { res.status(500).json({ error: 'Erro ao carregar chat' }); }
+});
+
+app.post('/api/return-chat/send/:orderId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const orderId = parseInt(req.params.orderId);
+    const type = req.query.type || 'return';
+    const convKey = type + ':' + orderId;
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: 'Mensagem vazia' });
+    const chatData = await db.getChatMessages(convKey);
+    const msgs = chatData ? chatData.messages : [];
+    msgs.push({
+      from: 'user',
+      message,
+      createdAt: new Date().toISOString(),
+      read: false
+    });
+    await db.saveChatMessages(convKey, msgs);
+    res.json({ success: true, conversationKey: convKey });
+  } catch { res.status(500).json({ error: 'Erro ao enviar mensagem' }); }
+});
+
+app.post('/api/return-chat/read/:orderId', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const orderId = parseInt(req.params.orderId);
+    const type = req.query.type || 'return';
+    const convKey = type + ':' + orderId;
+    const chatData = await db.getChatMessages(convKey);
+    if (!chatData) return res.json({ success: true });
+    const msgs = chatData.messages.map(m => {
+      if (m.from === 'admin') m.read = true;
+      return m;
+    });
+    await db.saveChatMessages(convKey, msgs);
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Erro ao marcar como lido' }); }
+});
+
 // ===================== IMAGE SERVING =====================
 
 app.get('/api/images/:id', async (req, res) => {

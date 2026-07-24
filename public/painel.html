@@ -413,6 +413,7 @@
       <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos</button>
       <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos</button>
       <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
+      <button class="tab-btn" data-tab="devolucoes" onclick="switchTab('devolucoes', this)"><i class="fas fa-undo"></i> Devolução e Cancelamento <span id="returnsBadge" style="display:none;background:#f59e0b;color:white;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
       <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários</button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos</button>
       <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários</button>
@@ -451,6 +452,16 @@
           <span id="chatsCount" style="font-size: 13px; color: var(--text-muted);"></span>
         </div>
         <div id="allChatsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando conversas...</div>
+      </div>
+    </div>
+
+    <div id="tab-devolucoes" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2><i class="fas fa-undo"></i> Devolução e Cancelamento</h2>
+          <span id="returnsCount" style="font-size: 13px; color: var(--text-muted);"></span>
+        </div>
+        <div id="returnsContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando chamados...</div>
       </div>
     </div>
 
@@ -729,6 +740,23 @@
       </div>
     </div>
 
+    <div class="modal-overlay" id="returnChatModal">
+      <div class="modal-content" style="max-width:550px;">
+        <div class="modal-header">
+          <h3><i class="fas fa-undo"></i> <span id="returnChatTitle">Chat Devolução</span></h3>
+          <button class="modal-close" onclick="closeReturnChatModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="returnChatInfo" style="padding:12px;background:var(--bg-cool);border-radius:10px;margin-bottom:12px;font-size:13px;"></div>
+        <div id="returnChatMessages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;padding:12px;background:var(--bg-cool);border-radius:12px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5;">
+          <div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <input type="text" id="returnChatInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendReturnChatMessage()" style="flex:1;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-family:inherit;outline:none;">
+          <button class="btn btn-primary" onclick="sendReturnChatMessage()" style="padding:12px 20px;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
   <script>
     const API_URL = '';
     let allOrders = [];
@@ -920,8 +948,21 @@
 
     function renderOrderRow(o) {
       const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
-      const items = o.itens.map(i => i.quantidade + 'x ' + i.nome).join(', ');
-      const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : 'badge-gray');
+      const time = new Date(o.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const cancelledItems = o.cancelledItems || [];
+      const returnedItems = o.returnedItems || [];
+      const hasCancelled = cancelledItems.length > 0;
+      const hasReturned = returnedItems.length > 0;
+      const items = o.itens.map(i => {
+        const itemId = i.id || i.productId;
+        const isCancelled = cancelledItems.includes(itemId);
+        const isReturned = returnedItems.includes(itemId);
+        let label = i.quantidade + 'x ' + i.nome;
+        if (isCancelled) label += ' <span style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;">CANCELADO</span>';
+        else if (isReturned) label += ' <span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;">DEVOLVIDO</span>';
+        return label;
+      }).join(', ');
+      const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : o.status === 'entregue' ? 'badge-blue' : o.status === 'chamado de devolução' ? 'badge-orange' : o.status === 'chamado de cancelamento' ? 'badge-red' : 'badge-gray');
       const hasSupplierLink = o.itens.some(item => {
         const product = allProducts.find(p => p.id == item.id);
         return product && product.supplierLink;
@@ -931,19 +972,21 @@
       let actions = '<div style="display:flex;gap:4px;align-items:center;">';
       actions += '<button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes" style="' + btnStyle + 'border-color:var(--primary);color:var(--primary);"><i class="fas fa-eye"></i></button>';
       actions += '<button class="order-detail-btn" onclick="openTrackingModal(' + o.id + ')" title="Rastreio" style="' + btnStyle + 'border-color:#8b5cf6;color:#8b5cf6;"><i class="fas fa-shipping-fast"></i></button>';
+      if (o.status !== 'entregue' && !hasCancelled) actions += '<button class="order-detail-btn" onclick="markDelivered(' + o.id + ')" title="Marcar como entregue" style="' + btnStyle + 'border-color:#22c55e;color:#22c55e;"><i class="fas fa-check-circle"></i></button>';
       if (hasSupplierLink) actions += '<button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar no fornecedor" style="' + btnStyle + 'border-color:var(--success);color:var(--success);' + (isProcessado ? '' : 'opacity:0.4;pointer-events:none;') + '"><i class="fas fa-cart-shopping"></i></button>';
       if (currentUserRole === 'admin') actions += '<button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir" style="' + btnStyle + 'border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>';
       actions += '</div>';
       const dotColor = isProcessado ? '#00a650' : '#ef4444';
       const dotTitle = isProcessado ? 'Processado (clique para desmarcar)' : 'Não processado (clique para marcar)';
       const processadoDot = '<span onclick="toggleProcessado(' + o.id + ')" title="' + dotTitle + '" style="display:inline-block;width:12px;height:12px;border-radius:50%;background:' + dotColor + ';cursor:pointer;box-shadow:0 0 6px ' + dotColor + '55;vertical-align:middle;margin-left:6px;transition:all 0.2s;" onmouseover="this.style.transform=\'scale(1.3)\'" onmouseout="this.style.transform=\'scale(1)\'"></span>';
-      return '<tr>' +
+      const rowBg = hasCancelled ? 'background:rgba(239,68,68,0.05);' : hasReturned ? 'background:rgba(245,158,11,0.05);' : '';
+      return '<tr style="' + rowBg + '">' +
         '<td><strong>#' + o.id + '</strong>' + processadoDot + '</td>' +
         '<td>' + (o.usuario?.nome || 'N/A') + '</td>' +
         '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + items.replace(/"/g, '&quot;') + '">' + items + '</td>' +
         '<td><strong>R$ ' + (o.total || 0).toFixed(2).replace('.', ',') + '</strong></td>' +
         '<td><span class="badge ' + statusClass + '">' + (o.status || 'Pendente') + '</span></td>' +
-        '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
+        '<td style="font-size:12px;color:var(--text-muted)">' + date + ' ' + time + '</td>' +
         '<td>' + actions + '</td>' +
       '</tr>';
     }
@@ -978,7 +1021,7 @@
       }
 
       const groups = groupOrdersByMonth(filtered);
-      const thead = '<thead><tr><th>Pedido #</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Data</th><th></th></tr></thead>';
+      const thead = '<thead><tr><th>Pedido #</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th>Data/Hora</th><th></th></tr></thead>';
 
       let html = '';
       groups.forEach(([key, group], idx) => {
@@ -1151,32 +1194,39 @@
     function showOrderDetail(orderId) {
       const order = allOrders.find(o => o.id == orderId);
       if (!order) return;
-      if (order.status !== 'aprovado' && order.status !== 'pendente') {
-        notify('Detalhes disponíveis apenas para pedidos ativos.', 'info');
-        return;
-      }
+
+      const cancelledItems = order.cancelledItems || [];
+      const returnedItems = order.returnedItems || [];
 
       const content = document.getElementById('orderDetailContent');
       const itemsHtml = order.itens.map(i => {
+        const itemId = i.id || i.productId;
+        const isCancelled = cancelledItems.includes(itemId);
+        const isReturned = returnedItems.includes(itemId);
         let specs = '';
         if (i.variantSpecs) {
           const vals = Object.values(i.variantSpecs).filter(Boolean).join(' | ');
           if (vals) specs = '<br><span style="font-size:11px;color:var(--text-muted)">' + vals + '</span>';
         }
+        let statusLabel = '';
+        if (isCancelled) statusLabel = ' <span style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;">CANCELADO</span>';
+        else if (isReturned) statusLabel = ' <span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;">DEVOLVIDO</span>';
         const product = allProducts.find(p => p.id == i.id);
         const buyBtn = product && product.supplierLink ?
           '<button onclick="openSupplierLink(' + i.id + ')" title="Comprar no fornecedor" style="background:var(--success);color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;margin-left:8px;"><i class="fas fa-shopping-cart"></i> Comprar</button>' : '';
-        return '<div class="cart-item-row"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + specs + buyBtn + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
+        return '<div class="cart-item-row" style="' + (isCancelled ? 'opacity:0.5;text-decoration:line-through;' : isReturned ? 'opacity:0.6;' : '') + '"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + statusLabel + specs + buyBtn + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
       }).join('');
 
-      const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', cancelado: 'badge-red', reembolsado: 'badge-gray' };
+      const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', cancelado: 'badge-red', reembolsado: 'badge-gray', entregue: 'badge-blue', 'chamado de devolução': 'badge-orange', 'chamado de cancelamento': 'badge-red' };
       const statusBadge = '<span class="badge ' + (statusColors[order.status] || 'badge-orange') + '">' + (order.status || 'pendente') + '</span>';
+      const deliveredInfo = order.deliveredAt ? '<br><span style="font-size:12px;color:var(--success);"><i class="fas fa-check-circle"></i> Entregue em: ' + new Date(order.deliveredAt).toLocaleString('pt-BR') + '</span>' : '';
 
       content.innerHTML = `
         <div class="detail-section">
           <div class="label">Pedido</div>
           <strong>#${order.id}</strong> - ${statusBadge}
           <br><span style="font-size:12px;color:var(--text-muted)">${order.createdAt ? new Date(order.createdAt).toLocaleString('pt-BR') : '—'}</span>
+          ${deliveredInfo}
         </div>
         <div class="detail-section">
           <div class="label">Cliente</div>
@@ -1223,6 +1273,7 @@
           <select id="orderStatusSelect" style="padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;">
             <option value="pendente" ${order.status === 'pendente' ? 'selected' : ''}>Pendente</option>
             <option value="aprovado" ${order.status === 'aprovado' ? 'selected' : ''}>Aprovado</option>
+            <option value="entregue" ${order.status === 'entregue' ? 'selected' : ''}>Entregue</option>
             <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
             <option value="reembolsado" ${order.status === 'reembolsado' ? 'selected' : ''}>Reembolsado</option>
           </select>
@@ -1277,6 +1328,27 @@
         }
       } catch (err) {
         notify('Erro de conexão ao excluir pedido', 'error');
+      }
+    }
+
+    async function markDelivered(orderId) {
+      if (!confirm('Marcar pedido #' + orderId + ' como entregue?')) return;
+      try {
+        const res = await fetch('/api/admin/orders/' + orderId + '/delivered', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() }
+        });
+        const data = await res.json();
+        if (data.success) {
+          const idx = allOrders.findIndex(o => o.id == orderId);
+          if (idx !== -1) allOrders[idx] = data.order;
+          renderOrders();
+          notify('Pedido #' + orderId + ' marcado como entregue!', 'success');
+        } else {
+          notify(data.error || 'Erro ao marcar entrega', 'error');
+        }
+      } catch (err) {
+        notify('Erro de conexão ao marcar entrega', 'error');
       }
     }
 
@@ -2293,7 +2365,118 @@
       if (tab === 'chats') {
         loadSupportChatList();
       }
+      if (tab === 'devolucoes') {
+        loadReturnsList();
+      }
     };
+
+    // ========== RETURN REQUESTS ==========
+    let activeReturnOrderId = null;
+    let activeReturnConvKey = null;
+    let returnPollInterval = null;
+
+    async function loadReturnsList() {
+      try {
+        const token = localStorage.getItem('techvault-token');
+        const res = await fetch('/api/admin/returns', { headers: { 'Authorization': 'Bearer ' + token } });
+        const orders = await res.json();
+        const container = document.getElementById('returnsContainer');
+        document.getElementById('returnsCount').textContent = orders.length + ' chamado' + (orders.length !== 1 ? 's' : '');
+        const badge = document.getElementById('returnsBadge');
+        if (orders.length > 0) { badge.style.display = 'inline'; badge.textContent = orders.length; }
+        else { badge.style.display = 'none'; }
+        if (!orders.length) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle"></i><p>Nenhum chamado pendente.</p></div>';
+          return;
+        }
+        container.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:var(--bg-cool);"><th style="padding:12px 16px;text-align:left;font-weight:600;">Pedido</th><th style="padding:12px 16px;text-align:left;font-weight:600;">Cliente</th><th style="padding:12px 16px;text-align:left;font-weight:600;">Tipo</th><th style="padding:12px 16px;text-align:left;font-weight:600;">Produto(s)</th><th style="padding:12px 16px;text-align:left;font-weight:600;">Data</th><th style="padding:12px 16px;text-align:left;font-weight:600;">Ações</th></tr></thead><tbody>' +
+          orders.map(o => {
+            const user = o.usuario || {};
+            const isReturn = (o.returnedItems || []).length > 0;
+            const isCancel = (o.cancelledItems || []).length > 0;
+            const typeLabel = isReturn && isCancel ? 'Devolução + Cancelamento' : isReturn ? 'Devolução' : 'Cancelamento';
+            const typeColor = isReturn && isCancel ? 'var(--warning)' : isReturn ? '#f59e0b' : '#ef4444';
+            const typeBg = isReturn && isCancel ? 'rgba(245,158,11,0.04)' : isReturn ? 'rgba(245,158,11,0.04)' : 'rgba(239,68,68,0.04)';
+            const itemNames = o.itens.filter(i => (o.returnedItems || []).includes(i.id || i.productId) || (o.cancelledItems || []).includes(i.id || i.productId)).map(i => i.nome).join(', ');
+            const convKey = isReturn ? 'return:' + o.id : 'cancel:' + o.id;
+            const date = new Date(o.createdAt).toLocaleDateString('pt-BR');
+            return '<tr style="border-bottom:1px solid var(--border);background:' + typeBg + ';">' +
+              '<td style="padding:12px 16px;"><strong>#' + o.id + '</strong></td>' +
+              '<td style="padding:12px 16px;">' + (user.nome || 'N/A') + '<br><span style="font-size:11px;color:var(--text-muted);">' + (user.email || '') + '</span></td>' +
+              '<td style="padding:12px 16px;"><span style="color:' + typeColor + ';font-weight:600;font-size:12px;">' + typeLabel + '</span></td>' +
+              '<td style="padding:12px 16px;max-width:200px;">' + itemNames + '</td>' +
+              '<td style="padding:12px 16px;font-size:12px;color:var(--text-muted);">' + date + '</td>' +
+              '<td style="padding:12px 16px;"><button class="order-detail-btn" onclick="openReturnChat(\'' + convKey + '\',' + o.id + ',\'' + (user.nome || 'Cliente').replace(/'/g, "\\'") + '\')" style="border-color:var(--primary);color:var(--primary);font-size:12px;padding:6px 12px;"><i class="fas fa-comments"></i> Chat</button></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table>';
+      } catch (e) { console.error(e); }
+    }
+
+    function openReturnChat(convKey, orderId, userName) {
+      activeReturnOrderId = orderId;
+      activeReturnConvKey = convKey;
+      document.getElementById('returnChatTitle').textContent = 'Chat — ' + userName;
+      const order = allOrders.find(o => o.id == orderId);
+      if (order) {
+        const isReturn = convKey.startsWith('return:');
+        const itemNames = order.itens.filter(i => (order.returnedItems || []).includes(i.id || i.productId) || (order.cancelledItems || []).includes(i.id || i.productId)).map(i => i.nome).join(', ');
+        const typeLabel = isReturn ? 'Chamado de devolução' : 'Chamado de cancelamento';
+        document.getElementById('returnChatInfo').innerHTML =
+          '<strong>Pedido #' + orderId + '</strong> — ' + userName + '<br>' +
+          '<span style="color:var(--text-muted);">Produto: ' + itemNames + '</span><br>' +
+          '<span style="color:var(--text-muted);">Status: <span class="badge badge-orange">' + typeLabel + '</span></span>';
+      }
+      loadReturnChatMessages(convKey);
+      document.getElementById('returnChatModal').classList.add('active');
+      if (returnPollInterval) clearInterval(returnPollInterval);
+      returnPollInterval = setInterval(() => loadReturnChatMessages(convKey, true), 8000);
+    }
+
+    function closeReturnChatModal() {
+      document.getElementById('returnChatModal').classList.remove('active');
+      if (returnPollInterval) { clearInterval(returnPollInterval); returnPollInterval = null; }
+      activeReturnOrderId = null;
+      activeReturnConvKey = null;
+    }
+
+    async function loadReturnChatMessages(convKey, silent) {
+      try {
+        const token = localStorage.getItem('techvault-token');
+        const res = await fetch('/api/admin/chat/' + convKey, { headers: { 'Authorization': 'Bearer ' + token } });
+        const msgs = await res.json();
+        const container = document.getElementById('returnChatMessages');
+        if (!msgs.length) {
+          container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-comment-dots"></i><p>Nenhuma mensagem ainda</p></div>';
+          return;
+        }
+        container.innerHTML = msgs.map(m => {
+          const isAdmin = m.from === 'admin';
+          const isSystem = m.from === 'system';
+          const align = isAdmin ? 'flex-end' : 'flex-start';
+          const bg = isAdmin ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;' : isSystem ? 'background:var(--bg-cool);color:var(--text-muted);font-style:italic;' : 'background:white;border:1px solid var(--border);';
+          const name = isAdmin ? (m.adminName || 'Admin') : isSystem ? 'Sistema' : 'Cliente';
+          const time = m.createdAt ? new Date(m.createdAt).toLocaleString('pt-BR') : '';
+          return '<div style="display:flex;flex-direction:column;align-items:' + align + ';gap:2px;"><span style="font-size:10px;color:var(--text-muted);">' + name + ' — ' + time + '</span><div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;' + bg + '">' + (m.message || '') + '</div></div>';
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+      } catch (e) { if (!silent) console.error(e); }
+    }
+
+    async function sendReturnChatMessage() {
+      const input = document.getElementById('returnChatInput');
+      const message = input.value.trim();
+      if (!message || !activeReturnConvKey) return;
+      try {
+        const token = localStorage.getItem('techvault-token');
+        await fetch('/api/admin/returns/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ conversationKey: activeReturnConvKey, message })
+        });
+        input.value = '';
+        loadReturnChatMessages(activeReturnConvKey);
+      } catch (e) { console.error(e); }
+    }
 
     function initChatPolling() {
       loadSupportChatList();

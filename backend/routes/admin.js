@@ -71,7 +71,7 @@ router.put('/orders/:id/status', async (req, res) => {
     const order = await db.orderById(parseInt(req.params.id));
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
     const { status } = req.body;
-    if (!['pendente', 'aprovado', 'cancelado', 'reembolsado'].includes(status)) {
+    if (!['pendente', 'aprovado', 'cancelado', 'reembolsado', 'entregue'].includes(status)) {
       return res.status(400).json({ error: 'Status inválido' });
     }
     await db.updateOrderStatus(parseInt(req.params.id), status);
@@ -87,6 +87,10 @@ router.put('/orders/:id/tracking', async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
     const { trackingNumber, trackingStatus } = req.body;
     await db.updateOrderTracking(orderId, trackingNumber || '', trackingStatus || []);
+    if (trackingStatus && trackingStatus.includes('entregue') && order.status !== 'entregue') {
+      await db.setOrderDelivered(orderId);
+      await db.updateOrderStatus(orderId, 'entregue');
+    }
     const updated = await db.orderById(orderId);
     res.json({ success: true, order: updated });
   } catch (e) { console.error('Erro ao salvar rastreio:', e); res.status(500).json({ error: 'Erro ao atualizar rastreio: ' + e.message }); }
@@ -102,6 +106,19 @@ router.put('/orders/:id/processado', async (req, res) => {
     await db.updateOrderProcessado(orderId, processado);
     res.json({ success: true });
   } catch (e) { console.error('Erro ao atualizar processado:', e); res.status(500).json({ error: 'Erro ao atualizar processado: ' + e.message }); }
+});
+
+router.put('/orders/:id/delivered', async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    if (isNaN(orderId)) return res.status(400).json({ error: 'ID de pedido inválido' });
+    const order = await db.orderById(orderId);
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    await db.setOrderDelivered(orderId);
+    await db.updateOrderStatus(orderId, 'entregue');
+    const updated = await db.orderById(orderId);
+    res.json({ success: true, order: updated });
+  } catch (e) { console.error('Erro ao marcar como entregue:', e); res.status(500).json({ error: 'Erro ao marcar como entregue: ' + e.message }); }
 });
 
 // ========== PRODUTOS ==========
