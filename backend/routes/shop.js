@@ -192,18 +192,6 @@ router.post('/orders', requireAuth, async (req, res) => {
 
     // Always try to create a dynamic checkout via API first (ensures webhook has order_nsu/redirect)
     let checkoutUrl = null;
-    let customCheckoutFallback = null;
-
-    // Find if any product has a custom checkoutLink (keep as fallback)
-    for (const item of (itens || [])) {
-      try {
-        const product = await db.productById(item.id || item.productId);
-        if (product && product.checkoutLink) {
-          customCheckoutFallback = product.checkoutLink;
-          break;
-        }
-      } catch {}
-    }
 
     // Try InfinitePay API to create dynamic checkout with proper webhook data
     const apiPayload = {
@@ -243,16 +231,9 @@ router.post('/orders', requireAuth, async (req, res) => {
       console.error('InfinitePay API fetch error:', e.message);
     }
 
-    // Fallback: use custom checkout link if API failed
     if (!checkoutUrl) {
-      if (customCheckoutFallback) {
-        const separator = customCheckoutFallback.includes('?') ? '&' : '?';
-        checkoutUrl = `${customCheckoutFallback}${separator}order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
-        console.log('Checkout fallback: usando link do produto:', checkoutUrl);
-      } else {
-        checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
-        console.log('Checkout fallback: usando link hardcoded:', checkoutUrl);
-      }
+      checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
+      console.log('Checkout: usando link hardcoded InfinitePay');
     } else {
       console.log('Checkout: usando link da API InfinitePay:', checkoutUrl);
     }
