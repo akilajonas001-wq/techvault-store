@@ -1,6 +1,10 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET não definido.');
+  process.exit(1);
+}
 
 async function authenticate(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];

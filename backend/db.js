@@ -999,6 +999,11 @@ async function countVisitsRange(startDate, endDate) {
   return parseInt(result.rows[0].c, 10);
 }
 
+async function countVisitsAll() {
+  const result = await query(`SELECT COUNT(DISTINCT fingerprint) as c FROM visits`);
+  return parseInt(result.rows[0].c, 10);
+}
+
 async function closeDb() {
   await pool.end();
 }
@@ -1020,5 +1025,5 @@ module.exports = {
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
   saveImage, getImage, deleteImage, deleteProductImages, decrementStock,
-  trackVisit, countVisits, countVisitsRange
+  trackVisit, countVisits, countVisitsRange, countVisitsAll
 };

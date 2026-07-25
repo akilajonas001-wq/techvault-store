@@ -6,7 +6,7 @@ const multer = require('multer');
 const path = require('path');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (req, file, cb) => {
-  const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+  const allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
   cb(null, allowed.includes(file.mimetype));
 } });
 

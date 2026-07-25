@@ -3,8 +3,17 @@ const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { OAuth2Client } = require('google-auth-library');
 const { signToken } = require('../middleware/auth');
+const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 let googleClient = null;
 if (GOOGLE_CLIENT_ID) {
@@ -77,7 +86,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, senha } = req.body;
     if (!email || !senha) {
@@ -187,7 +196,7 @@ router.get('/auth/check', async (req, res) => {
 
   try {
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await db.userById(decoded.id);
     if (!user) return res.json({ authenticated: false });
@@ -208,7 +217,7 @@ router.post('/user/set-username', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
 
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); } catch {
       return res.status(401).json({ error: 'Token inválido' });
@@ -250,7 +259,7 @@ router.get('/users/:id', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
 
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); } catch {
       return res.status(401).json({ error: 'Token inválido' });

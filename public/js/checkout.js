@@ -73,10 +73,10 @@ function renderAddressCards(addresses) {
       <div class="data-card ${idx === 0 ? 'selected' : ''}" onclick="selectAddressCard(this, ${a.id})">
         <input type="radio" name="selectedAddress" value="${a.id}" ${idx === 0 ? 'checked' : ''}>
         <div class="data-card-body">
-          <strong><i class="fas fa-map-marker-alt"></i> ${a.label || 'Endereço ' + (idx + 1)}</strong>
-          <span>${a.nome || ''}${a.cpf ? ' • CPF: ' + a.cpf : ''}</span>
-          <span>${enderecoLinha}${enderecoLinha && cidadeLinha ? '<br>' : ''}${cidadeLinha}</span>
-          <span><i class="fas fa-phone"></i> ${a.telefone || ''} ${a.cep ? '• CEP: ' + a.cep : ''}</span>
+          <strong><i class="fas fa-map-marker-alt"></i> ${escapeHtml(a.label || 'Endereço ' + (idx + 1))}</strong>
+          <span>${escapeHtml(a.nome || '')}${a.cpf ? ' • CPF: ' + escapeHtml(a.cpf) : ''}</span>
+          <span>${escapeHtml(enderecoLinha)}${enderecoLinha && cidadeLinha ? '<br>' : ''}${escapeHtml(cidadeLinha)}</span>
+          <span><i class="fas fa-phone"></i> ${escapeHtml(a.telefone || '')} ${a.cep ? '• CEP: ' + escapeHtml(a.cep) : ''}</span>
         </div>
       </div>
     `;
@@ -92,9 +92,9 @@ function renderLegacyDataCards(profile) {
       <input type="radio" name="selectedAddress" value="" checked>
       <div class="data-card-body">
         <strong><i class="fas fa-user"></i> Dados do Perfil</strong>
-        <span>${profile.nome || ''}${profile.cpf ? ' • CPF: ' + profile.cpf : ''}</span>
-        <span><i class="fas fa-map-marker-alt"></i> ${enderecoCompleto || 'Não informado'}</span>
-        <span><i class="fas fa-phone"></i> ${profile.telefone || ''}</span>
+        <span>${escapeHtml(profile.nome || '')}${profile.cpf ? ' • CPF: ' + escapeHtml(profile.cpf) : ''}</span>
+        <span><i class="fas fa-map-marker-alt"></i> ${escapeHtml(enderecoCompleto || 'Não informado')}</span>
+        <span><i class="fas fa-phone"></i> ${escapeHtml(profile.telefone || '')}</span>
       </div>
     </div>
   `;
@@ -146,6 +146,13 @@ async function handleQuickCheckout() {
   const addr = getSelectedAddress();
   if (!addr) {
     showNotification('Selecione um endereço de entrega', 'error');
+    return;
+  }
+
+  const brStates = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+  const cepClean = (addr.cep || '').replace(/\D/g, '');
+  if (cepClean.length !== 8 || !brStates.includes(addr.estado)) {
+    showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
     return;
   }
 
@@ -241,13 +248,13 @@ function loadCartItems(containerId, totalId) {
     let specsInfo = '';
     if (item.variantSpecs) {
       const specs = Object.values(item.variantSpecs).filter(Boolean).join(' | ');
-      if (specs) specsInfo = '<br><small style="color: var(--text-muted); font-size: 11px;">' + specs + '</small>';
+      if (specs) specsInfo = '<br><small style="color: var(--text-muted); font-size: 11px;">' + escapeHtml(specs) + '</small>';
     }
     return `
       <div class="cart-item">
         <div>
-          <strong>${item.nome}</strong><br>
-          <small>Categoria: ${item.categoria || 'N/A'} | ${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>${specsInfo}
+          <strong>${escapeHtml(item.nome)}</strong><br>
+          <small>Categoria: ${escapeHtml(item.categoria || 'N/A')} | ${item.quantidade}x R$ ${item.preco.toFixed(2)}</small>${specsInfo}
         </div>
         <div>
           <span>R$ ${subtotal.toFixed(2)}</span>
@@ -316,6 +323,13 @@ async function handleCheckout(event) {
     cidade: document.getElementById('cidade').value,
     estado: document.getElementById('estado').value
   };
+
+  const brStates = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+  const cepClean = (endereco.cep || '').replace(/\D/g, '');
+  if (cepClean.length !== 8 || !brStates.includes(endereco.estado)) {
+    showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
+    return;
+  }
 
   const nomeCompleto = document.getElementById('nomeCompleto').value;
   const telefone = document.getElementById('telefone').value;
@@ -392,9 +406,10 @@ async function loadUserCoupons() {
     let couponHtml = '<div style="margin-top:12px;padding:12px;background:#fefce8;border-radius:8px;border:1px solid #fde68a;">' +
       '<p style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px;"><i class="fas fa-tag"></i> Seus cupons disponíveis:</p>';
     coupons.forEach(c => {
+      const safeCode = escapeHtml(c.code);
       couponHtml += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid #fef9c3;">' +
-        '<div><span style="font-size:12px;font-weight:700;color:#d97706;">' + c.code + '</span><span style="font-size:11px;color:#6b7280;margin-left:6px;">' + c.discount + '% off</span></div>' +
-        '<button onclick="quickApplyCoupon(\'' + c.code + '\')" style="padding:4px 10px;border:none;border-radius:4px;background:#d97706;color:white;font-size:11px;font-weight:600;cursor:pointer;">Usar</button>' +
+        '<div><span style="font-size:12px;font-weight:700;color:#d97706;">' + safeCode + '</span><span style="font-size:11px;color:#6b7280;margin-left:6px;">' + escapeHtml(c.discount) + '% off</span></div>' +
+        '<button onclick="quickApplyCoupon(\'' + safeCode.replace(/'/g, "&#39;") + '\')" style="padding:4px 10px;border:none;border-radius:4px;background:#d97706;color:white;font-size:11px;font-weight:600;cursor:pointer;">Usar</button>' +
       '</div>';
     });
     couponHtml += '</div>';
@@ -455,7 +470,7 @@ async function applyCoupon() {
       document.getElementById('orderTotal').textContent = 'R$ ' + novoTotal.toFixed(2).replace('.', ',');
     } else {
       appliedCoupon = null;
-      result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Cupom inválido') + '</span>';
+      result.innerHTML = '<span style="color:var(--error)">' + escapeHtml(data.error || 'Cupom inválido') + '</span>';
     }
   } catch (err) {
     result.innerHTML = '<span style="color:var(--error)">Erro ao validar cupom</span>';

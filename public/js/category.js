@@ -68,7 +68,7 @@ async function loadCategory(page) {
   const categoryName = getCategoryFromSlug(slug);
 
   const icon = iconMap[categoryName] || 'fa-tag';
-  titleEl.innerHTML = `<i class="fas ${icon}"></i> ${categoryName}`;
+  titleEl.innerHTML = `<i class="fas ${icon}"></i> ${escapeHtml(categoryName)}`;
 
   try {
     const response = await fetch(`/api/products/category/${encodeURIComponent(categoryName)}?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
@@ -93,13 +93,13 @@ async function loadCategory(page) {
       return `
       <div class="product-card" onclick="window.location.href='/produto/${product.id}'">
         <div class="product-image">
-          <img src="${product.imagem}" alt="${product.nome}" loading="lazy">
+          <img src="${escapeHtml(product.imagem)}" alt="${escapeHtml(product.nome)}" loading="lazy">
           <button class="wishlist-btn${inWish ? ' active' : ''}" onclick="event.stopPropagation(); toggleWishlist(${product.id}, this)" title="${inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos'}">
             <i class="${inWish ? 'fas' : 'far'} fa-heart"></i>
           </button>
         </div>
         <div class="product-info">
-          <div class="product-name">${product.nome}</div>
+          <div class="product-name">${escapeHtml(product.nome)}</div>
           <div class="product-rating">
             <i class="fas fa-star"></i>
             <span>${product.avaliacao.toFixed(1)}</span>

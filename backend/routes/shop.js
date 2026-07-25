@@ -116,7 +116,7 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
 
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     let userId;
     try { userId = jwt.verify(token, JWT_SECRET).id; }
     catch { return res.status(401).json({ error: 'Token inválido' }); }
@@ -125,7 +125,9 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
     const comments = await db.allComments(parseInt(req.params.id));
     const comment = comments.find(c => c.id === commentId);
     if (!comment) return res.status(404).json({ error: 'Comentário não encontrado' });
-    if (comment.userId !== userId) return res.status(403).json({ error: 'Você não tem permissão para deletar este comentário' });
+    const user = await db.userById(userId);
+    const isAdmin = user && (user.admin || user.role === 'admin' || user.role === 'funcionario');
+    if (comment.userId !== userId && !isAdmin) return res.status(403).json({ error: 'Você não tem permissão para deletar este comentário' });
 
     await db.deleteComment(commentId);
     res.json({ success: true });
@@ -142,19 +144,45 @@ router.post('/orders', requireAuth, async (req, res) => {
     const { endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
     const user = req.user;
 
-    // Verificar estoque antes de criar o pedido
+    // Validar endereço brasileiro
+    const brStates = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+    const cepClean = (endereco?.cep || '').replace(/\D/g, '');
+    if (cepClean.length !== 8) {
+      return res.status(400).json({ error: 'CEP inválido. Informe um CEP brasileiro com 8 dígitos.' });
+    }
+    if (!endereco?.estado || !brStates.includes(endereco.estado)) {
+      return res.status(400).json({ error: 'Só realizamos entregas dentro do Brasil.' });
+    }
+
+    // Verificar estoque e recalcular preço server-side
+    let serverTotal = 0;
     for (const item of (itens || [])) {
       const product = await db.productById(item.id || item.productId);
-      if (product && product.stock >= 0 && product.stock < (item.quantidade || 1)) {
+      if (!product) return res.status(400).json({ error: 'Produto não encontrado: ' + (item.nome || item.id) });
+      if (product.stock >= 0 && product.stock < (item.quantidade || 1)) {
         return res.status(400).json({ error: 'Estoque insuficiente para "' + (product.nome || 'Produto') + '". Disponível: ' + product.stock });
       }
+      serverTotal += (product.preco || 0) * (item.quantidade || 1);
     }
+    serverTotal = Math.round(serverTotal * 100) / 100;
+
+    // Recalcular desconto do cupom server-side
+    let serverDiscount = 0;
+    if (cupom && cupom.code) {
+      const couponRecord = await db.couponByCode(cupom.code.toUpperCase());
+      if (couponRecord && couponRecord.valid) {
+        if (couponRecord.type === 'percent') serverDiscount = serverTotal * (couponRecord.discount / 100);
+        else if (couponRecord.type === 'fixed') serverDiscount = couponRecord.discount;
+        serverDiscount = Math.min(Math.round(serverDiscount * 100) / 100, serverTotal);
+      }
+    }
+    const finalTotal = Math.round((serverTotal - serverDiscount) * 100) / 100;
 
     const newOrder = await db.createOrder({
       id: Date.now(), userId: user.id,
       usuario: { nome: user.nome, email: user.email, telefone: user.telefone },
-      endereco, itens, total, totalOriginal: totalOriginal || total,
-      cupom: cupom || null, cliente: cliente || {},
+      endereco, itens, total: finalTotal, totalOriginal: serverTotal,
+      cupom: cupom && serverDiscount > 0 ? { code: cupom.code, desconto: serverDiscount } : null, cliente: cliente || {},
       taxas: {},
       pagamento: 'InfinitePay', status: 'pendente',
       createdAt: new Date().toISOString()
@@ -196,11 +224,14 @@ router.post('/orders', requireAuth, async (req, res) => {
     // Try InfinitePay API to create dynamic checkout with proper webhook data
     const apiPayload = {
       handle: INFINITE_PAY_HANDLE,
-      itens: (itens || []).map(item => ({
-        quantity: item.quantidade || 1,
-        price: Math.round((item.preco || 0) * 100),
-        description: item.nome || 'Produto'
-      })),
+      itens: (itens || []).map(item => {
+        const serverPrice = Math.round((item.preco || 0) * 100);
+        return {
+          quantity: item.quantidade || 1,
+          price: serverPrice,
+          description: item.nome || 'Produto'
+        };
+      }),
       order_nsu: paymentRef,
       redirect_url: successUrl,
       webhook_url: webhookUrl,
@@ -256,7 +287,7 @@ router.get('/orders/user/:userId', async (req, res) => {
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
 
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     let decoded;
     try { decoded = jwt.verify(token, JWT_SECRET); }
     catch { return res.status(401).json({ error: 'Token inválido' }); }
@@ -287,7 +318,7 @@ router.get('/coupons/my', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await db.userById(decoded.id);
     res.json(await db.userCoupons(decoded.id, user?.email));
@@ -299,7 +330,7 @@ router.post('/coupons/apply', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, JWT_SECRET);
     const { code } = req.body;
     if (!code) return res.status(400).json({ error: 'Código do cupom é obrigatório' });
@@ -376,7 +407,7 @@ router.get('/notifications/my', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.json([]);
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+    const JWT_SECRET = process.env.JWT_SECRET;
     const decoded = jwt.verify(token, JWT_SECRET);
     res.json(await db.userNotifications(decoded.id));
   } catch { res.json([]); }
@@ -387,8 +418,11 @@ router.post('/notifications/read/:id', async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
     const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
-    jwt.verify(token, JWT_SECRET);
+    const JWT_SECRET = process.env.JWT_SECRET;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userNotifs = await db.userNotifications(decoded.id);
+    const notif = userNotifs.find(n => String(n.id) === String(req.params.id));
+    if (!notif) return res.status(404).json({ error: 'Notificação não encontrada' });
     await db.markNotificationRead(req.params.id);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Erro' }); }

@@ -62,8 +62,8 @@ async function loadCategoriesFilter() {
     if (container) {
       container.innerHTML = categorias.map(function(cat) {
         return '<div class="filter-option">' +
-          '<input type="checkbox" id="cat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
-          '<label for="cat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
+          '<input type="checkbox" id="cat_' + escapeHtml(cat).replace(/\s+/g, '_') + '" value="' + escapeHtml(cat) + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + escapeHtml(cat).replace(/'/g, "&#39;") + '\')">' +
+          '<label for="cat_' + escapeHtml(cat).replace(/\s+/g, '_') + '">' + escapeHtml(cat) + '</label>' +
         '</div>';
       }).join('');
     }
@@ -72,8 +72,8 @@ async function loadCategoriesFilter() {
       mobileContainer.innerHTML = '<div class="filter-section" style="padding:0;"><div class="filter-title" style="padding:0 0 12px 0;"><i class="fas fa-tags"></i> Categorias</div></div>' +
         categorias.map(function(cat) {
           return '<div class="filter-option">' +
-            '<input type="checkbox" id="mcat_' + cat.replace(/\s+/g, '_') + '" value="' + cat + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + cat + '\')">' +
-            '<label for="mcat_' + cat.replace(/\s+/g, '_') + '">' + cat + '</label>' +
+            '<input type="checkbox" id="mcat_' + escapeHtml(cat).replace(/\s+/g, '_') + '" value="' + escapeHtml(cat) + '" ' + (currentFilters.categoria === cat ? 'checked' : '') + ' onchange="selectCategory(\'' + escapeHtml(cat).replace(/'/g, "&#39;") + '\')">' +
+            '<label for="mcat_' + escapeHtml(cat).replace(/\s+/g, '_') + '">' + escapeHtml(cat) + '</label>' +
           '</div>';
         }).join('');
     }
@@ -140,13 +140,13 @@ async function loadProducts(page) {
       const inWish = isInWishlist(product.id);
       return '<div class="product-card" onclick="window.location.href=\'/produto/' + product.id + '\'">' +
         '<div class="product-image">' +
-          '<img src="' + product.imagem + '" alt="' + product.nome + '" loading="lazy">' +
+          '<img src="' + escapeHtml(product.imagem) + '" alt="' + escapeHtml(product.nome) + '" loading="lazy">' +
           '<button class="wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)" title="' + (inWish ? 'Remover dos favoritos' : 'Adicionar aos favoritos') + '">' +
             '<i class="' + (inWish ? 'fas' : 'far') + ' fa-heart"></i>' +
           '</button>' +
         '</div>' +
         '<div class="product-info">' +
-          '<div class="product-name">' + product.nome + '</div>' +
+          '<div class="product-name">' + escapeHtml(product.nome) + '</div>' +
           '<div class="product-rating">' +
             '<i class="fas fa-star"></i> ' +
             '<span>' + product.avaliacao.toFixed(1) + '</span>' +

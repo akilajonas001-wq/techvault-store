@@ -14,11 +14,11 @@ if curl -s --head "$SITE_URL" > /dev/null 2>&1; then
 else
     echo "⚠️  Servidor não está rodando. Iniciando..."
     cd "$SITE_DIR"
-    
+
     # Iniciar em background
     npm start > /dev/null 2>&1 &
     echo "📦 Aguardando servidor inicializar..."
-    
+
     # Aguardar até o servidor estar pronto
     for i in {1..30}; do
         if curl -s --head "$SITE_URL" > /dev/null 2>&1; then
@@ -39,4 +39,4 @@ else
     echo "🌐 Abra manualmente: $SITE_URL"
 fi
 
-echo "✅ TechVault Store abierta!"
+echo "✅ TechVault Store aberta!"

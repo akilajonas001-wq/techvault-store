@@ -118,7 +118,7 @@ function showUserMenu() {
     }
     userMenu.innerHTML = `
       <a href="/conta" style="order:1;font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;white-space:nowrap;">Minha Conta</a>
-      <span style="order:2;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:4px;padding:5px 8px;">${firstName}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + currentUser.username + ')</span>' : ''}</span>
+      <span style="order:2;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:4px;padding:5px 8px;">${escapeHtml(firstName)}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + escapeHtml(currentUser.username) + ')</span>' : ''}</span>
       <div id="notifBell" style="order:5;position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
         <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ef4444;color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
@@ -132,8 +132,8 @@ function showUserMenu() {
   // Mobile nav
   if (mobileUserInfo) {
     mobileUserInfo.classList.add('active');
-    document.getElementById('mobileUserName').textContent = currentUser?.nome || 'Usuário';
-    document.getElementById('mobileUserEmail').textContent = currentUser?.email || '';
+    document.getElementById('mobileUserName').textContent = escapeHtml(currentUser?.nome || 'Usuário');
+    document.getElementById('mobileUserEmail').textContent = escapeHtml(currentUser?.email || '');
   }
   mobileAuthLinks.forEach(el => el.style.display = 'none');
   if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
@@ -251,12 +251,12 @@ function renderCartItems() {
     let specsInfo = '';
     if (item.variantSpecs) {
       const specs = Object.values(item.variantSpecs).filter(Boolean).join(' | ');
-      if (specs) specsInfo = '<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">' + specs + '</div>';
+      if (specs) specsInfo = '<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">' + escapeHtml(specs) + '</div>';
     }
     return `
       <div class="cart-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
         <div style="flex: 1;">
-          <strong style="font-size: 14px; color: var(--text);">${item.nome}</strong>
+          <strong style="font-size: 14px; color: var(--text);">${escapeHtml(item.nome)}</strong>
           ${specsInfo}
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
             <button onclick="changeQuantity('${item.id}', -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
@@ -302,7 +302,7 @@ function showNotification(message, type = 'info') {
 
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
-  notification.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${message}`;
+  notification.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${escapeHtml(message)}`;
 
   document.body.appendChild(notification);
 
@@ -685,9 +685,9 @@ function renderSupportMessages(messages) {
     const time = new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const name = isAdmin ? (m.adminName || 'Atendente') : 'Você';
     return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:85%;align-self:' + align + ';">' +
-      '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
+      '<span style="font-size:10px;color:#94a3b8;margin-bottom:2px;">' + escapeHtml(name) + ' - ' + escapeHtml(time) + '</span>' +
       '<div style="background:' + bg + ';color:' + color + ';padding:8px 12px;border-radius:14px;' + (isAdmin ? 'border-bottom-left-radius:4px;' : 'border-bottom-right-radius:4px;') + 'box-shadow:0 1px 3px rgba(0,0,0,0.08);font-size:13px;">' +
-      m.message +
+      escapeHtml(m.message) +
       '</div></div>';
   }).join('');
   container.scrollTop = container.scrollHeight;
@@ -795,10 +795,10 @@ function toggleNotifs() {
         dropdown.innerHTML += '<div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px;">Nenhuma notificação</div>';
       } else {
         notifs.forEach(n => {
-          dropdown.innerHTML += '<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'" onclick="readNotif(\'' + n.id + '\',\'' + (n.couponCode || '') + '\')">' +
-            '<div style="font-size:13px;font-weight:600;color:#111;margin-bottom:2px;">' + (n.title || 'Notificação') + '</div>' +
-            '<div style="font-size:12px;color:#6b7280;line-height:1.4;">' + (n.message || '') + '</div>' +
-            (n.couponCode ? '<div style="margin-top:6px;display:inline-block;background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">Código: ' + n.couponCode + '</div>' : '') +
+          dropdown.innerHTML += '<div style="padding:12px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'" onclick="readNotif(\'' + n.id + '\',\'' + escapeHtml(n.couponCode || '').replace(/'/g, "&#39;") + '\')">' +
+            '<div style="font-size:13px;font-weight:600;color:#111;margin-bottom:2px;">' + escapeHtml(n.title || 'Notificação') + '</div>' +
+            '<div style="font-size:12px;color:#6b7280;line-height:1.4;">' + escapeHtml(n.message || '') + '</div>' +
+            (n.couponCode ? '<div style="margin-top:6px;display:inline-block;background:#fef3c7;color:#d97706;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;">Código: ' + escapeHtml(n.couponCode) + '</div>' : '') +
           '</div>';
         });
       }

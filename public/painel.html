@@ -382,11 +382,12 @@
     </div>
 
     <div class="stats-grid" id="statsGrid">
-      <div class="stat-card">
+      <div class="stat-card" id="ordersCard">
         <div class="stat-icon blue"><i class="fas fa-shopping-bag"></i></div>
         <div class="stat-value" id="statOrders">0</div>
         <div class="stat-label">
-          <span class="visit-period active" data-period="day" onclick="setOrderPeriod('day')">Dia</span>
+          <span class="visit-period active" data-period="total" onclick="setOrderPeriod('total')">Total</span>
+          <span class="visit-period" data-period="day" onclick="setOrderPeriod('day')">Dia</span>
           <span class="visit-period" data-period="week" onclick="setOrderPeriod('week')">Semana</span>
           <span class="visit-period" data-period="month" onclick="setOrderPeriod('month')">Mês</span>
           <span class="visit-period" data-period="year" onclick="setOrderPeriod('year')">Ano</span>
@@ -395,7 +396,13 @@
       <div class="stat-card" id="revenueCard">
         <div class="stat-icon green"><i class="fas fa-dollar-sign"></i></div>
         <div class="stat-value" id="statRevenue">R$ 0</div>
-        <div class="stat-label">Receita Total</div>
+        <div class="stat-label">
+          <span class="visit-period active" data-period="total" onclick="setRevenuePeriod('total')">Total</span>
+          <span class="visit-period" data-period="day" onclick="setRevenuePeriod('day')">Dia</span>
+          <span class="visit-period" data-period="week" onclick="setRevenuePeriod('week')">Semana</span>
+          <span class="visit-period" data-period="month" onclick="setRevenuePeriod('month')">Mês</span>
+          <span class="visit-period" data-period="year" onclick="setRevenuePeriod('year')">Ano</span>
+        </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon orange"><i class="fas fa-users"></i></div>
@@ -407,11 +414,12 @@
         <div class="stat-value" id="statCarts">0</div>
         <div class="stat-label">Carrinhos Ativos</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" id="visitsCard">
         <div class="stat-icon red"><i class="fas fa-eye"></i></div>
         <div class="stat-value" id="statVisits">0</div>
         <div class="stat-label">
-          <span class="visit-period active" data-period="day" onclick="setVisitPeriod('day')">Dia</span>
+          <span class="visit-period active" data-period="total" onclick="setVisitPeriod('total')">Total</span>
+          <span class="visit-period" data-period="day" onclick="setVisitPeriod('day')">Dia</span>
           <span class="visit-period" data-period="week" onclick="setVisitPeriod('week')">Semana</span>
           <span class="visit-period" data-period="month" onclick="setVisitPeriod('month')">Mês</span>
           <span class="visit-period" data-period="year" onclick="setVisitPeriod('year')">Ano</span>
@@ -861,6 +869,10 @@
     }
 
     let ordersData = null;
+    let revenueData = null;
+    let currentOrderPeriod = 'total';
+    let currentRevenuePeriod = 'total';
+    let currentVisitPeriod = 'total';
 
     function startOfWeek() {
       const d = new Date(); d.setHours(0,0,0,0);
@@ -888,7 +900,7 @@
     function updateStats() {
       const completedOrders = allOrders.filter(o => o.status === 'aprovado');
       const revenue = completedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-      document.getElementById('statRevenue').textContent = 'R$ ' + revenue.toFixed(2).replace('.', ',');
+
       document.getElementById('statUsers').textContent = allUsers.length;
       document.getElementById('statCarts').textContent = allCarts.length;
 
@@ -901,9 +913,19 @@
         day: allOrders.filter(o => new Date(o.createdAt) >= today).length,
         week: allOrders.filter(o => new Date(o.createdAt) >= week).length,
         month: allOrders.filter(o => new Date(o.createdAt) >= month).length,
-        year: allOrders.filter(o => new Date(o.createdAt) >= year).length
+        year: allOrders.filter(o => new Date(o.createdAt) >= year).length,
+        total: allOrders.length
       };
-      setOrderPeriod('day');
+      setOrderPeriod(currentOrderPeriod);
+
+      revenueData = {
+        day: completedOrders.filter(o => new Date(o.createdAt) >= today).reduce((sum, o) => sum + (o.total || 0), 0),
+        week: completedOrders.filter(o => new Date(o.createdAt) >= week).reduce((sum, o) => sum + (o.total || 0), 0),
+        month: completedOrders.filter(o => new Date(o.createdAt) >= month).reduce((sum, o) => sum + (o.total || 0), 0),
+        year: completedOrders.filter(o => new Date(o.createdAt) >= year).reduce((sum, o) => sum + (o.total || 0), 0),
+        total: revenue
+      };
+      setRevenuePeriod(currentRevenuePeriod);
       loadVisits();
     }
 
@@ -923,9 +945,20 @@
 
     function setOrderPeriod(period) {
       if (!ordersData) return;
-      document.querySelectorAll('.stat-card:first-child .visit-period').forEach(el => el.classList.remove('active'));
-      document.querySelector(`.stat-card:first-child .visit-period[data-period="${period}"]`).classList.add('active');
+      currentOrderPeriod = period;
+      const card = document.getElementById('ordersCard');
+      card.querySelectorAll('.visit-period').forEach(el => el.classList.remove('active'));
+      card.querySelector(`.visit-period[data-period="${period}"]`).classList.add('active');
       document.getElementById('statOrders').textContent = ordersData[period];
+    }
+
+    function setRevenuePeriod(period) {
+      if (!revenueData) return;
+      currentRevenuePeriod = period;
+      const card = document.getElementById('revenueCard');
+      card.querySelectorAll('.visit-period').forEach(el => el.classList.remove('active'));
+      card.querySelector(`.visit-period[data-period="${period}"]`).classList.add('active');
+      document.getElementById('statRevenue').textContent = 'R$ ' + revenueData[period].toFixed(2).replace('.', ',');
     }
 
     let visitsData = null;
@@ -935,7 +968,7 @@
         const res = await fetch('/api/visits');
         const data = await res.json();
         visitsData = data;
-        setVisitPeriod('day');
+        setVisitPeriod(currentVisitPeriod);
       } catch {
         document.getElementById('statVisits').textContent = '—';
       }
@@ -943,10 +976,11 @@
 
     function setVisitPeriod(period) {
       if (!visitsData) return;
-      const card = document.getElementById('statVisits').closest('.stat-card');
+      currentVisitPeriod = period;
+      const card = document.getElementById('visitsCard');
       card.querySelectorAll('.visit-period').forEach(el => el.classList.remove('active'));
       card.querySelector(`.visit-period[data-period="${period}"]`).classList.add('active');
-      const values = { day: visitsData.count, week: visitsData.week, month: visitsData.month, year: visitsData.year };
+      const values = { day: visitsData.count, week: visitsData.week, month: visitsData.month, year: visitsData.year, total: visitsData.total ?? 0 };
       document.getElementById('statVisits').textContent = values[period];
     }
 
@@ -1332,7 +1366,7 @@
           renderOrders();
           updateStats();
         } else {
-          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro') + '</span>';
+          result.innerHTML = '<span style="color:var(--error)">' + (typeof escapeHtml === 'function' ? escapeHtml(data.error || 'Erro') : (data.error || 'Erro')) + '</span>';
         }
       } catch (err) {
         result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
@@ -1471,11 +1505,12 @@
         });
         const data = await res.json();
         if (data.success) {
-          result.innerHTML = '<span style="color:var(--success)">✓ ' + data.user.nome + ' agora é ' + (role === 'admin' ? 'Administrador' : 'Funcionário') + '</span>';
+          const esc = typeof escapeHtml === 'function' ? escapeHtml : s => String(s);
+          result.innerHTML = '<span style="color:var(--success)">✓ ' + esc(data.user.nome) + ' agora é ' + (role === 'admin' ? 'Administrador' : 'Funcionário') + '</span>';
           document.getElementById('staffEmail').value = '';
           loadAllData(getToken());
         } else {
-          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro ao adicionar') + '</span>';
+          result.innerHTML = '<span style="color:var(--error)">' + (typeof escapeHtml === 'function' ? escapeHtml(data.error || 'Erro ao adicionar') : (data.error || 'Erro ao adicionar')) + '</span>';
         }
       } catch (err) {
         result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
@@ -2024,7 +2059,7 @@
           document.getElementById(uid + '_code').value = '';
           document.getElementById(uid + '_disc').value = '';
         } else {
-          result.innerHTML = '<span style="color:var(--error)">' + (data.error || 'Erro') + '</span>';
+          result.innerHTML = '<span style="color:var(--error)">' + (typeof escapeHtml === 'function' ? escapeHtml(data.error || 'Erro') : (data.error || 'Erro')) + '</span>';
         }
       } catch {
         result.innerHTML = '<span style="color:var(--error)">Erro de conexão</span>';
@@ -2146,10 +2181,11 @@
         const color = isAdmin ? 'white' : 'var(--text)';
         const time = new Date(m.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         const name = isAdmin ? (m.adminName || 'Admin') : 'Cliente';
+        const esc = typeof escapeHtml === 'function' ? escapeHtml : s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         return '<div style="display:flex;flex-direction:column;align-items:' + align + ';max-width:80%;align-self:' + align + ';">' +
-          '<span style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">' + name + ' - ' + time + '</span>' +
+          '<span style="font-size:10px;color:var(--text-muted);margin-bottom:2px;">' + esc(name) + ' - ' + esc(time) + '</span>' +
           '<div style="background:' + bg + ';color:' + color + ';padding:10px 14px;border-radius:16px;' + (isAdmin ? 'border-bottom-right-radius:4px;' : 'border-bottom-left-radius:4px;') + 'box-shadow:var(--shadow-sm);">' +
-          m.message +
+          esc(m.message) +
           '</div></div>';
       }).join('');
       container.scrollTop = container.scrollHeight;
@@ -2486,7 +2522,8 @@
           const bg = isAdmin ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;' : isSystem ? 'background:var(--bg-cool);color:var(--text-muted);font-style:italic;' : 'background:white;border:1px solid var(--border);';
           const name = isAdmin ? (m.adminName || 'Admin') : isSystem ? 'Sistema' : 'Cliente';
           const time = m.createdAt ? new Date(m.createdAt).toLocaleString('pt-BR') : '';
-          return '<div style="display:flex;flex-direction:column;align-items:' + align + ';gap:2px;"><span style="font-size:10px;color:var(--text-muted);">' + name + ' — ' + time + '</span><div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;' + bg + '">' + (m.message || '') + '</div></div>';
+          const esc = typeof escapeHtml === 'function' ? escapeHtml : s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+          return '<div style="display:flex;flex-direction:column;align-items:' + align + ';gap:2px;"><span style="font-size:10px;color:var(--text-muted);">' + esc(name) + ' — ' + esc(time) + '</span><div style="max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;' + bg + '">' + esc(m.message || '') + '</div></div>';
         }).join('');
         container.scrollTop = container.scrollHeight;
       } catch (e) { if (!silent) console.error(e); }

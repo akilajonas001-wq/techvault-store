@@ -56,14 +56,15 @@ router.get('/visits', async (req, res) => {
     const monthStart = startOfMonth();
     const yearStart = startOfYear();
 
-    const [dayCount, weekCount, monthCount, yearCount] = await Promise.all([
+    const [dayCount, weekCount, monthCount, yearCount, totalCount] = await Promise.all([
       db.countVisits(today),
       db.countVisitsRange(weekStart, today),
       db.countVisitsRange(monthStart, today),
-      db.countVisitsRange(yearStart, today)
+      db.countVisitsRange(yearStart, today),
+      db.countVisitsAll()
     ]);
 
-    res.json({ date: today, count: dayCount, week: weekCount, month: monthCount, year: yearCount });
+    res.json({ date: today, count: dayCount, week: weekCount, month: monthCount, year: yearCount, total: totalCount });
   } catch (err) {
     console.error('Erro ao consultar visitas:', err);
     res.status(500).json({ error: 'Erro interno' });

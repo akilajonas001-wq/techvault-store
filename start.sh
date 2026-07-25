@@ -4,7 +4,7 @@
 echo "🚀 Iniciando TechVault Store..."
 echo ""
 
-cd ~/techvault-store
+cd /home/jonas/techvault-store
 
 # Verificar se as dependências estão instaladas
 if [ ! -d "node_modules" ]; then
@@ -18,7 +18,7 @@ echo "🌐 Servidor disponível em: http://localhost:3000"
 echo "📧 Emails serão enviados para: akilajonas001@gmail.com"
 echo ""
 echo "⚠️  Para configurar o email, edite o arquivo .env"
-echo "   See README.md for instructions"
+echo "   Veja o README.md para instruções"
 echo ""
 
 npm start

@@ -12,7 +12,11 @@ const { authenticate, adminAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET não definido. Configure a variável de ambiente JWT_SECRET.');
+  process.exit(1);
+}
 
 app.set('trust proxy', 1);
 
@@ -23,7 +27,12 @@ app.use(helmet({
 }));
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 600, standardHeaders: true, legacyHeaders: false });
 app.use('/api/', apiLimiter);
-app.use(cors());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'https://techvault-store.onrender.com'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 // ===================== WEBHOOK (must be before body parsers to handle raw bodies) =====================
 
@@ -181,10 +190,7 @@ app.get('/api/confirm-payment/:ref', async (req, res) => {
     const ref = req.params.ref;
     let order = await db.orderByPaymentRef(ref);
     if (order) {
-      if (order.status === 'pendente') {
-        await db.updateOrderStatus(order.id, 'aprovado');
-        console.log(`>>> Pedido #${order.id} aprovado via /confirm-payment (ref: ${ref})`);
-      }
+      // Do NOT auto-approve - only the webhook should change order status
       return res.redirect(`/pedido-sucesso?id=${order.id}&ref=${ref}`);
     }
     // Try by numeric ID as fallback
@@ -192,9 +198,6 @@ app.get('/api/confirm-payment/:ref', async (req, res) => {
     if (!isNaN(id)) {
       order = await db.orderById(id);
       if (order) {
-        if (order.status === 'pendente') {
-          await db.updateOrderStatus(id, 'aprovado');
-        }
         return res.redirect(`/pedido-sucesso?id=${id}`);
       }
     }
@@ -438,10 +441,10 @@ app.get('/api/return-chat/messages/:orderId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
     const orderId = parseInt(req.params.orderId);
+    const order = await db.orderById(orderId);
+    if (!order || order.userId !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
     const type = req.query.type || 'return';
     const convKey = type + ':' + orderId;
     const chatData = await db.getChatMessages(convKey);
@@ -454,10 +457,10 @@ app.post('/api/return-chat/send/:orderId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
     const orderId = parseInt(req.params.orderId);
+    const order = await db.orderById(orderId);
+    if (!order || order.userId !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
     const type = req.query.type || 'return';
     const convKey = type + ':' + orderId;
     const { message } = req.body;
@@ -479,10 +482,10 @@ app.post('/api/return-chat/read/:orderId', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: 'Autenticação necessária' });
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'techvault-default-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET);
     const orderId = parseInt(req.params.orderId);
+    const order = await db.orderById(orderId);
+    if (!order || order.userId !== decoded.id) return res.status(403).json({ error: 'Acesso negado' });
     const type = req.query.type || 'return';
     const convKey = type + ':' + orderId;
     const chatData = await db.getChatMessages(convKey);
@@ -528,17 +531,9 @@ app.post('/api/verify-payment/:id', async (req, res) => {
 
     if (!order) return res.json({ verified: false, error: 'not_found' });
 
-    if (order.status === 'aprovado') {
-      return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef });
-    }
-
-    if (order.status === 'pendente') {
-      await db.updateOrderStatus(order.id, 'aprovado');
-      console.log(`Pedido #${order.id} aprovado via verify-payment`);
-      return res.json({ verified: true, status: 'aprovado', orderId: order.id, paymentRef: order.paymentRef, method: 'verify-payment' });
-    }
-
-    res.json({ verified: false, status: order.status, orderId: order.id });
+    // Do NOT auto-approve here - only the webhook should approve orders
+    // This endpoint only returns the current status
+    res.json({ verified: order.status === 'aprovado', status: order.status, orderId: order.id, paymentRef: order.paymentRef });
   } catch (e) {
     console.error('Erro verify-payment:', e);
     res.json({ verified: false, error: 'server_error' });

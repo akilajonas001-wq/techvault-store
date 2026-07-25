@@ -51,7 +51,7 @@ function buildSpecsHtml(specs) {
     if (hiddenKeys.includes(key)) continue;
     if (value && value !== 'N/A') {
       const label = specLabels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      rows += '<tr><td class="spec-label">' + label + '</td><td class="spec-value">' + value + '</td></tr>';
+      rows += '<tr><td class="spec-label">' + escapeHtml(label) + '</td><td class="spec-value">' + escapeHtml(value) + '</td></tr>';
     }
   }
   if (!rows) return '';
@@ -87,10 +87,10 @@ async function loadRelatedProducts(categoria, currentId) {
       const price = 'R$ ' + p.preco.toFixed(2).replace('.', ',');
       return '<div class="related-product-card" onclick="window.location.href=\'/produto/' + p.id + '\'">' +
         '<div class="related-product-image">' +
-          '<img src="' + p.imagem + '" alt="' + p.nome + '" loading="lazy">' +
+          '<img src="' + escapeHtml(p.imagem) + '" alt="' + escapeHtml(p.nome) + '" loading="lazy">' +
         '</div>' +
         '<div class="related-product-info">' +
-          '<div class="related-product-name">' + p.nome + '</div>' +
+          '<div class="related-product-name">' + escapeHtml(p.nome) + '</div>' +
           '<div class="related-product-price">' + price + '</div>' +
         '</div>' +
       '</div>';
@@ -146,9 +146,9 @@ async function loadComments(productId) {
       return '<div class="comment-card">' +
         '<div class="comment-card-header">' +
           '<div class="comment-user">' +
-            '<div class="comment-avatar">' + initials + '</div>' +
+            '<div class="comment-avatar">' + escapeHtml(initials) + '</div>' +
             '<div class="comment-user-info">' +
-              '<span class="comment-user-name">' + c.userName + '</span>' +
+              '<span class="comment-user-name">' + escapeHtml(c.userName) + '</span>' +
               '<span class="comment-date">' + date + '</span>' +
             '</div>' +
           '</div>' +
@@ -157,7 +157,7 @@ async function loadComments(productId) {
             (canDelete ? '<button class="comment-delete-btn" onclick="deleteComment(' + c.id + ')" title="Remover comentário"><i class="fas fa-trash-alt"></i></button>' : '') +
           '</div>' +
         '</div>' +
-        '<div class="comment-text">' + c.comment + '</div>' +
+        '<div class="comment-text">' + escapeHtml(c.comment) + '</div>' +
       '</div>';
     }).join('');
   } catch (error) {
@@ -201,7 +201,7 @@ function updateCommentAuth() {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       currentUserId = payload.id;
-      el.innerHTML = 'Comentando como <strong>' + (payload.email || 'usuário') + '</strong>';
+      el.innerHTML = 'Comentando como <strong>' + escapeHtml(payload.email || 'usuário') + '</strong>';
     } catch {
       currentUserId = null;
       el.innerHTML = '<a href="/login">Faça login</a> para comentar';
@@ -317,9 +317,9 @@ async function loadProduct(productId) {
         const selected = idx === 0 ? ' selected' : '';
         const vPreco = v.preco || product.preco;
         variantHtml += '<div class="variant-item' + selected + '" data-variant="' + idx + '" onclick="selectVariant(' + idx + ')">' +
-          '<div class="variant-name">' + (v.nome || product.nome) + '</div>' +
+          '<div class="variant-name">' + escapeHtml(v.nome || product.nome) + '</div>' +
           '<div class="variant-price">R$ ' + vPreco.toFixed(2).replace('.', ',') + '</div>' +
-          (v.especificacoes ? '<div class="variant-specs">' + Object.values(v.especificacoes).filter(Boolean).join(' | ') + '</div>' : '') +
+          (v.especificacoes ? '<div class="variant-specs">' + escapeHtml(Object.values(v.especificacoes).filter(Boolean).join(' | ')) + '</div>' : '') +
         '</div>';
       });
       variantHtml += '</div></div>';
@@ -328,7 +328,7 @@ async function loadProduct(productId) {
     const allImages = (product.imagens && product.imagens.length > 0) ? product.imagens : [product.imagem];
     const thumbsHtml = allImages.map((img, i) =>
       '<div class="thumb-item' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" onclick="goToSlide(' + i + ')">' +
-        '<img src="' + img + '" alt="' + product.nome + ' ' + (i+1) + '">' +
+        '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(product.nome) + ' ' + (i+1) + '">' +
       '</div>'
     ).join('');
 
@@ -339,7 +339,7 @@ async function loadProduct(productId) {
             '<div class="carousel-track" id="carouselTrack">' +
               allImages.map((img, i) =>
                 '<div class="carousel-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">' +
-                  '<img src="' + img + '" alt="' + product.nome + ' ' + (i+1) + '">' +
+                  '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(product.nome) + ' ' + (i+1) + '">' +
                 '</div>'
               ).join('') +
             '</div>' +
@@ -355,7 +355,7 @@ async function loadProduct(productId) {
           (allImages.length > 1 ? '<div class="thumbs-row">' + thumbsHtml + '</div>' : '') +
         '</div>' +
         '<div class="product-info-section">' +
-          '<h1>' + product.nome + '</h1>' +
+          '<h1>' + escapeHtml(product.nome) + '</h1>' +
           '<div class="product-rating-large">' +
             '<div class="stars">' + generateStars(product.avaliacao) + '</div>' +
             '<span class="rating-text">' + product.avaliacao.toFixed(1) + ' (' + product.reviews + ' avaliações)</span>' +
@@ -383,7 +383,7 @@ async function loadProduct(productId) {
           specsHtml +
           '<div class="description-section">' +
             '<h2>Descrição do Produto</h2>' +
-            '<p>' + (product.descricao || 'Descrição não disponível') + '</p>' +
+            '<p>' + escapeHtml(product.descricao || 'Descrição não disponível') + '</p>' +
           '</div>' +
         '</div>' +
       '</div>';
