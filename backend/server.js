@@ -239,17 +239,20 @@ function renderPage(fileName) {
     } catch (e) {
       console.error('Erro ao ler partial header:', e);
     }
-  }
 
-  try {
-    const footer = fs.readFileSync(path.join(PUBLIC_DIR, 'partials', 'footer.html'), 'utf8');
-    html = html.replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/g, '');
-    const lastBodyIdx = html.lastIndexOf('</body>');
-    if (lastBodyIdx !== -1) {
-      html = html.slice(0, lastBodyIdx) + footer + '\n' + html.slice(lastBodyIdx);
+    // Footer compartilhado apenas nas paginas da loja (que usam o header).
+    // Paginas standalone (login, registro, painel, comprovante, pedido-*)
+    // nao recebem footer para nao quebrar o layout de centralizacao.
+    try {
+      const footer = fs.readFileSync(path.join(PUBLIC_DIR, 'partials', 'footer.html'), 'utf8');
+      html = html.replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/g, '');
+      const lastBodyIdx = html.lastIndexOf('</body>');
+      if (lastBodyIdx !== -1) {
+        html = html.slice(0, lastBodyIdx) + footer + '\n' + html.slice(lastBodyIdx);
+      }
+    } catch (e) {
+      console.error('Erro ao ler partial footer:', e);
     }
-  } catch (e) {
-    console.error('Erro ao ler partial footer:', e);
   }
 
   return html;
