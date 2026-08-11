@@ -146,6 +146,7 @@ function cents(value) {
 
 // Distribui o desconto do cupom proporcionalmente entre os itens (em centavos inteiros),
 // garantindo que a soma dos itens bata exatamente com o total final do pedido.
+// NOTA: a API do Mercado Pago espera unit_price em REAIS (moeda corrente), nao em centavos.
 function buildMpItems(itens, baseCents, totalCents) {
   if (!itens || itens.length === 0 || baseCents <= 0 || totalCents <= 0) return [];
   const items = itens.map(it => ({
@@ -154,15 +155,21 @@ function buildMpItems(itens, baseCents, totalCents) {
     unit_price: cents(it.preco),
     category_id: 'others'
   }));
-  if (baseCents === totalCents) return items;
+  if (baseCents === totalCents) return toMpCurrency(items);
   let allocated = 0;
   const n = items.length;
-  return items.map((it, i) => {
+  return toMpCurrency(items.map((it, i) => {
     if (i === n - 1) return { ...it, unit_price: totalCents - allocated };
     const price = Math.floor(it.unit_price * totalCents / baseCents);
     allocated += price;
     return { ...it, unit_price: price };
-  });
+  }));
+}
+
+// Converte valores de centavos inteiros para REAIS (com 2 casas decimais), que eh a
+// unidade que a API do Mercado Pago usa em unit_price.
+function toMpCurrency(items) {
+  return items.map(it => ({ ...it, unit_price: Math.round(it.unit_price) / 100 }));
 }
 
 function buildMpPayer(cliente, user) {
