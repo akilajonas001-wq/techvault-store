@@ -345,18 +345,7 @@
 </head>
 <body>
   <!-- Header -->
-  <header class="header">
-    <div class="header-top">
-      <a href="/" class="logo">
-        <img src="/images/logo.png" alt="TechVault">
-      </a>
-      <div style="margin-left: auto;">
-        <a href="/" style="text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px;">
-          <i class="fas fa-arrow-left"></i> Voltar para loja
-        </a>
-      </div>
-    </div>
-  </header>
+  <!--HEADER-->
 
   <!-- Main Content -->
   <div class="container">
@@ -382,19 +371,17 @@
 
     function loadWishlist() {
       const saved = localStorage.getItem('techvault-wishlist');
-      if (saved) {
-        wishlist = JSON.parse(saved);
-      }
+      let parsed = [];
+      try { parsed = JSON.parse(saved || '[]'); } catch (e) { parsed = []; }
+      wishlist = (Array.isArray(parsed) ? parsed : []).map(p => (typeof p === 'object' && p !== null) ? p.id : p);
       renderWishlist();
     }
 
-    function renderWishlist() {
+    function renderEmpty() {
       const container = document.getElementById('wishlistContent');
       const countBadge = document.getElementById('wishlistCountBadge');
-
-      countBadge.textContent = `${wishlist.length} ${wishlist.length === 1 ? 'item' : 'itens'}`;
-
-      if (wishlist.length === 0) {
+      countBadge.textContent = '0 itens';
+      if (container) {
         container.innerHTML = `
           <div class="empty-state">
             <i class="far fa-heart"></i>
@@ -405,24 +392,47 @@
             </a>
           </div>
         `;
-        return;
+      }
+    }
+
+    async function renderWishlist() {
+      const container = document.getElementById('wishlistContent');
+      const countBadge = document.getElementById('wishlistCountBadge');
+
+      if (wishlist.length === 0) { renderEmpty(); return; }
+
+      let products = [];
+      try {
+        const res = await fetch('/api/products');
+        products = await res.json();
+      } catch (e) {
+        products = [];
       }
 
+      const items = wishlist
+        .map(id => products.find(p => String(p.id) === String(id)))
+        .filter(Boolean);
+
+      countBadge.textContent = `${items.length} ${items.length === 1 ? 'item' : 'itens'}`;
+
+      if (items.length === 0) { renderEmpty(); return; }
+
+      window.__wishlistItems = items;
       container.innerHTML = `
         <div class="wishlist-grid">
-          ${wishlist.map(item => `
+          ${items.map(item => `
             <div class="wishlist-item">
               <button class="remove-btn" onclick="removeFromWishlist(${item.id})" title="Remover">
                 <i class="fas fa-times"></i>
               </button>
               <div class="wishlist-item-image" onclick="window.location.href='/produto/${item.id}'">
-                <img src="${item.imagem}" alt="${item.nome}" loading="lazy">
+                <img src="${item.imagem}" alt="${escapeHtml(item.nome)}" loading="lazy">
               </div>
               <div class="wishlist-item-info">
-                <div class="wishlist-item-name">${item.nome}</div>
-                <div class="wishlist-item-price">R$ ${item.preco.toFixed(2).replace('.', ',')}</div>
+                <div class="wishlist-item-name">${escapeHtml(item.nome)}</div>
+                <div class="wishlist-item-price">R$ ${Number(item.preco).toFixed(2).replace('.', ',')}</div>
                 <div class="wishlist-actions">
-                  <button class="btn btn-primary" onclick="addToCart(${item.id}, '${item.nome.replace(/'/g, "\\'")}', ${item.preco})">
+                  <button class="btn btn-primary" onclick="addToCartFromWishlist(${item.id})">
                     <i class="fas fa-cart-plus"></i> Adicionar ao carrinho
                   </button>
                   <a href="/produto/${item.id}" class="btn btn-outline">
@@ -436,40 +446,19 @@
       `;
     }
 
+    function addToCartFromWishlist(id) {
+      const item = window.__wishlistItems && window.__wishlistItems.find(p => String(p.id) === String(id));
+      if (!item) return;
+      addToCart({ id: item.id, nome: item.nome, preco: Number(item.preco), imagem: item.imagem });
+      showToast('Produto adicionado ao carrinho!');
+    }
+
     function removeFromWishlist(id) {
-      wishlist = wishlist.filter(p => p.id !== id);
+      wishlist = wishlist.filter(p => String(p) !== String(id));
       localStorage.setItem('techvault-wishlist', JSON.stringify(wishlist));
       renderWishlist();
+      updateWishlistCount();
       showToast('Produto removido dos favoritos');
-    }
-
-    function addToCart(id, nome, preco) {
-      // Fetch product details and add to cart
-      fetch('/api/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: id, quantity: 1 })
-      }).then(() => {
-        showToast(`${nome} adicionado ao carrinho! 🛒`);
-        updateCartCount();
-      }).catch(() => {
-        // Fallback to localStorage cart
-        let cart = JSON.parse(localStorage.getItem('techvault-cart') || '[]');
-        const existing = cart.find(p => p.id === id);
-        if (existing) {
-          existing.quantidade += 1;
-        } else {
-          cart.push({ id, nome, preco, quantidade: 1 });
-        }
-        localStorage.setItem('techvault-cart', JSON.stringify(cart));
-        showToast(`${nome} adicionado ao carrinho! 🛒`);
-        updateCartCount();
-      });
-    }
-
-    function updateCartCount() {
-      // Dispatch event for parent window to update
-      window.dispatchEvent(new CustomEvent('cart-updated'));
     }
 
     function showToast(message, isError = false) {
@@ -491,5 +480,7 @@
       }, 3000);
     }
   </script>
+  <script src="/js/main.js?v=4"></script>
+  <script src="/js/header.js?v=1"></script>
 </body>
 </html>

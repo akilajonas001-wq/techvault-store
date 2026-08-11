@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 const { authenticate, adminAuth } = require('./middleware/auth');
 
@@ -212,7 +213,60 @@ app.get('/api/confirm-payment/:ref', async (req, res) => {
 
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
-app.use(express.static(path.join(__dirname, '..', 'public'), { maxAge: '1h', etag: true, lastModified: true, setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); } }));
+
+// ===================== HEADER / FOOTER COMPARTILHADO =====================
+// Todas as páginas da loja usam o mesmo header e footer
+// (partials/header.html e partials/footer.html), injetados pelo servidor.
+// Isso garante consistência e facilita manutenção: basta editar um único arquivo.
+const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const HEADER_PLACEHOLDER = '<!--HEADER-->';
+
+function renderPage(fileName) {
+  const resolved = path.resolve(PUBLIC_DIR, fileName);
+  if (resolved !== PUBLIC_DIR && !resolved.startsWith(PUBLIC_DIR + path.sep)) return null;
+
+  let html;
+  try {
+    html = fs.readFileSync(resolved, 'utf8');
+  } catch (e) {
+    return null;
+  }
+
+  if (html.includes(HEADER_PLACEHOLDER)) {
+    try {
+      const partial = fs.readFileSync(path.join(PUBLIC_DIR, 'partials', 'header.html'), 'utf8');
+      html = html.split(HEADER_PLACEHOLDER).join(partial);
+    } catch (e) {
+      console.error('Erro ao ler partial header:', e);
+    }
+  }
+
+  try {
+    const footer = fs.readFileSync(path.join(PUBLIC_DIR, 'partials', 'footer.html'), 'utf8');
+    html = html.replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/g, '');
+    const lastBodyIdx = html.lastIndexOf('</body>');
+    if (lastBodyIdx !== -1) {
+      html = html.slice(0, lastBodyIdx) + footer + '\n' + html.slice(lastBodyIdx);
+    }
+  } catch (e) {
+    console.error('Erro ao ler partial footer:', e);
+  }
+
+  return html;
+}
+
+// Serve arquivos .html diretos (ex: /quem-somos.html) com o header injetado
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const p = req.path.replace(/^\/+/, '').replace(/\/+$/, '');
+  if (!p.endsWith('.html')) return next();
+  const html = renderPage(p);
+  if (html === null) return next();
+  res.set('Cache-Control', 'no-cache');
+  res.type('html').send(html);
+});
+
+app.use(express.static(path.join(__dirname, '..', 'public'), { index: false, maxAge: '1h', etag: true, lastModified: true, setHeaders: (res, filePath) => { if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); } }));
 app.use(session({ secret: JWT_SECRET, resave: false, saveUninitialized: true, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'lax' } }));
 
 // Initialize database before starting server
@@ -562,26 +616,28 @@ app.get('/api/receipt/:id', async (req, res) => {
 
 // ===================== STATIC PAGE ROUTES =====================
 
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'login.html')));
-app.get('/registro', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'registro.html')));
-app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'checkout.html')));
-app.get('/conta', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'conta.html')));
-app.get('/categoria/:categoria', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'categoria.html')));
-app.get('/produto/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'produto.html')));
-app.get('/busca', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'busca.html')));
-app.get('/privacidade', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'privacidade.html')));
-app.get('/termos', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'termos.html')));
-app.get('/central-ajuda', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'central-ajuda.html')));
-app.get('/favoritos', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'favoritos.html')));
-app.get('/como-comprar', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'como-comprar.html')));
-app.get('/frete-entrega', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'frete-entrega.html')));
-app.get('/devolucoes', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'devolucoes.html')));
-app.get('/painel', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'painel.html')));
-app.get('/pedido-sucesso', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-sucesso.html')));
-app.get('/pedido-cancelado', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'pedido-cancelado.html')));
-app.get('/comprovante', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'comprovante.html')));
-app.get('/comprovante/:id', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'comprovante.html')));
+app.get('/', (req, res) => res.send(renderPage('index.html')));
+app.get('/login', (req, res) => res.send(renderPage('login.html')));
+app.get('/registro', (req, res) => res.send(renderPage('registro.html')));
+app.get('/checkout', (req, res) => res.send(renderPage('checkout.html')));
+app.get('/conta', (req, res) => res.send(renderPage('conta.html')));
+app.get('/categoria/:categoria', (req, res) => res.send(renderPage('categoria.html')));
+app.get('/produto/:id', (req, res) => res.send(renderPage('produto.html')));
+app.get('/busca', (req, res) => res.send(renderPage('busca.html')));
+app.get('/privacidade', (req, res) => res.send(renderPage('privacidade.html')));
+app.get('/termos', (req, res) => res.send(renderPage('termos.html')));
+app.get('/central-ajuda', (req, res) => res.send(renderPage('central-ajuda.html')));
+app.get('/favoritos', (req, res) => res.send(renderPage('favoritos.html')));
+app.get('/como-comprar', (req, res) => res.send(renderPage('como-comprar.html')));
+app.get('/frete-entrega', (req, res) => res.send(renderPage('frete-entrega.html')));
+app.get('/devolucoes', (req, res) => res.send(renderPage('devolucoes.html')));
+app.get('/quem-somos', (req, res) => res.send(renderPage('quem-somos.html')));
+app.get('/trabalhe-conosco', (req, res) => res.send(renderPage('trabalhe-conosco.html')));
+app.get('/painel', (req, res) => res.send(renderPage('painel.html')));
+app.get('/pedido-sucesso', (req, res) => res.send(renderPage('pedido-sucesso.html')));
+app.get('/pedido-cancelado', (req, res) => res.send(renderPage('pedido-cancelado.html')));
+app.get('/comprovante', (req, res) => res.send(renderPage('comprovante.html')));
+app.get('/comprovante/:id', (req, res) => res.send(renderPage('comprovante.html')));
 
 startServer().then(() => {
   app.listen(PORT, '0.0.0.0', () => {

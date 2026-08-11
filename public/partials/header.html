@@ -1,0 +1,148 @@
+<header class="header header-new">
+  <!-- ===== LINHA 1: LOGO + BUSCA + AÇÕES ===== -->
+  <div class="header-top">
+    <a href="/" class="logo" aria-label="TechVault - Início">
+      <img src="/images/logo.png" alt="TechVault" style="height: 44px; width: auto;">
+    </a>
+
+    <div class="search-box">
+      <i class="fas fa-search search-box-icon" aria-hidden="true"></i>
+      <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais..." autocomplete="off" aria-label="Pesquisar produtos">
+      <button type="button" onclick="searchProducts()" aria-label="Buscar">
+        <i class="fas fa-search"></i>
+        <span>Buscar</span>
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <a class="header-icon-link" href="/conta" title="Minha Conta">
+        <span class="header-icon-circle"><i class="fas fa-user"></i></span>
+        <span class="header-icon-label">Minha Conta</span>
+      </a>
+
+      <a class="header-icon-link" href="/conta?tab=pedidos" title="Meus Pedidos">
+        <span class="header-icon-circle"><i class="fas fa-box-open"></i></span>
+        <span class="header-icon-label">Pedidos</span>
+      </a>
+
+      <a class="header-icon-link" href="/favoritos" title="Favoritos">
+        <span class="header-icon-circle"><i class="far fa-heart"></i></span>
+        <span class="header-icon-label">Favoritos</span>
+        <span class="header-badge" id="wishlistCount">0</span>
+      </a>
+
+      <div class="header-icon-link cart-icon" id="cartIcon" onclick="viewCart()" title="Carrinho" role="button" tabindex="0" onkeydown="if(event.key==='Enter')viewCart()">
+        <span class="header-icon-circle"><i class="fas fa-shopping-cart"></i></span>
+        <span class="header-icon-label">Carrinho</span>
+        <span class="header-badge cart-count" id="cartCount">0</span>
+      </div>
+
+      <div id="authButtons" class="auth-buttons-desktop">
+        <a href="/login" class="login-link">Entrar</a>
+        <a href="/registro" class="register-link">Criar conta</a>
+      </div>
+
+      <div id="userMenu"></div>
+
+      <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Abrir menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== LINHA 2: NAVEGAÇÃO DE CATEGORIAS ===== -->
+  <nav class="header-nav" aria-label="Navegação principal">
+    <div class="header-nav-inner">
+      <div class="dropdown" id="categoriesDropdown">
+        <button class="dropdown-toggle" onclick="toggleCategoriesMenu(event)" aria-haspopup="true" aria-expanded="false">
+          <i class="fas fa-th-large"></i>
+          <span>Categorias</span>
+          <i class="fas fa-chevron-down dropdown-arrow"></i>
+        </button>
+        <div class="dropdown-menu" id="categoriesMenu">
+          <div class="dropdown-loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+      </div>
+
+      <a class="header-nav-link" href="/#ofertas"><i class="fas fa-fire"></i> Ofertas</a>
+      <a class="header-nav-link" href="/busca?ordem=novidades"><i class="fas fa-sparkles"></i> Novidades</a>
+      <a class="header-nav-link" href="/busca?ordem=mais-vendidos"><i class="fas fa-chart-line"></i> Mais Vendidos</a>
+
+      <div class="header-nav-spacer"></div>
+
+      <a class="header-nav-link header-nav-help" href="/central-ajuda"><i class="fas fa-question-circle"></i> Ajuda</a>
+    </div>
+  </nav>
+
+  <!-- ===== MENU MOBILE ===== -->
+  <nav class="mobile-nav" id="mobileNav" aria-label="Menu mobile">
+    <div class="mobile-nav-header">
+      <a href="/" class="mobile-logo">
+        <i class="fas fa-cube"></i> TechVault
+      </a>
+      <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar menu">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="mobile-user-info" id="mobileUserInfo">
+      <div class="user-name"><i class="fas fa-user-circle"></i> <span id="mobileUserName">Olá, Usuário</span></div>
+      <div class="user-email" id="mobileUserEmail"></div>
+    </div>
+
+    <div class="mobile-search">
+      <input type="text" id="mobileSearchInput" placeholder="Buscar produtos..." autocomplete="off">
+      <button onclick="mobileSearch()" aria-label="Buscar"><i class="fas fa-search"></i></button>
+    </div>
+
+    <div class="mobile-nav-links">
+      <a href="#" onclick="showOffers(); toggleMobileMenu()">
+        <i class="fas fa-tag"></i> Ofertas
+      </a>
+
+      <div class="mobile-nav-cats" id="mobileCategoriesLinks">
+        <div class="mobile-nav-cat-title"><i class="fas fa-th-large"></i> Categorias</div>
+      </div>
+
+      <a href="/login" onclick="toggleMobileMenu()" class="mobile-auth-link">
+        <i class="fas fa-sign-in-alt"></i> Entrar
+      </a>
+      <a href="/registro" onclick="toggleMobileMenu()" class="mobile-auth-link">
+        <i class="fas fa-user-plus"></i> Criar Conta
+      </a>
+      <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount">
+        <i class="fas fa-user"></i> Minha Conta
+      </a>
+      <a href="/conta?tab=pedidos" onclick="toggleMobileMenu()" style="display:none" class="mobile-myorders">
+        <i class="fas fa-box-open"></i> Meus Pedidos
+      </a>
+
+      <span class="mobile-nav-divider"></span>
+
+      <a href="/central-ajuda" onclick="toggleMobileMenu()">
+        <i class="fas fa-question-circle"></i> Ajuda
+      </a>
+      <a href="/como-comprar" onclick="toggleMobileMenu()">
+        <i class="fas fa-shopping-bag"></i> Como Comprar
+      </a>
+      <a href="/frete-entrega" onclick="toggleMobileMenu()">
+        <i class="fas fa-shipping-fast"></i> Frete e Entrega
+      </a>
+
+      <span class="mobile-nav-divider"></span>
+
+      <a href="/favoritos" onclick="toggleMobileMenu()">
+        <i class="far fa-heart"></i> Favoritos
+      </a>
+
+      <a href="/painel" onclick="toggleMobileMenu()" style="display:none" class="mobile-admin-link">
+        <i class="fas fa-shield-alt"></i> Painel Admin
+      </a>
+
+      <a href="#" onclick="logout(); toggleMobileMenu()" class="mobile-logout" style="display:none">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </a>
+    </div>
+  </nav>
+  <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+</header>

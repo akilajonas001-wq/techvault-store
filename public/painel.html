@@ -39,47 +39,55 @@
       -webkit-font-smoothing: antialiased;
     }
     .header {
-      background: var(--white);
+      background: linear-gradient(135deg, #0a1930 0%, #122a50 100%);
       position: sticky; top: 0; z-index: 1000;
-      box-shadow: var(--shadow-md);
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(4, 12, 28, 0.4);
+      border-bottom: none;
     }
     .header-top {
       display: flex; align-items: center; gap: 16px;
       max-width: 1400px; margin: 0 auto; padding: 12px 24px;
     }
-    .logo { text-decoration: none; display: flex; align-items: center; flex-shrink: 0; }
-    .logo img { height: 70px; width: auto; }
+    .logo {
+      text-decoration: none; display: flex; align-items: center; flex-shrink: 0;
+      background: #fff; border-radius: 12px; padding: 4px 12px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s ease;
+    }
+    .logo:hover { transform: translateY(-1px); }
+    .logo img { height: 44px; width: auto; display: block; }
     .header-menu { display: flex; gap: 16px; align-items: center; margin-left: auto; }
     .header-menu a {
-      color: var(--text-light); text-decoration: none;
+      color: rgba(255, 255, 255, 0.92); text-decoration: none;
       font-size: 14px; font-weight: 500; transition: color 0.2s;
       display: flex; align-items: center; gap: 6px;
     }
-    .header-menu a:hover { color: var(--primary); }
+    .header-menu a:hover { color: #ff8a00; }
     .admin-badge {
-      background: var(--primary-gradient);
-      color: white; padding: 4px 12px; border-radius: 8px;
+      background: linear-gradient(135deg, #ff8a00 0%, #ff5e3a 100%);
+      color: white; padding: 6px 14px; border-radius: 8px;
       font-size: 12px; font-weight: 600; white-space: nowrap;
+      box-shadow: 0 3px 10px rgba(255, 122, 26, 0.4);
     }
     .hamburger {
       display: none; background: none; border: none;
-      font-size: 22px; color: var(--text); cursor: pointer;
+      font-size: 22px; color: #fff; cursor: pointer;
       padding: 4px; margin-left: auto;
     }
     .mobile-menu {
-      display: none; background: var(--white);
-      border-top: 1px solid var(--border); padding: 12px 16px;
+      display: none; background: linear-gradient(135deg, #0a1930 0%, #122a50 100%);
+      border-top: 1px solid rgba(255, 255, 255, 0.14); padding: 12px 16px;
       flex-direction: column; gap: 10px;
     }
     .mobile-menu.open { display: flex; }
     .mobile-menu a {
-      color: var(--text); text-decoration: none;
+      color: #fff; text-decoration: none;
       font-size: 14px; font-weight: 500; padding: 10px 0;
       display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
     }
     .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: #ff8a00; }
     .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
     .dashboard-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -429,13 +437,12 @@
 
     <div class="tab-nav">
       <button class="tab-btn active" data-tab="pedidos" onclick="switchTab('pedidos', this)"><i class="fas fa-box"></i> Pedidos <span id="pedidosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários <span id="usuariosBadge" class="tab-count-badge"></span></button>
+      <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários <span id="funcionariosBadge" class="tab-count-badge"></span></button>
       <button class="tab-btn" data-tab="carrinhos" onclick="switchTab('carrinhos', this)"><i class="fas fa-shopping-cart"></i> Carrinhos <span id="carrinhosBadge" class="tab-count-badge"></span></button>
       <button class="tab-btn" data-tab="chats" onclick="switchTab('chats', this)" id="chatsTabBtn"><i class="fas fa-headset"></i> Atendimento <span id="chatUnreadBadge" class="tab-count-badge" style="background:rgba(239,68,68,0.15);color:#ef4444;"></span></button>
       <button class="tab-btn" data-tab="devolucoes" onclick="switchTab('devolucoes', this)"><i class="fas fa-undo"></i> Devolução e Cancelamento <span id="returnsBadge" class="tab-count-badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;"></span></button>
-      <button class="tab-btn" data-tab="funcionarios" onclick="switchTab('funcionarios', this)"><i class="fas fa-user-tie"></i> ADM's e Funcionários <span id="funcionariosBadge" class="tab-count-badge"></span></button>
       <button class="tab-btn" data-tab="produtos" onclick="switchTab('produtos', this)"><i class="fas fa-boxes"></i> Produtos <span id="produtosBadge" class="tab-count-badge"></span></button>
-      <button class="tab-btn" data-tab="usuarios" onclick="switchTab('usuarios', this)"><i class="fas fa-users"></i> Usuários <span id="usuariosBadge" class="tab-count-badge"></span></button>
-      <button class="tab-btn" data-tab="newsletter" onclick="switchTab('newsletter', this)"><i class="fas fa-gift"></i> Cupons</button>
       <button class="tab-btn" data-tab="whatsapp" onclick="switchTab('whatsapp', this)"><i class="fab fa-whatsapp"></i> WhatsApp</button>
     </div>
 
@@ -594,40 +601,10 @@
           <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
 
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <h4 style="font-size:15px;font-weight:600;"><i class="fas fa-layer-group"></i> Variantes do Produto</h4>
-            <button class="order-detail-btn" onclick="addVariant()" style="border-color:var(--primary);color:var(--primary);font-size:12px;"><i class="fas fa-plus"></i> Adicionar Variante</button>
+            <h4 style="font-size:15px;font-weight:600;"><i class="fas fa-layer-group"></i> Subcategorias</h4>
+            <button class="order-detail-btn" onclick="addVariant()" style="border-color:var(--primary);color:var(--primary);font-size:12px;"><i class="fas fa-plus"></i> Adicionar Subcategoria</button>
           </div>
-          <div id="variantsContainer" style="display:flex;flex-direction:column;gap:16px;">
-              <div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                  <strong style="font-size:14px;">Variante 1</strong>
-                  <button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>
-                </div>
-                <div class="variant-card-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-                <div>
-                  <label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label>
-                  <input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
-                </div>
-                <div>
-                  <label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label>
-                  <input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
-                </div>
-              </div>
-              <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                  <label style="font-size:12px;font-weight:500;">Especificações da Variante</label>
-                  <button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>
-                </div>
-                <div class="vpSpecs">
-                  <div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">
-                    <input type="text" class="vpSpecKey" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">
-                    <input type="text" class="vpSpecValue" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">
-                    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div id="variantsContainer" style="display:flex;flex-direction:column;gap:16px;"></div>
 
           <hr style="margin:20px 0;border:none;border-top:1px solid var(--border);">
 
@@ -641,9 +618,12 @@
 
     <div id="tab-usuarios" class="tab-content">
       <div class="card">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap:wrap;gap:10px;">
           <h2><i class="fas fa-users"></i> Todos os Usuários</h2>
           <span id="usersCount" style="font-size: 13px; color: var(--text-muted);"></span>
+          <div style="flex:1;display:flex;justify-content:flex-end;min-width:200px;">
+            <input type="text" id="userSearchInput" placeholder="Buscar por nome, email, username ou telefone..." oninput="userSearch()" style="padding:9px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;width:100%;max-width:340px;transition:border-color .2s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
         </div>
         <div id="usersContainer" class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando usuários...</div>
       </div>
@@ -806,8 +786,6 @@
           document.getElementById('addStaffForm').style.display = 'none';
           document.getElementById('revenueCard').style.display = 'none';
           document.getElementById('newProductBtn').style.display = 'none';
-          const nlBtn = document.querySelector('.tab-btn[data-tab="newsletter"]');
-          if (nlBtn) nlBtn.style.display = 'none';
         }
         document.getElementById('lastUpdate').textContent = 'Atualizado em ' + new Date().toLocaleString('pt-BR');
         loadAllData(token);
@@ -1638,6 +1616,8 @@
     function openCreateProductModal() {
       document.getElementById('cpEditId').value = '';
       document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> Novo Produto';
+      document.getElementById('variantsContainer').innerHTML = '';
+      addVariant();
       document.getElementById('createProductModal').classList.add('active');
       document.body.dataset.scrollY = window.scrollY;
       document.body.style.position = 'fixed';
@@ -1663,53 +1643,13 @@
       document.getElementById('cpCheckoutLink').value = p.checkoutLink || '';
       document.getElementById('cpSupplierLink').value = p.supplierLink || '';
 
-      // Rebuild variants
+      // Rebuild variants (subcategorias)
       const vc = document.getElementById('variantsContainer');
-      const variants = p.variants || [p].map(v => v.variants || []);
-      if (p.variants && p.variants.length > 0) {
-        vc.innerHTML = '';
-        p.variants.forEach((v, i) => {
-          if (i === 0) {
-            const first = vc.querySelector('.variant-card');
-            if (first) {
-              first.querySelector('.vpNome').value = v.nome || '';
-              first.querySelector('.vpPreco').value = v.preco || '';
-              vc.innerHTML = '';
-            }
-          }
-          const idx = vc.querySelectorAll('.variant-card').length;
-          const card = document.createElement('div');
-          card.className = 'variant-card';
-          card.dataset.index = idx;
-          card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;';
-          let specHtml = '';
-          if (v.especificacoes) {
-            Object.entries(v.especificacoes).forEach(([k, val]) => {
-              specHtml += '<div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">' +
-                '<input type="text" class="vpSpecKey" value="' + k.replace(/"/g, '&quot;') + '" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
-                '<input type="text" class="vpSpecValue" value="' + (val || '').replace(/"/g, '&quot;') + '" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
-                '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button></div>';
-            });
-          }
-          card.innerHTML =
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-              '<strong style="font-size:14px;">Variante ' + (idx+1) + '</strong>' +
-              '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-              '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" value="' + (v.nome || '').replace(/"/g, '&quot;') + '" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
-              '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" value="' + (v.preco || '') + '" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
-            '</div>' +
-            '<div>' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-                '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
-                '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
-              '</div>' +
-              '<div class="vpSpecs">' + specHtml + '</div>' +
-            '</div>';
-          vc.appendChild(card);
-        });
-      }
+      vc.innerHTML = '';
+      const variants = (p.variants && p.variants.length) ? p.variants : [{}];
+      variants.forEach(function(v, i) {
+        vc.insertAdjacentHTML('beforeend', variantCardHTML(v, i));
+      });
       document.getElementById('createProductModal').classList.add('active');
       document.body.dataset.scrollY = window.scrollY;
       document.body.style.position = 'fixed';
@@ -1730,31 +1670,86 @@
       delete document.body.dataset.scrollY;
     }
 
-    function addVariant() {
-      const container = document.getElementById('variantsContainer');
-      const cards = container.querySelectorAll('.variant-card');
-      const idx = cards.length;
-      const card = document.createElement('div');
-      card.className = 'variant-card';
-      card.dataset.index = idx;
-      card.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;';
-      card.innerHTML =
+    function variantCardHTML(v, idx) {
+      v = v || {};
+      const esc = function(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
+      const nome = esc(v.nome);
+      const preco = v.preco != null && v.preco !== '' ? v.preco : '';
+      const imagem = esc(v.imagem);
+      const descricao = esc(v.descricao);
+      const checkoutLink = esc(v.checkoutLink);
+      const espesc = v.especificacoes || v.specs || {};
+      let specHtml = '';
+      Object.entries(espesc).forEach(function(kv) {
+        specHtml += '<div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">' +
+          '<input type="text" class="vpSpecKey" value="' + esc(kv[0]) + '" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+          '<input type="text" class="vpSpecValue" value="' + esc(kv[1]) + '" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
+          '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button></div>';
+      });
+      return '<div class="variant-card" data-index="' + idx + '" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-          '<strong style="font-size:14px;">Variante ' + (idx+1) + '</strong>' +
+          '<strong style="font-size:14px;">Subcategoria ' + (idx+1) + '</strong>' +
           '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
-          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+        '<div class="variant-card-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
+          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Subcategoria</label><input type="text" class="vpNome" value="' + nome + '" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+          '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" value="' + preco + '" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
         '</div>' +
+        '<div class="variant-image-row" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px;">' +
+          '<div style="flex:1;"><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Imagem da Subcategoria</label><input type="url" class="vpImagem" value="' + imagem + '" placeholder="URL da imagem ou faça upload" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
+          '<label class="upload-btn upload-btn-label" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:2px dashed var(--primary);border-radius:8px;color:var(--primary);cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;"><i class="fas fa-cloud-upload-alt"></i> Upload<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none;" onchange="uploadVariantImage(this)"></label>' +
+          '<div class="vpImagemPreview" style="width:46px;height:46px;border:2px solid var(--border);border-radius:8px;background:#fff;overflow:hidden;' + (imagem ? '' : 'display:none;') + '"><img src="' + imagem + '" style="width:100%;height:100%;object-fit:cover;" alt=""></div>' +
+        '</div>' +
+        '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Descrição da Subcategoria</label><textarea class="vpDescricao" rows="2" placeholder="Descrição exibida no produto quando o cliente escolher esta subcategoria" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;">' + descricao + '</textarea></div>' +
+        '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Link de Checkout InfinitePay</label><input type="url" class="vpCheckoutLink" value="' + checkoutLink + '" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"><span style="font-size:11px;color:var(--text-muted);margin-top:2px;display:block;">Se vazio, usa o link geral do produto no botão "Comprar agora".</span></div>' +
         '<div>' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-            '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
+            '<label style="font-size:12px;font-weight:500;">Especificações da Subcategoria</label>' +
             '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
           '</div>' +
-          '<div class="vpSpecs"></div>' +
-        '</div>';
-      container.appendChild(card);
+          '<div class="vpSpecs">' + specHtml + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function addVariant() {
+      const container = document.getElementById('variantsContainer');
+      const idx = container.querySelectorAll('.variant-card').length;
+      container.insertAdjacentHTML('beforeend', variantCardHTML(null, idx));
+    }
+
+    async function uploadVariantImage(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const card = input.closest('.variant-card');
+      const urlInput = card.querySelector('.vpImagem');
+      const preview = card.querySelector('.vpImagemPreview');
+      const previewImg = preview ? preview.querySelector('img') : null;
+      if (previewImg) {
+        preview.style.display = 'block';
+        previewImg.src = URL.createObjectURL(file);
+      }
+      const formData = new FormData();
+      formData.append('image', file);
+      try {
+        const res = await fetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + getToken() },
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          urlInput.value = data.url;
+          if (previewImg) previewImg.src = data.url;
+        } else {
+          alert(data.error || 'Erro ao enviar imagem');
+          if (preview) preview.style.display = 'none';
+        }
+      } catch (err) {
+        alert('Erro de conexão ao enviar imagem');
+        if (preview) preview.style.display = 'none';
+      }
+      input.value = '';
     }
 
     function removeVariant(btn) {
@@ -1765,7 +1760,7 @@
       }
       card.remove();
       document.getElementById('variantsContainer').querySelectorAll('.variant-card').forEach(function(c, i) {
-        c.querySelector('strong').textContent = 'Variante ' + (i+1);
+        c.querySelector('strong').textContent = 'Subcategoria ' + (i+1);
       });
     }
 
@@ -1834,13 +1829,16 @@
       variantCards.forEach(function(card) {
         const vNome = card.querySelector('.vpNome').value.trim();
         const vPreco = parseFloat(card.querySelector('.vpPreco').value) || 0;
+        const vImagem = card.querySelector('.vpImagem').value.trim();
+        const vDescricao = card.querySelector('.vpDescricao').value.trim();
+        const vCheckoutLink = card.querySelector('.vpCheckoutLink').value.trim();
         const vSpecs = {};
         card.querySelectorAll('.vpSpec-row').forEach(function(row) {
           const key = row.querySelector('.vpSpecKey').value.trim();
           const value = row.querySelector('.vpSpecValue').value.trim();
           if (key && value) vSpecs[key] = value;
         });
-        variants.push({ nome: vNome, preco: vPreco, especificacoes: vSpecs });
+        variants.push({ nome: vNome, preco: vPreco, imagem: vImagem, descricao: vDescricao, checkoutLink: vCheckoutLink, especificacoes: vSpecs });
 
         // Also collect specs from the first variant for the base specs
         Object.assign(specs, vSpecs);
@@ -1899,30 +1897,8 @@
           document.getElementById('cpCheckoutLink').value = '';
           document.getElementById('cpSupplierLink').value = '';
           document.getElementById('cpEditId').value = '';
-          document.getElementById('variantsContainer').innerHTML =
-            '<div class="variant-card" data-index="0" style="border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafbfc;">' +
-              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-                '<strong style="font-size:14px;">Variante 1</strong>' +
-                '<button class="order-detail-btn" onclick="removeVariant(this)" style="border-color:var(--error);color:var(--error);font-size:11px;padding:4px 10px;"><i class="fas fa-trash-alt"></i></button>' +
-              '</div>' +
-        '<div class="variant-card-inner" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">' +
-                '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Nome da Variante</label><input type="text" class="vpNome" placeholder="Ex: iPhone 16 128GB Preto" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
-                '<div><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Preço (R$)</label><input type="number" class="vpPreco" placeholder="7341" step="0.01" min="0" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"></div>' +
-              '</div>' +
-              '<div>' +
-                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
-                  '<label style="font-size:12px;font-weight:500;">Especificações da Variante</label>' +
-                  '<button class="order-detail-btn" onclick="addVariantSpec(this)" style="border-color:var(--text-muted);color:var(--text-muted);font-size:10px;padding:2px 8px;"><i class="fas fa-plus"></i> Especificação</button>' +
-                '</div>' +
-                '<div class="vpSpecs">' +
-                  '<div class="vpSpec-row" style="display:flex;gap:6px;margin-bottom:4px;">' +
-                    '<input type="text" class="vpSpecKey" placeholder="Ex: Cor" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
-                    '<input type="text" class="vpSpecValue" placeholder="Ex: Preto" style="flex:1;padding:6px 10px;border:2px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;outline:none;">' +
-                    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--error);cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>' +
-                  '</div>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
+          document.getElementById('variantsContainer').innerHTML = '';
+          addVariant();
         } else {
           alert(data.error || 'Erro ao criar produto');
         }
@@ -1931,12 +1907,30 @@
       }
     }
 
+    let userSearchTerm = '';
+    function userSearch() {
+      const input = document.getElementById('userSearchInput');
+      userSearchTerm = (input ? input.value : '').toLowerCase().trim();
+      renderUsers();
+    }
+
     function renderUsers() {
       const container = document.getElementById('usersContainer');
-      document.getElementById('usersCount').textContent = allUsers.length + ' usuário' + (allUsers.length !== 1 ? 's' : '');
+      const isClient = u => u.role !== 'admin' && u.role !== 'funcionario';
+      const allClients = allUsers.filter(isClient);
+      let users = allClients;
+      if (userSearchTerm) {
+        users = allClients.filter(u =>
+          (u.nome || '').toLowerCase().includes(userSearchTerm) ||
+          (u.username || '').toLowerCase().includes(userSearchTerm) ||
+          (u.email || '').toLowerCase().includes(userSearchTerm) ||
+          (u.telefone || '').toLowerCase().includes(userSearchTerm)
+        );
+      }
+      document.getElementById('usersCount').textContent = users.length + (userSearchTerm ? ' de ' + allClients.length : '') + ' cliente' + (users.length !== 1 ? 's' : '');
 
-      if (!allUsers.length) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>Nenhum usuário cadastrado</p></div>';
+      if (!users.length) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><p>' + (userSearchTerm ? 'Nenhum cliente encontrado para "' + escapeHtml(userSearchTerm) + '"' : 'Nenhum cliente cadastrado') + '</p></div>';
         return;
       }
 
@@ -1946,28 +1940,21 @@
           '<th>Username</th>' +
           '<th>Email</th>' +
           '<th>Telefone</th>' +
-          '<th>Tipo</th>' +
           '<th>Membro desde</th>' +
           '<th style="width:90px">Ações</th>' +
         '</tr></thead><tbody>' +
-        allUsers.map(u => {
+        users.map(u => {
           const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('pt-BR') : 'N/A';
-          let roleHtml;
-          if (u.role === 'admin') roleHtml = '<span class="badge badge-blue"><i class="fas fa-shield-alt"></i> Admin</span>';
-          else if (u.role === 'funcionario') roleHtml = '<span class="badge badge-orange"><i class="fas fa-user-tie"></i> Funcionário</span>';
-          else roleHtml = '<span class="badge badge-gray">Cliente</span>';
           const isSelf = currentUserId && currentUserId === u.id;
           const canDelete = currentUserRole === 'admin' && !isSelf;
-          const isStaff = u.role === 'admin' || u.role === 'funcionario';
           return '<tr>' +
             '<td><strong>' + (u.nome || 'N/A') + '</strong></td>' +
             '<td style="font-size:13px;color:var(--text-muted)">' + (u.username || '<span style="color:var(--error)">—</span>') + '</td>' +
             '<td>' + (u.email || '') + '</td>' +
             '<td>' + (u.telefone || '—') + '</td>' +
-          '<td>' + roleHtml + '</td>' +
           '<td style="font-size:12px;color:var(--text-muted)">' + date + '</td>' +
           '<td style="white-space:nowrap">' +
-            (!isStaff ? '<button onclick="openChat(\'support:' + u.id + '\', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button>' : '') +
+            '<button onclick="openChat(\'support:' + u.id + '\', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:4px;" title="Conversar"><i class="fas fa-comment-dots"></i></button>' +
             (canDelete ? '<button onclick="deleteUser(' + u.id + ', \'' + (u.nome || '').replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:16px;padding:4px;margin-left:4px;" title="Excluir"><i class="fas fa-trash-alt"></i></button>' : '') +
           '</td>' +
         '</tr>';
@@ -2611,6 +2598,10 @@
       } finally {
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> Salvar Rastreio'; }
       }
+    }
+
+    if (document.getElementById('variantsContainer')) {
+      addVariant();
     }
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>

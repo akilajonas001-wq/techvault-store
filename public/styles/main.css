@@ -158,9 +158,9 @@ body {
 
 .login-link,
 .register-link {
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s;
@@ -695,6 +695,580 @@ img, video, iframe, svg {
     display: flex;
     order: 1;
     flex-shrink: 0;
+  }
+}
+
+/* ===========================================
+   NOVO HEADER (2 LINHAS)
+   Linha 1: Logo | Busca | Minha Conta | Pedidos |
+            Favoritos | Carrinho | Entrar
+   Linha 2: Categorias | Ofertas | Novidades |
+            Mais Vendidos | Ajuda
+   =========================================== */
+
+/* ---- Linha 1: barra superior ---- */
+.header-new .header-top {
+  gap: 20px;
+  padding: 14px 24px;
+  flex-wrap: nowrap;
+}
+
+.header-new .logo img {
+  height: 62px;
+  width: auto;
+}
+
+/* Busca maior, com ícone interno */
+.header-new .search-box {
+  flex: 1;
+  max-width: 820px;
+  height: 54px;
+  background: var(--bg-light);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.header-new .search-box:focus-within {
+  background: var(--white);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+}
+
+.header-new .search-box .search-box-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 17px;
+  pointer-events: none;
+}
+
+.header-new .search-box input {
+  width: 100%;
+  height: 100%;
+  padding: 0 112px 0 48px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.header-new .search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.header-new .search-box button {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  min-width: 108px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary-gradient);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.25s ease;
+}
+
+.header-new .search-box button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(26, 115, 232, 0.35);
+}
+
+/* ---- Ícones de ação (Minha Conta, Pedidos, Favoritos, Carrinho) ---- */
+.header-new .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.header-new .header-icon-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-light);
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.header-new .header-icon-link:hover {
+  background: var(--bg-cool);
+  color: var(--primary);
+}
+
+.header-new .header-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 115, 232, 0.08);
+  color: var(--primary);
+  font-size: 20px;
+  transition: all 0.25s ease;
+}
+
+.header-new .header-icon-link:hover .header-icon-circle {
+  background: var(--primary-gradient);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(26, 115, 232, 0.3);
+}
+
+.header-new .header-icon-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.header-new .header-badge {
+  position: absolute;
+  top: -2px;
+  right: 2px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.35);
+  transition: transform 0.2s ease;
+  z-index: 2;
+}
+
+.header-new .header-icon-link:hover .header-badge {
+  transform: translateY(-1px);
+}
+
+.header-new .header-actions #authButtons {
+  margin-left: 6px;
+}
+
+.header-new .header-actions #userMenu {
+  margin-left: 4px;
+}
+
+.header-new .header-actions .hamburger {
+  margin-left: 6px;
+}
+
+/* ---- Animação do carrinho ---- */
+@keyframes badgePop {
+  0% { transform: scale(0.3); }
+  60% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cartBounce {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-7px); }
+  50% { transform: translateY(2px); }
+  70% { transform: translateY(-4px); }
+}
+
+.header-new .cart-icon.bump .header-badge {
+  animation: badgePop 0.55s cubic-bezier(0.36, 1.44, 0.4, 1);
+}
+
+.header-new .cart-icon.bump .header-icon-circle {
+  animation: cartBounce 0.6s ease;
+}
+
+/* ---- Linha 2: barra de navegação ---- */
+.header-new .header-nav {
+  background: var(--primary-gradient);
+  box-shadow: 0 3px 10px rgba(26, 115, 232, 0.2);
+}
+
+.header-new .header-nav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.header-new .header-nav-spacer {
+  flex: 1;
+}
+
+.header-new .header-nav-link {
+  color: #fff;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.header-new .header-nav-link i {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.header-new .header-nav-link:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.header-new .header-nav-help {
+  opacity: 0.92;
+}
+
+/* ---- Dropdown Categorias ---- */
+.header-new .dropdown {
+  position: relative;
+}
+
+.header-new .dropdown-toggle {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.header-new .dropdown-toggle:hover,
+.header-new .dropdown.open .dropdown-toggle {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.header-new .dropdown-toggle .dropdown-arrow {
+  font-size: 11px;
+  transition: transform 0.25s ease;
+}
+
+.header-new .dropdown.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.header-new .dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 1200;
+  min-width: 270px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 8px;
+  display: none;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.header-new .dropdown.open .dropdown-menu {
+  display: block;
+  animation: dropdownIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header-new .dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 9px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.header-new .dropdown-menu a:hover {
+  background: var(--bg-cool);
+  color: var(--primary);
+}
+
+.header-new .dropdown-menu a i {
+  width: 20px;
+  text-align: center;
+  color: var(--primary);
+  font-size: 14px;
+}
+
+.header-new .dropdown-menu a.dropdown-all {
+  font-weight: 700;
+  border-top: 1px solid var(--border-light);
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.header-new .dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 6px 4px;
+}
+
+.header-new .dropdown-loading {
+  padding: 14px 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Mobile nav categorias */
+.mobile-nav-cats .mobile-nav-cat-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-top: 1px solid var(--border-light);
+  margin-top: 4px;
+}
+
+.mobile-nav-cats a {
+  padding-left: 34px !important;
+  font-size: 14px !important;
+}
+
+.mobile-nav-cats a i {
+  color: var(--primary) !important;
+}
+
+/* Ajuste quando o header antigo tinha itens dentro do menu */
+.header-new + .header-nav { /* fallback placeholder */ }
+
+/* ===========================================
+   NOVO TEMA NAVY (HEADER AZUL-MARINHO)
+   Fundo azul-marinho + acento laranja
+   =========================================== */
+.header-new {
+  --navy-1: #0a1930;
+  --navy-2: #122a50;
+  --navy-deep: #071227;
+  --accent: #ff7a1a;
+  --accent-light: #ffa94d;
+  --accent-gradient: linear-gradient(135deg, #ff8a00 0%, #ff5e3a 100%);
+  background: linear-gradient(135deg, var(--navy-1) 0%, var(--navy-2) 100%) !important;
+  border-bottom: none !important;
+  box-shadow: 0 4px 24px rgba(4, 12, 28, 0.4) !important;
+}
+
+/* Logo em chip branco para destacar no navy */
+.header-new .logo {
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.header-new .logo:hover {
+  transform: translateY(-1px);
+}
+
+.header-new .logo img {
+  display: block;
+}
+
+/* ---- Busca no tema navy ---- */
+.header-new .search-box {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.header-new .search-box:focus-within {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.22);
+}
+
+.header-new .search-box .search-box-icon {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.header-new .search-box input {
+  color: #fff;
+}
+
+.header-new .search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.header-new .search-box button {
+  background: var(--accent-gradient);
+}
+
+.header-new .search-box button:hover {
+  box-shadow: 0 6px 16px rgba(255, 122, 26, 0.5);
+}
+
+/* ---- Ícones de ação brancos sobre navy ---- */
+.header-new .header-icon-link {
+  color: #fff;
+}
+
+.header-new .header-icon-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.header-new .header-icon-circle {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.header-new .header-icon-link:hover .header-icon-circle {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 122, 26, 0.4);
+}
+
+.header-new .cart-icon i {
+  color: #fff;
+}
+
+.header-new .header-icon-label {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Badges (carrinho / favoritos) em laranja */
+.header-new .header-badge {
+  background: var(--accent);
+  box-shadow: 0 2px 8px rgba(255, 122, 26, 0.55);
+}
+
+/* ---- Botões Entrar / Criar conta ---- */
+.header-new .header-actions .login-link {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.header-new .header-actions .login-link:hover {
+  background: rgba(255, 255, 255, 0.26);
+  color: #fff;
+}
+
+.header-new .header-actions .register-link {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(255, 122, 26, 0.35);
+}
+
+.header-new .header-actions .register-link:hover {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(255, 122, 26, 0.5);
+}
+
+/* ---- Hamburger ---- */
+.header-new .hamburger span {
+  background: #fff;
+}
+
+.header-new .hamburger:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ---- Linha 2: nav mais escura pra dar profundidade ---- */
+.header-new .header-nav {
+  background: linear-gradient(90deg, var(--navy-deep) 0%, var(--navy-1) 100%);
+  box-shadow: 0 3px 12px rgba(4, 12, 28, 0.35);
+}
+
+/* ===========================================
+   RESPONSIVO - HEADER NOVO
+   =========================================== */
+@media (max-width: 1200px) {
+  .header-new .header-icon-label {
+    display: none;
+  }
+
+  .header-new .header-icon-link {
+    padding: 4px 10px;
+  }
+
+  .header-new .header-icon-circle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 992px) {
+  .header-new .header-top {
+    gap: 10px;
+    padding: 10px 16px;
+  }
+
+  .header-new .logo img {
+    height: 48px;
+  }
+
+  .header-new .search-box {
+    height: 46px;
+  }
+
+  .header-new .search-box button {
+    min-width: 44px;
+    padding: 0 12px;
+  }
+
+  .header-new .search-box button span {
+    display: none;
+  }
+
+  .header-new .search-box input {
+    padding-right: 60px;
   }
 }
 

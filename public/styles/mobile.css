@@ -351,7 +351,7 @@
   }
   
   .mobile-logout i {
-    color: #ef4444 !important;
+    color: #ff7a1a !important;
   }
   
   /* Hide auth links in mobile nav when logged in */
@@ -1282,5 +1282,124 @@
 
   .mobile-user-info .user-email {
     font-size: 11px;
+  }
+}
+/* ===========================================
+   NOVO HEADER - MOBILE
+   =========================================== */
+@media (max-width: 768px) {
+  /* Header compacto: logo + ações na 1a linha, busca embaixo */
+  .header-new .header-top {
+    flex-wrap: wrap !important;
+    padding: 6px 10px !important;
+    gap: 4px !important;
+  }
+
+  .header-new .header-actions {
+    order: 2;
+    gap: 0;
+    margin-left: auto;
+  }
+
+  .header-new .header-actions .hamburger {
+    order: 99;
+    margin-left: 2px;
+    padding: 6px;
+  }
+
+  .header-new .header-icon-link {
+    padding: 3px 6px;
+  }
+
+  .header-new .header-icon-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .header-new .header-badge {
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -2px;
+    right: 0;
+  }
+
+  .header-new .header-actions #authButtons,
+  .header-new .header-actions #userMenu {
+    display: none !important;
+  }
+
+  /* Busca ocupa toda a largura */
+  .header-new .search-box {
+    order: 999 !important;
+    flex-basis: 100% !important;
+    margin-top: 6px !important;
+    max-width: 100% !important;
+    height: 44px !important;
+  }
+
+  .header-new .search-box button {
+    min-width: 44px;
+    padding: 0 12px;
+  }
+
+  .header-new .search-box button span {
+    display: none;
+  }
+
+  .header-new .search-box input {
+    padding-right: 56px;
+    font-size: 14px;
+  }
+
+  /* Nav horizontal com quebra de linha (sem cortar o dropdown) */
+  .header-new .header-nav-inner {
+    flex-wrap: wrap;
+    padding: 4px 10px;
+    gap: 2px;
+  }
+
+  .header-new .header-nav-link {
+    padding: 9px 11px;
+    font-size: 12.5px;
+    flex-shrink: 0;
+  }
+
+  .header-new .header-nav-link i {
+    font-size: 13px;
+  }
+
+  .header-new .dropdown-toggle {
+    padding: 9px 11px;
+    font-size: 12.5px;
+    flex-shrink: 0;
+  }
+
+  .header-new .header-nav-spacer {
+    display: none;
+  }
+
+  .header-new .header-nav-help {
+    display: none;
+  }
+
+  /* Dropdown cabe na tela */
+  .header-new .dropdown-menu {
+    min-width: 250px;
+    max-width: calc(100vw - 16px);
+    max-height: 55vh;
+  }
+}
+
+@media (max-width: 380px) {
+  .header-new .header-icon-link {
+    padding: 3px 4px;
+  }
+
+  .header-new .header-icon-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
 }

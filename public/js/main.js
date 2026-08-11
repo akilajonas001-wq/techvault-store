@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadCart();
   await checkAuth();
   updateCartCount();
+  updateWishlistCount();
   initScrollReveal();
   initBackToTop();
   trackVisit();
@@ -31,12 +32,28 @@ function saveCart() {
 
 function updateCartCount() {
   const countElement = document.getElementById('cartCount');
+  const cartIcon = document.getElementById('cartIcon');
   if (countElement) {
     const totalCount = cart.reduce((sum, item) => sum + item.quantidade, 0);
     countElement.textContent = totalCount;
+    countElement.style.display = totalCount > 0 ? 'flex' : 'none';
     countElement.style.transform = 'scale(1.3)';
     setTimeout(() => { countElement.style.transform = 'scale(1)'; }, 200);
+    if (cartIcon) {
+      cartIcon.classList.add('bump');
+      setTimeout(() => cartIcon.classList.remove('bump'), 650);
+    }
   }
+}
+
+function updateWishlistCount() {
+  const el = document.getElementById('wishlistCount');
+  if (!el) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem('techvault-wishlist') || '[]'); } catch (e) { list = []; }
+  const count = Array.isArray(list) ? list.length : 0;
+  el.textContent = count;
+  el.style.display = count > 0 ? 'flex' : 'none';
 }
 
 async function checkAuth() {
@@ -78,6 +95,7 @@ function showAuthButtons() {
   const mobileUserInfo = document.getElementById('mobileUserInfo');
   const mobileAuthLinks = document.querySelectorAll('.mobile-auth-link');
   const mobileMyAccount = document.querySelector('.mobile-myaccount');
+  const mobileMyOrders = document.querySelector('.mobile-myorders');
   const mobileLogout = document.querySelector('.mobile-logout');
   const mobileAdminLink = document.querySelector('.mobile-admin-link');
 
@@ -93,6 +111,7 @@ function showAuthButtons() {
   if (mobileUserInfo) mobileUserInfo.classList.remove('active');
   mobileAuthLinks.forEach(el => el.style.display = 'flex');
   if (mobileMyAccount) mobileMyAccount.style.display = 'none';
+  if (mobileMyOrders) mobileMyOrders.style.display = 'none';
   if (mobileLogout) mobileLogout.style.display = 'none';
   if (mobileAdminLink) mobileAdminLink.style.display = 'none';
 }
@@ -103,6 +122,7 @@ function showUserMenu() {
   const mobileUserInfo = document.getElementById('mobileUserInfo');
   const mobileAuthLinks = document.querySelectorAll('.mobile-auth-link');
   const mobileMyAccount = document.querySelector('.mobile-myaccount');
+  const mobileMyOrders = document.querySelector('.mobile-myorders');
   const mobileLogout = document.querySelector('.mobile-logout');
   const mobileAdminLink = document.querySelector('.mobile-admin-link');
 
@@ -114,17 +134,15 @@ function showUserMenu() {
     const firstName = (currentUser?.nome || '').split(' ')[0];
     let adminLink = '';
     if (currentUser && currentUser.admin) {
-      adminLink = `<a href="/painel" style="order:7;font-size:13px;font-weight:600;color:#1a73e8;text-decoration:none;display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:8px;background:rgba(26,115,232,0.08);transition:all .2s;white-space:nowrap;"><i class="fas fa-shield-alt"></i> Painel</a>`;
+      adminLink = `<a href="/painel" style="order:7;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);transition:all .2s;white-space:nowrap;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
-      <a href="/conta" style="order:1;font-size:13px;font-weight:500;color:var(--text-light);text-decoration:none;transition:color 0.2s;padding:5px 8px;border-radius:6px;white-space:nowrap;">Minha Conta</a>
-      <span style="order:2;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;display:flex;align-items:center;gap:4px;padding:5px 8px;">${escapeHtml(firstName)}${currentUser?.username ? ' <span style="font-weight:400;color:var(--text-muted);font-size:11px;">(@' + escapeHtml(currentUser.username) + ')</span>' : ''}</span>
-      <div id="notifBell" style="order:5;position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:16px;color:var(--text-light);padding:5px;" onclick="toggleNotifs()" title="Notificações">
+      <div id="notifBell" style="order:5;position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:20px;color:#fff;padding:10px;" onclick="toggleNotifs()" title="Notificações">
         <i class="far fa-bell"></i>
-        <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ef4444;color:white;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
+        <span id="notifCount" style="display:none;position:absolute;top:0;right:0;background:#ff7a1a;color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.2);">0</span>
       </div>
       ${adminLink}
-      <a href="#" onclick="logout()" style="order:8;font-size:13px;color:var(--text-light);text-decoration:none;padding:5px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;white-space:nowrap;"><i class="fas fa-sign-out-alt"></i> Sair</a>
+      <a href="#" onclick="logout()" style="order:8;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .2s;"><i class="fas fa-sign-out-alt"></i> Sair</a>
     `;
     checkNotifications();
   }
@@ -137,6 +155,7 @@ function showUserMenu() {
   }
   mobileAuthLinks.forEach(el => el.style.display = 'none');
   if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
+  if (mobileMyOrders) mobileMyOrders.style.display = 'flex';
   if (mobileLogout) mobileLogout.style.display = 'flex';
   if (mobileAdminLink && currentUser && currentUser.admin) {
     mobileAdminLink.style.display = 'flex';

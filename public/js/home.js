@@ -17,9 +17,16 @@ const categoryIcons = {
   'Livros e Papelaria': 'fa-book',
   'Eletrônicos': 'fa-tv',
   'Beleza e Perfumaria': 'fa-pump-soap',
+  'Beleza e Bem-Estar': 'fa-pump-soap',
   'Móveis': 'fa-chair',
   'Games': 'fa-gamepad',
-  'Eletrodomésticos': 'fa-blender'
+  'Eletrodomésticos': 'fa-blender',
+  'Acessórios e Moda': 'fa-tshirt',
+  'Casa e Organização': 'fa-couch',
+  'Escritório e Papelaria': 'fa-pen',
+  'Ferramentas': 'fa-tools',
+  'Pets': 'fa-paw',
+  'Diversos': 'fa-store'
 };
 
 // Wishlist integration

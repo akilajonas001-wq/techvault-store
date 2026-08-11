@@ -317,6 +317,7 @@ async function loadProduct(productId) {
         const selected = idx === 0 ? ' selected' : '';
         const vPreco = v.preco || product.preco;
         variantHtml += '<div class="variant-item' + selected + '" data-variant="' + idx + '" onclick="selectVariant(' + idx + ')">' +
+          (v.imagem ? '<img class="variant-img" src="' + escapeHtml(v.imagem) + '" alt="' + escapeHtml(v.nome || product.nome) + '">' : '') +
           '<div class="variant-name">' + escapeHtml(v.nome || product.nome) + '</div>' +
           '<div class="variant-price">R$ ' + vPreco.toFixed(2).replace('.', ',') + '</div>' +
           (v.especificacoes ? '<div class="variant-specs">' + escapeHtml(Object.values(v.especificacoes).filter(Boolean).join(' | ')) + '</div>' : '') +
@@ -383,7 +384,7 @@ async function loadProduct(productId) {
           specsHtml +
           '<div class="description-section">' +
             '<h2>Descrição do Produto</h2>' +
-            '<p>' + escapeHtml(product.descricao || 'Descrição não disponível') + '</p>' +
+            '<p id="productDescription">' + escapeHtml(product.descricao || 'Descrição não disponível') + '</p>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -431,6 +432,15 @@ function selectVariant(idx) {
     const displayPrice = selectedVariant.preco || currentProduct.preco;
     priceEl.textContent = 'R$ ' + displayPrice.toFixed(2).replace('.', ',');
   }
+
+  // Update description with subcategory-specific text
+  const descEl = document.getElementById('productDescription');
+  if (descEl) {
+    descEl.textContent = selectedVariant.descricao || currentProduct.descricao || 'Descrição não disponível';
+  }
+
+  // Update gallery image with subcategory image (if any)
+  updateVariantImageOverlay(selectedVariant.imagem);
   
   // Highlight selected
   document.querySelectorAll('.variant-item').forEach(function(el) {
@@ -450,6 +460,26 @@ function selectVariant(idx) {
   }
 }
 
+function updateVariantImageOverlay(src) {
+  const carousel = document.getElementById('carouselTrack');
+  if (!carousel) return;
+  const container = carousel.closest('.carousel-container');
+  if (!container) return;
+  let overlay = document.getElementById('variantImageOverlay');
+  if (!src) {
+    if (overlay) overlay.remove();
+    return;
+  }
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'variantImageOverlay';
+    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:4;background:var(--bg-cool,#f1f5f9);display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<img style="max-width:100%;max-height:100%;object-fit:contain;" alt="Subcategoria">';
+    container.appendChild(overlay);
+  }
+  overlay.querySelector('img').src = src;
+}
+
 function getSelectedVariantData() {
   if (!currentProduct) return null;
   if (selectedVariant) {
@@ -457,9 +487,10 @@ function getSelectedVariantData() {
       id: selectedVariant.id || currentProduct.id,
       nome: selectedVariant.nome || currentProduct.nome,
       preco: selectedVariant.preco || currentProduct.preco,
-      imagem: currentProduct.imagem,
+      imagem: selectedVariant.imagem || currentProduct.imagem,
       quantidade: 1,
       categoria: currentProduct.categoria,
+      checkoutLink: selectedVariant.checkoutLink || currentProduct.checkoutLink || '',
       variantSpecs: selectedVariant.especificacoes || null
     };
   }
@@ -469,7 +500,8 @@ function getSelectedVariantData() {
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,
     quantidade: 1,
-    categoria: currentProduct.categoria
+    categoria: currentProduct.categoria,
+    checkoutLink: currentProduct.checkoutLink || ''
   };
 }
 
@@ -554,6 +586,11 @@ function addToCartFromProduct() {
 }
 
 function buyNow() {
+  const cartItem = getSelectedVariantData();
+  if (cartItem && cartItem.checkoutLink) {
+    window.location.href = cartItem.checkoutLink;
+    return;
+  }
   addToCartFromProduct();
   window.location.href = '/checkout';
 }

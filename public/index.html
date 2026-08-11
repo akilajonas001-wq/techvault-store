@@ -1207,117 +1207,7 @@
 </head>
 <body>
   <!-- Header -->
-  <header class="header">
-    <div class="header-top">
-      <a href="/" class="logo">
-        <img src="/images/logo.png" alt="TechVault" style="height: 70px; width: auto;">
-      </a>
-      
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais...">
-        <button onclick="searchProducts()">
-          <i class="fas fa-search"></i>
-        </button>
-      </div>
-      
-      <div class="header-menu">
-        <a href="#ofertas" class="menu-link">Ofertas</a>
-        <div class="wishlist-icon" onclick="window.location.href='/favoritos'" title="Favoritos">
-          <i class="far fa-heart"></i>
-          <span class="wishlist-count" id="wishlistCount">0</span>
-        </div>
-        <div class="cart-icon" onclick="viewCart()">
-          <i class="fas fa-shopping-cart"></i>
-          <span class="cart-count" id="cartCount">0</span>
-        </div>
-        <div id="authButtons" class="auth-buttons-desktop">
-          <a href="/login" class="login-link">Login</a>
-          <a href="/registro" class="register-link">Criar conta</a>
-        </div>
-        <div id="userMenu">
-          <span id="userName"></span>
-          <a href="#" onclick="logout()">Sair</a>
-        </div>
-        <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </div>
-    </div>
-    
-    <nav class="mobile-nav" id="mobileNav">
-      <div class="mobile-nav-header">
-        <a href="/" class="mobile-logo">
-          <i class="fas fa-cube"></i> TechVault
-        </a>
-        <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar menu">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      
-      <!-- User info section (shown when logged in) -->
-      <div class="mobile-user-info" id="mobileUserInfo">
-        <div class="user-name"><i class="fas fa-user-circle"></i> <span id="mobileUserName">Olá, Usuário</span></div>
-        <div class="user-email" id="mobileUserEmail"></div>
-      </div>
-      
-      <!-- Search bar -->
-      <div class="mobile-search">
-        <input type="text" id="mobileSearchInput" placeholder="Buscar produtos...">
-        <button onclick="mobileSearch()"><i class="fas fa-search"></i></button>
-      </div>
-      
-      <!-- Navigation links -->
-      <div class="mobile-nav-links">
-        <a href="#" onclick="showOffers(); toggleMobileMenu()">
-          <i class="fas fa-tag"></i> Ofertas
-        </a>
-        
-        <!-- Auth links (shown when NOT logged in) -->
-        <a href="/login" onclick="toggleMobileMenu()" class="mobile-auth-link">
-          <i class="fas fa-sign-in-alt"></i> Login
-        </a>
-        <a href="/registro" onclick="toggleMobileMenu()" class="mobile-auth-link">
-          <i class="fas fa-user-plus"></i> Criar Conta
-        </a>
-        
-        <!-- Account link (shown when logged in) -->
-        <a href="/conta" onclick="toggleMobileMenu()" style="display:none" class="mobile-myaccount">
-          <i class="fas fa-user"></i> Minha Conta
-        </a>
-        
-        <span class="mobile-nav-divider"></span>
-        
-        <a href="/central-ajuda" onclick="toggleMobileMenu()">
-          <i class="fas fa-question-circle"></i> Ajuda
-        </a>
-        <a href="/como-comprar" onclick="toggleMobileMenu()">
-          <i class="fas fa-shopping-bag"></i> Como Comprar
-        </a>
-        <a href="/frete-entrega" onclick="toggleMobileMenu()">
-          <i class="fas fa-shipping-fast"></i> Frete e Entrega
-        </a>
-        
-        <span class="mobile-nav-divider"></span>
-        
-        <a href="/favoritos" onclick="toggleMobileMenu()">
-          <i class="far fa-heart"></i> Favoritos
-        </a>
-        
-        <!-- Admin link (shown for admins) -->
-        <a href="/painel" onclick="toggleMobileMenu()" style="display:none" class="mobile-admin-link">
-          <i class="fas fa-shield-alt"></i> Painel Admin
-        </a>
-        
-        <!-- Logout link (shown when logged in) -->
-        <a href="#" onclick="logout(); toggleMobileMenu()" class="mobile-logout" style="display:none">
-          <i class="fas fa-sign-out-alt"></i> Sair
-        </a>
-      </div>
-    </nav>
-    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
-  </header>
+  <!--HEADER-->
 
   <!-- Banner Principal -->
   <section class="hero-banner">
@@ -1561,6 +1451,7 @@
       if (e.key === 'Enter') mobileSearch();
     });
   </script>
+  <script src="/js/header.js?v=1"></script>
   <script src="/js/main.js?v=4"></script>
   <script src="/js/home.js?v=3"></script>
   <script>

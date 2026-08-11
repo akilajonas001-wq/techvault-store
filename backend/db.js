@@ -916,7 +916,7 @@ async function offerProducts(limit = 10) {
 }
 
 async function adminProducts(search, pausedFilter) {
-  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, stock, checkoutLink, supplierLink FROM products WHERE 1=1`;
+  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, paused, precoAlterado, imagem, estoque, stock, checkoutLink, supplierLink, specs, variants FROM products WHERE 1=1`;
   const params = [];
   let idx = 1;
   if (search) {
@@ -932,6 +932,8 @@ async function adminProducts(search, pausedFilter) {
     precoAlterado: p.precoAlterado === 1 || p.precoAlterado === true,
     checkoutLink: p.checkoutlink || p.checkoutLink || '',
     supplierLink: p.supplierlink || p.supplierLink || '',
+    specs: JSON.parse(p.specs || '{}'),
+    variants: JSON.parse(p.variants || '[]'),
     modified: (p.paused === 1 || p.paused === true) || (p.precoAlterado === 1 || p.precoAlterado === true)
   }));
 }

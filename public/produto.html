@@ -1089,6 +1089,15 @@
       background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(66, 133, 244, 0.05));
       box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
     }
+    .variant-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      background: #fff;
+      flex-shrink: 0;
+    }
     .variant-name {
       flex: 1;
       font-size: 14px;
@@ -1386,59 +1395,7 @@
 </head>
 <body>
   <!-- Header -->
-  <header class="header">
-    <div class="header-top">
-      <a href="/" class="logo">
-        <img src="/images/logo.png" alt="TechVault">
-      </a>
-      
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Buscar produtos, marcas e muito mais...">
-        <button onclick="searchProducts()">
-          <i class="fas fa-search"></i>
-        </button>
-      </div>
-      
-      <div class="header-menu">
-        <div class="cart-icon" onclick="viewCart()">
-          <i class="fas fa-shopping-cart"></i>
-          <span class="cart-count" id="cartCount">0</span>
-        </div>
-        <div id="authButtons" class="auth-buttons-desktop">
-          <a href="/login" class="login-link">Login</a>
-          <a href="/registro" class="register-link">Criar conta</a>
-        </div>
-        <div id="userMenu">
-          <span class="user-name" id="userName"></span>
-          <a href="#" onclick="logout()">Sair</a>
-        </div>
-        <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      </div>
-    </div>
-    <nav class="mobile-nav" id="mobileNav">
-      <button class="mobile-close" onclick="toggleMobileMenu()" aria-label="Fechar menu">
-        <i class="fas fa-times"></i>
-      </button>
-      <a href="/" class="mobile-logo">
-        <i class="fas fa-cube"></i> TechVault
-      </a>
-      <div class="mobile-search">
-        <input type="text" id="mobileSearchInput" placeholder="Buscar produtos...">
-        <button onclick="mobileSearch()"><i class="fas fa-search"></i></button>
-      </div>
-      <a href="/" onclick="toggleMobileMenu()"><i class="fas fa-home"></i> Início</a>
-      <a href="/login" onclick="toggleMobileMenu()"><i class="fas fa-sign-in-alt"></i> Login</a>
-      <a href="/registro" class="mobile-register" onclick="toggleMobileMenu()"><i class="fas fa-user-plus"></i> Criar Conta</a>
-      <a href="/conta" onclick="toggleMobileMenu()" style="display:none;" class="mobile-myaccount"><i class="fas fa-user"></i> Minha Conta</a>
-      <hr>
-      <a href="/central-ajuda" onclick="toggleMobileMenu()"><i class="fas fa-question-circle"></i> Ajuda</a>
-    </nav>
-    <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
-  </header>
+  <!--HEADER-->
 
   <!-- Main Content -->
   <main class="main-content">
@@ -1559,6 +1516,7 @@
       if (e.key === 'Enter') mobileSearch();
     });
   </script>
+  <script src="/js/header.js?v=1"></script>
   <script src="/js/main.js?v=4"></script>
   <script src="/js/produto.js?v=3"></script>
 </body>

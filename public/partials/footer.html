@@ -1,0 +1,265 @@
+<style>
+    .footer {
+      background: linear-gradient(135deg, #0a1930 0%, #122a50 100%) !important;
+      border-top: none !important;
+      width: 100% !important;
+      max-width: none !important;
+      margin: 80px 0 0 !important;
+      padding: 64px 0 28px !important;
+    }
+
+    .footer-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 48px;
+    }
+
+    .footer-section h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      color: #fff;
+      position: relative;
+      padding-bottom: 12px;
+    }
+
+    .footer-section h3::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(135deg, #ff8a00 0%, #ff5e3a 100%);
+      border-radius: 2px;
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 12px;
+    }
+
+    .footer-section a {
+      color: rgba(255, 255, 255, 0.72);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .footer-section a:hover {
+      color: #ff8a00;
+      transform: translateX(6px);
+    }
+
+    .footer-section .footer-link-muted {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .social-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .social-links a {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+
+    .social-links a:hover {
+      background: linear-gradient(135deg, #ff8a00 0%, #ff5e3a 100%);
+      color: #fff;
+      transform: translateY(-4px);
+    }
+
+    .payment-methods {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .payment-badge {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-security {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      padding: 32px 24px;
+      margin: 0 auto;
+      max-width: 1400px;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .security-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .security-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: white;
+    }
+
+    .norton-icon {
+      background: linear-gradient(135deg, #FFB300, #FF8F00);
+      box-shadow: 0 4px 12px rgba(255, 179, 0, 0.3);
+    }
+
+    .google-icon {
+      background: linear-gradient(135deg, #4285F4, #34A853);
+      box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+    }
+
+    .security-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .security-text strong {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+
+    .security-text span {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .footer-bottom {
+      max-width: 1400px;
+      margin: 48px auto 0;
+      padding: 28px 24px;
+      text-align: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .footer {
+        text-align: center;
+      }
+      .footer-content {
+        justify-items: center;
+      }
+      .footer-security {
+        gap: 16px;
+        padding: 20px 16px;
+        margin-top: 24px;
+      }
+      .security-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        border-radius: 8px;
+      }
+      .security-text strong { font-size: 12px; }
+      .security-text span { font-size: 10px; }
+      .footer-bottom { font-size: 12px; padding: 16px; }
+    }
+  </style>
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Sobre o TechVault</h3>
+        <ul>
+          <li><a href="/quem-somos.html">Quem somos</a></li>
+          <li><a href="/privacidade.html">Políticas de privacidade</a></li>
+          <li><a href="/termos.html">Termos de uso</a></li>
+          <li><a href="/trabalhe-conosco" class="footer-link-muted">Trabalhe conosco</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Ajuda e Suporte</h3>
+        <ul>
+          <li><a href="/central-ajuda.html">Central de ajuda</a></li>
+          <li><a href="/como-comprar.html">Como comprar</a></li>
+          <li><a href="/frete-entrega.html">Frete e entrega</a></li>
+          <li><a href="/devolucoes.html">Devoluções</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Formas de Pagamento</h3>
+        <ul>
+          <li><a href="#"><i class="fab fa-pix" style="margin-right: 8px;"></i>PIX</a></li>
+          <li><a href="#"><i class="far fa-credit-card" style="margin-right: 8px;"></i>Cartão de Crédito</a></li>
+        </ul>
+        <div class="payment-methods">
+          <span class="payment-badge"><i class="fab fa-pix"></i> PIX</span>
+          <span class="payment-badge"><i class="far fa-credit-card"></i> Visa</span>
+          <span class="payment-badge"><i class="far fa-credit-card"></i> Mastercard</span>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Redes Sociais</h3>
+        <div class="social-links">
+          <a href="https://www.instagram.com/tec_hvault/" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
+          <a href="https://www.facebook.com/profile.php?id=61591779263693" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+          <a href="#"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-security">
+      <div class="security-badge">
+        <div class="security-icon norton-icon">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="security-text">
+          <strong>Norton Secured</strong>
+          <span>Protegido por Symantec</span>
+        </div>
+      </div>
+      <div class="security-badge">
+        <div class="security-icon google-icon">
+          <i class="fab fa-google"></i>
+        </div>
+        <div class="security-text">
+          <strong>Google Site Seguro</strong>
+          <span>Verificado pelo Google</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 TechVault Marketplace. Todos os direitos reservados.</p>
+      <p style="margin-top: 8px; font-size: 12px;">CPF: 709.589.644-59 - Akila Jonas - Dois Irmãos, Recife - PE</p>
+    </div>
+  </footer>
