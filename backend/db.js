@@ -570,17 +570,6 @@ async function createProduct(data) {
   return productById(data.id);
 }
 
-async function decrementStock(productId, quantity) {
-  const p = await productById(productId);
-  if (!p || p.stock === -1) return;
-  const newStock = Math.max(0, p.stock - (quantity || 1));
-  if (newStock <= 0) {
-    await query(`UPDATE products SET stock = 0, paused = 1 WHERE id = $1`, [productId]);
-  } else {
-    await query(`UPDATE products SET stock = $1 WHERE id = $2`, [newStock, productId]);
-  }
-}
-
 async function deleteProduct(id) {
   await query(`DELETE FROM products WHERE id = $1`, [id]);
 }
@@ -1038,6 +1027,6 @@ module.exports = {
   getCategories, searchProducts, productsByCategory, featuredProducts, offerProducts,
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
-  saveImage, getImage, deleteImage, deleteProductImages, decrementStock,
+  saveImage, getImage, deleteImage, deleteProductImages,
   trackVisit, countVisits, countVisitsRange, countVisitsAll
 };

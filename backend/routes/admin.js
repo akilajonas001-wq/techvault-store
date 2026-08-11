@@ -139,6 +139,8 @@ router.post('/products', async (req, res) => {
       preco: parseFloat(p.preco), precoOriginal: p.precoOriginal ? parseFloat(p.precoOriginal) : null,
       categoria: p.categoria || 'outros', imagem: p.imagem || '',
       imagens: p.imagens || [], estoque: p.estoque || 'N/A',
+      stock: p.paused ? 0 : -1,
+      paused: p.paused === true,
       destaque: p.destaque === true, avaliacao: parseFloat(p.avaliacao) || 0,
       reviews: parseInt(p.reviews) || 0,
       specs: p.specs || {}, variants: p.variants || [],
@@ -188,7 +190,7 @@ router.post('/products/:id/toggle-pause', async (req, res) => {
     const id = parseInt(req.params.id);
     const p = await db.productById(id);
     if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
-    await db.updateProduct(id, { paused: !p.paused });
+    await db.updateProduct(id, { paused: !p.paused, stock: p.paused ? -1 : 0 });
     const updated = await db.productById(id);
     res.json({ success: true, id, nome: updated.nome, paused: updated.paused });
   } catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao pausar/ativar produto' }); }

@@ -520,8 +520,8 @@
             <input type="text" id="productSearch" placeholder="Buscar produto..." oninput="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;width:200px;">
             <select id="productFilter" onchange="filterProducts()" style="padding:8px 14px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;background:var(--white);">
               <option value="all">Todos</option>
-              <option value="active">Ativos</option>
-              <option value="paused">Pausados</option>
+              <option value="active">Disponíveis</option>
+              <option value="paused">Indisponíveis</option>
             </select>
             <button id="newProductBtn" class="order-detail-btn" onclick="openCreateProductModal()" style="border-color:var(--success);color:var(--success);font-weight:600;"><i class="fas fa-plus-circle"></i> Novo Produto</button>
           </div>
@@ -1540,12 +1540,12 @@
         filtered.map(p => {
           const isModified = p.modified || p.paused;
           const statusBadge = p.paused
-            ? '<span class="badge badge-red"><i class="fas fa-pause-circle"></i> Pausado</span>'
+            ? '<span class="badge badge-red"><i class="fas fa-pause-circle"></i> Indisponível</span>'
             : p.precoAlterado
               ? '<span class="badge badge-orange"><i class="fas fa-dollar-sign"></i> Preço Alterado</span>'
-              : '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Ativo</span>';
+              : '<span class="badge badge-green"><i class="fas fa-check-circle"></i> Disponível</span>';
           const rowBg = isModified ? ' style="background:rgba(239,68,68,0.05);"' : '';
-          const btnText = p.paused ? 'Reativar' : 'Pausar';
+          const btnText = p.paused ? 'Disponibilizar' : 'Indisponibilizar';
           const btnColor = p.paused ? 'var(--success)' : 'var(--error)';
           const priceDisplay = p.precoAlterado
             ? '<span style="color:var(--error);font-weight:700;">R$ ' + (p.preco || 0).toFixed(2).replace('.', ',') + '</span>' +
@@ -1648,7 +1648,7 @@
       document.getElementById('cpPreco').value = p.preco || '';
       document.getElementById('cpPrecoOriginal').value = p.precoOriginal || '';
       document.getElementById('cpCategoria').value = p.categoria || '';
-      document.getElementById('cpEstoque').value = p.stock != null ? (p.stock > 0 ? '1' : '0') : '1';
+      document.getElementById('cpEstoque').value = p.paused ? '0' : '1';
       document.getElementById('cpImagem').value = p.imagem || '';
       document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
       document.getElementById('cpDestaque').checked = p.destaque;
@@ -1828,7 +1828,7 @@
       const descricao = document.getElementById('cpDescricao').value.trim();
       const precoOriginal = document.getElementById('cpPrecoOriginal').value ? parseFloat(document.getElementById('cpPrecoOriginal').value) : null;
       const categoria = document.getElementById('cpCategoria').value.trim() || 'outros';
-      const stock = document.getElementById('cpEstoque').value !== '' ? parseInt(document.getElementById('cpEstoque').value) : 1;
+      const disponivel = document.getElementById('cpEstoque').value === '1';
       const imagem = document.getElementById('cpImagem').value.trim() || '';
       const imagens = document.getElementById('cpImagens').value.trim().split('\n').filter(Boolean);
       const destaque = document.getElementById('cpDestaque').checked;
@@ -1863,7 +1863,8 @@
         categoria: categoria,
         imagem: imagem,
         imagens: imagens,
-        stock: stock,
+        stock: disponivel ? -1 : 0,
+        paused: !disponivel,
         destaque: destaque,
         avaliacao: 0,
         reviews: 0,

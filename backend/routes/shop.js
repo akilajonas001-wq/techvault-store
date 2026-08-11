@@ -226,14 +226,11 @@ router.post('/orders', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Só realizamos entregas dentro do Brasil.' });
     }
 
-    // Verificar estoque e recalcular preço server-side
+    // Recalcular preço server-side (estoque é infinito enquanto disponível)
     let serverTotal = 0;
     for (const item of (itens || [])) {
       const product = await db.productById(item.id || item.productId);
       if (!product) return res.status(400).json({ error: 'Produto não encontrado: ' + (item.nome || item.id) });
-      if (product.stock >= 0 && product.stock < (item.quantidade || 1)) {
-        return res.status(400).json({ error: 'Estoque insuficiente para "' + (product.nome || 'Produto') + '". Disponível: ' + product.stock });
-      }
       serverTotal += (product.preco || 0) * (item.quantidade || 1);
     }
     serverTotal = Math.round(serverTotal * 100) / 100;
@@ -272,11 +269,6 @@ router.post('/orders', requireAuth, async (req, res) => {
       cidade: endereco?.cidade || '',
       estado: endereco?.estado || ''
     }).catch(e => console.error('Erro perfil:', e.message));
-
-    (itens || []).forEach(item => {
-      db.decrementStock(item.id || item.productId, item.quantidade || 1)
-        .catch(e => console.error('Erro ao decrementar estoque:', e.message));
-    });
 
     transporter.sendMail({
       from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
