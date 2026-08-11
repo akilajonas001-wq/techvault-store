@@ -2,6 +2,14 @@ let profileData = null;
 let appliedCoupon = null;
 let savedAddresses = [];
 
+let pendingOrderData = null;
+let currentOrderId = null;
+let currentPaymentRef = null;
+let paymentMethod = 'pix';
+let mpInstance = null;
+let pixPollTimer = null;
+let lastCardBrand = null;
+
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAuth();
   loadCartItems('orderCartItems', 'orderTotal');
@@ -136,99 +144,426 @@ function fillFormFields(addr) {
   }
 }
 
-async function handleQuickCheckout() {
+async function goToPaymentStep(mode) {
   const token = localStorage.getItem('techvault-token');
   if (!token || !currentUser) {
     showNotification('Você precisa estar logado', 'error');
-    return;
-  }
-
-  const addr = getSelectedAddress();
-  if (!addr) {
-    showNotification('Selecione um endereço de entrega', 'error');
+    setTimeout(() => { window.location.href = '/login'; }, 1200);
     return;
   }
 
   const brStates = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-  const cepClean = (addr.cep || '').replace(/\D/g, '');
-  if (cepClean.length !== 8 || !brStates.includes(addr.estado)) {
-    showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
-    return;
+
+  let endereco, cliente;
+  if (mode === 'quick') {
+    const addr = getSelectedAddress();
+    if (!addr) {
+      showNotification('Selecione um endereço de entrega', 'error');
+      return;
+    }
+    const cepClean = (addr.cep || '').replace(/\D/g, '');
+    if (cepClean.length !== 8 || !brStates.includes(addr.estado)) {
+      showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
+      return;
+    }
+    endereco = {
+      cep: addr.cep || '', logradouro: addr.logradouro || '', numero: addr.numero || '',
+      complemento: addr.complemento || '', bairro: addr.bairro || '',
+      cidade: addr.cidade || '', estado: addr.estado || ''
+    };
+    cliente = { nome: addr.nome || '', telefone: addr.telefone || '', cpf: addr.cpf || '' };
+  } else {
+    endereco = {
+      cep: document.getElementById('cep').value,
+      logradouro: document.getElementById('logradouro').value,
+      numero: document.getElementById('numero').value,
+      complemento: document.getElementById('complemento').value,
+      bairro: document.getElementById('bairro').value,
+      cidade: document.getElementById('cidade').value,
+      estado: document.getElementById('estado').value
+    };
+    const cepClean = (endereco.cep || '').replace(/\D/g, '');
+    if (cepClean.length !== 8 || !brStates.includes(endereco.estado)) {
+      showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
+      return;
+    }
+    cliente = {
+      nome: document.getElementById('nomeCompleto').value,
+      telefone: document.getElementById('telefone').value,
+      cpf: document.getElementById('cpfCheckout').value
+    };
   }
 
-  const cartData = loadCartItems('orderCartItems', 'orderTotal');
+  const cartData = loadCartItems('paymentCartItems', null);
   if (!cartData || cartData.cart.length === 0) {
     showNotification('Seu carrinho está vazio', 'error');
     return;
   }
-
   const { cart, total } = cartData;
   let finalTotal = total;
   if (appliedCoupon) {
     finalTotal = total - appliedCoupon.discountValue;
   }
 
-  const selectedId = document.querySelector('input[name="selectedAddress"]:checked');
-  const isProfileAddr = selectedId && !parseInt(selectedId.value);
-
-  const orderData = {
-    userId: currentUser.id,
-    endereco: {
-      cep: addr.cep || '',
-      logradouro: addr.logradouro || '',
-      numero: addr.numero || '',
-      complemento: addr.complemento || '',
-      bairro: addr.bairro || '',
-      cidade: addr.cidade || '',
-      estado: addr.estado || ''
-    },
+  pendingOrderData = {
+    endereco,
     itens: cart.map(item => ({
-      id: item.id,
-      nome: item.nome,
-      categoria: item.categoria,
-      preco: item.preco,
-      quantidade: item.quantidade,
+      id: item.id, nome: item.nome, categoria: item.categoria,
+      preco: item.preco, quantidade: item.quantidade,
       variantSpecs: item.variantSpecs || null
     })),
     total: finalTotal,
     totalOriginal: total,
     cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
-    cliente: {
-      nome: addr.nome || '',
-      telefone: addr.telefone || '',
-      cpf: addr.cpf || ''
-    }
+    cliente
   };
 
-  const loadingOverlay = document.getElementById('loadingOverlay');
-  const errorMessage = document.getElementById('errorMessage');
+  document.getElementById('savedDataSection').style.display = 'none';
+  document.getElementById('fullFormSection').style.display = 'none';
+  document.getElementById('pixPanel').style.display = 'none';
+  document.getElementById('cardPanel').style.display = 'none';
+  document.getElementById('paymentError').style.display = 'none';
+  document.getElementById('paymentSection').style.display = 'block';
+  document.getElementById('paymentTotal').textContent = formatMoney(finalTotal);
+  updateCardAmounts(finalTotal);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
+function selectPaymentMethod(method) {
+  paymentMethod = method;
+  document.getElementById('pmPixOption').classList.toggle('selected', method === 'pix');
+  document.getElementById('pmCardOption').classList.toggle('selected', method === 'card');
+  const radio = document.querySelector('input[name="paymentMethod"][value="' + method + '"]');
+  if (radio) radio.checked = true;
+  if (method === 'card' && pendingOrderData) updateCardAmounts(pendingOrderData.total);
+}
+
+async function finalizePayment() {
+  if (!pendingOrderData) {
+    showNotification('Preencha os dados de entrega primeiro', 'error');
+    return;
+  }
+  if (currentOrderId) {
+    document.getElementById('paymentError').style.display = 'none';
+    if (paymentMethod === 'pix') return createPixPayment(currentOrderId);
+    return showCardPanel(currentOrderId);
+  }
+
+  const token = localStorage.getItem('techvault-token');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  loadingOverlay.style.display = 'flex';
   try {
-    loadingOverlay.style.display = 'flex';
     const response = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(orderData)
+      body: JSON.stringify(pendingOrderData)
     });
     const data = await response.json();
-    console.log('Order response:', response.status, data);
-    if (response.ok && data.success && data.checkout_url) {
+    if (response.ok && data.success) {
+      currentOrderId = data.orderId;
+      currentPaymentRef = data.paymentRef;
       localStorage.removeItem('techvault-cart');
       fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
-      window.location.href = data.checkout_url;
+      loadingOverlay.style.display = 'none';
+      if (paymentMethod === 'pix') return createPixPayment(currentOrderId);
+      return showCardPanel(currentOrderId);
     } else {
       loadingOverlay.style.display = 'none';
-      let msg = data.error || 'Erro ao processar pedido';
-      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento: ' + (data.payment_error || 'tente novamente.');
-      errorMessage.textContent = msg;
-      errorMessage.style.display = 'block';
+      showPaymentError(data.error || 'Erro ao criar pedido. Tente novamente.');
     }
   } catch (error) {
     console.error('Erro:', error);
-    document.getElementById('loadingOverlay').style.display = 'none';
-    errorMessage.textContent = 'Erro de conexão. Tente novamente.';
-    errorMessage.style.display = 'block';
+    loadingOverlay.style.display = 'none';
+    showPaymentError('Erro de conexão. Tente novamente.');
   }
+}
+
+function showPaymentError(msg) {
+  const el = document.getElementById('paymentError');
+  el.textContent = msg;
+  el.style.display = 'flex';
+}
+
+async function createPixPayment(orderId) {
+  const token = localStorage.getItem('techvault-token');
+  document.getElementById('paymentSection').style.display = 'none';
+  document.getElementById('cardPanel').style.display = 'none';
+  document.getElementById('pixPanel').style.display = 'block';
+  resetPixPanel();
+  try {
+    const response = await fetch('/api/payments/pix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ orderId })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      showPixError(data.error || 'Erro ao gerar PIX. Tente novamente.');
+      return;
+    }
+    if (data.alreadyPaid) { redirectSuccess(); return; }
+    document.getElementById('pixQr').innerHTML = data.qr_code_base64
+      ? '<img src="data:image/png;base64,' + data.qr_code_base64 + '" alt="QR Code PIX">'
+      : (data.ticket_url ? '<a href="' + data.ticket_url + '" target="_blank">Abrir QR Code</a>' : '');
+    document.getElementById('pixCopyPaste').value = data.qr_code || '';
+    if (data.expires_at) {
+      const expires = new Date(data.expires_at);
+      document.getElementById('pixExpiry').textContent = 'O código expira às ' + expires.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    startPixPolling(orderId);
+  } catch (error) {
+    console.error('Erro PIX:', error);
+    showPixError('Erro de conexão ao gerar o PIX.');
+  }
+}
+
+function resetPixPanel() {
+  clearInterval(pixPollTimer);
+  document.getElementById('pixQr').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('pixCopyPaste').value = '';
+  document.getElementById('pixExpiry').textContent = '';
+  document.getElementById('pixWaiting').innerHTML =
+    '<div class="spinner"></div>' +
+    '<p>Aguardando pagamento...</p>' +
+    '<small>O pedido será confirmado automaticamente ao receber o pagamento</small>';
+}
+
+function showPixError(msg) {
+  document.getElementById('pixWaiting').innerHTML =
+    '<p style="color:var(--error);font-weight:600;"><i class="fas fa-exclamation-circle"></i> ' + escapeHtml(msg) + '</p>' +
+    '<button class="btn btn-primary" style="margin-top:8px;padding:12px 20px;font-size:14px;" onclick="retryPix()"><i class="fas fa-redo"></i> Tentar novamente</button>';
+}
+
+function retryPix() {
+  if (currentOrderId) createPixPayment(currentOrderId);
+}
+
+function startPixPolling(orderId) {
+  clearInterval(pixPollTimer);
+  pixPollTimer = setInterval(async () => {
+    try {
+      const token = localStorage.getItem('techvault-token');
+      const response = await fetch('/api/payments/' + orderId + '/status', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await response.json();
+      if (data.status === 'aprovado') {
+        clearInterval(pixPollTimer);
+        redirectSuccess();
+      } else if (data.status === 'reprovado' || data.status === 'cancelado' || data.status === 'reembolsado' || data.status === 'estornado') {
+        clearInterval(pixPollTimer);
+        showPixError('Pagamento não concluído. ' + (data.statusDetail || ''));
+      }
+    } catch (e) {}
+  }, 4000);
+}
+
+function copyPixCode() {
+  const code = document.getElementById('pixCopyPaste').value;
+  if (!code) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      showNotification('Código PIX copiado!', 'success');
+    }).catch(() => fallbackCopy(code));
+  } else {
+    fallbackCopy(code);
+  }
+}
+
+function fallbackCopy(text) {
+  const el = document.createElement('textarea');
+  el.value = text;
+  el.style.position = 'fixed';
+  el.style.opacity = '0';
+  document.body.appendChild(el);
+  el.select();
+  try { document.execCommand('copy'); showNotification('Código PIX copiado!', 'success'); }
+  catch (e) { showNotification('Copie o código manualmente', 'error'); }
+  document.body.removeChild(el);
+}
+
+function redirectSuccess() {
+  clearInterval(pixPollTimer);
+  window.location.href = '/pedido-sucesso?id=' + currentOrderId + '&ref=' + (currentPaymentRef || '');
+}
+
+async function showCardPanel(orderId) {
+  document.getElementById('paymentSection').style.display = 'none';
+  document.getElementById('pixPanel').style.display = 'none';
+  document.getElementById('cardPanel').style.display = 'block';
+  document.getElementById('cardError').style.display = 'none';
+  if (pendingOrderData) updateCardAmounts(pendingOrderData.total);
+  if (!mpInstance) {
+    try {
+      const cfg = await (await fetch('/api/config')).json();
+      if (cfg.mercadoPagoPublicKey && typeof MercadoPago !== 'undefined') {
+        mpInstance = new MercadoPago(cfg.mercadoPagoPublicKey);
+      }
+    } catch (e) {}
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function detectCardBrand() {
+  const bin = document.getElementById('cardNumber').value.replace(/\D/g, '').slice(0, 6);
+  if (bin.length < 6 || !mpInstance) return;
+  mpInstance.getPaymentMethods({ bin }).then(res => {
+    if (res && res[0] && res[0].id) {
+      lastCardBrand = res[0].id;
+      document.getElementById('cardBrandLabel').style.display = 'flex';
+      document.getElementById('cardBrandText').textContent = lastCardBrand;
+      loadInstallments(bin);
+    }
+  }).catch(() => {});
+}
+
+async function loadInstallments(bin) {
+  const amount = pendingOrderData ? pendingOrderData.total : 0;
+  if (!mpInstance || !bin || bin.length < 6 || amount <= 0) return;
+  try {
+    const res = await mpInstance.getInstallments({ amount, bin, paymentTypeId: 'credit_card' });
+    if (res && res[0] && res[0].payer_costs && res[0].payer_costs.length) {
+      const sel = document.getElementById('cardInstallments');
+      sel.innerHTML = res[0].payer_costs.map(c =>
+        '<option value="' + c.installments + '">' + escapeHtml(c.recommended_message) + '</option>'
+      ).join('');
+      updateCardAmounts(amount);
+    }
+  } catch (e) {}
+}
+
+function updateCardAmounts(total) {
+  const btn = document.getElementById('cardPayButton');
+  if (btn) btn.innerHTML = '<i class="fas fa-lock"></i> Pagar ' + formatMoney(total);
+}
+
+function mascaraCartao(input) {
+  let v = input.value.replace(/\D/g, '');
+  v = v.replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19);
+  input.value = v;
+}
+
+function mascaraValidade(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2, 4);
+  input.value = v;
+}
+
+function formatMoney(v) {
+  return 'R$ ' + (parseFloat(v) || 0).toFixed(2).replace('.', ',');
+}
+
+async function processCardPayment(event) {
+  event.preventDefault();
+  if (!currentOrderId) {
+    showCardError('Pedido não encontrado. Volte e finalize novamente.');
+    return;
+  }
+  if (!mpInstance) {
+    showCardError('Serviço de pagamento indisponível no momento.');
+    return;
+  }
+
+  const cardNumber = document.getElementById('cardNumber').value.replace(/\D/g, '');
+  const cardholderName = document.getElementById('cardholderName').value.trim();
+  const expiry = document.getElementById('cardExpiry').value.trim();
+  const securityCode = document.getElementById('cardCvv').value;
+  const identificationNumber = document.getElementById('cardCpf').value.replace(/\D/g, '');
+  const installments = parseInt(document.getElementById('cardInstallments').value) || 1;
+
+  if (cardNumber.length < 13) return showCardError('Número do cartão inválido.');
+  if (!cardholderName) return showCardError('Informe o nome impresso no cartão.');
+  if (!/^\d{2}\/\d{2}$/.test(expiry)) return showCardError('Validade inválida. Use MM/AA.');
+  if (securityCode.length < 3) return showCardError('CVV inválido.');
+  if (identificationNumber.length !== 11) return showCardError('CPF do titular inválido.');
+
+  const [mm, yy] = expiry.split('/');
+  const token = localStorage.getItem('techvault-token');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  document.getElementById('cardError').style.display = 'none';
+
+  loadingOverlay.style.display = 'flex';
+  try {
+    const cardTokenData = await mpInstance.createCardToken({
+      cardNumber,
+      cardholderName,
+      cardExpirationMonth: mm,
+      cardExpirationYear: '20' + yy,
+      securityCode,
+      identificationType: 'CPF',
+      identificationNumber
+    });
+    if (!cardTokenData || !cardTokenData.id) {
+      loadingOverlay.style.display = 'none';
+      return showCardError('Não foi possível processar o cartão. Verifique os dados.');
+    }
+
+    let paymentMethodId;
+    try {
+      const methods = await mpInstance.getPaymentMethods({ bin: cardNumber.slice(0, 6) });
+      paymentMethodId = methods && methods[0] ? methods[0].id : undefined;
+    } catch (e) {}
+
+    const response = await fetch('/api/payments/card', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        orderId: currentOrderId,
+        token: cardTokenData.id,
+        installments,
+        cpf: identificationNumber,
+        paymentMethodId
+      })
+    });
+    const data = await response.json();
+    loadingOverlay.style.display = 'none';
+
+    if (data.status === 'approved') {
+      redirectSuccess();
+    } else if (data.status === 'in_process' || data.status === 'pending' || data.status === 'authorized') {
+      document.getElementById('cardPanel').style.display = 'none';
+      document.getElementById('pixPanel').style.display = 'block';
+      resetPixPanel();
+      document.getElementById('pixQr').innerHTML = '';
+      document.getElementById('pixCopyPaste').value = '';
+      document.getElementById('pixWaiting').innerHTML =
+        '<div class="spinner"></div>' +
+        '<p>Pagamento em processamento...</p>' +
+        '<small>Isso pode levar alguns instantes. Acompanhe o status do pedido.</small>';
+      startPixPolling(currentOrderId);
+    } else if (data.status === 'rejected') {
+      const detail = rejectDetail(data.statusDetail);
+      showCardError(detail);
+    } else {
+      showCardError(data.error || 'Não foi possível aprovar o pagamento.');
+    }
+  } catch (error) {
+    console.error('Erro cartão:', error);
+    loadingOverlay.style.display = 'none';
+    showCardError('Erro ao processar o cartão. Verifique os dados e tente novamente.');
+  }
+}
+
+function rejectDetail(detail) {
+  const map = {
+    'cc_rejected_other_reason': 'Cartão não aprovado. Tente outro cartão ou forma de pagamento.',
+    'cc_rejected_bad_filled_card_number': 'Número do cartão inválido.',
+    'cc_rejected_bad_filled_security_code': 'CVV inválido.',
+    'cc_rejected_bad_filled_date': 'Validade inválida.',
+    'cc_rejected_card_disabled': 'Cartão bloqueado. Contate seu banco.',
+    'cc_rejected_card_error': 'Erro ao processar cartão.',
+    'cc_rejected_insufficient_amount': 'Limite insuficiente.',
+    'cc_rejected_high_risk': 'Pagamento recusado por segurança.',
+    'cc_rejected_invalid_installments': 'Parcelas inválidas.',
+    'cc_rejected_call_for_authorize': 'Contate seu banco para autorizar a compra.'
+  };
+  return map[detail] || 'Pagamento recusado pelo emissor do cartão. Tente novamente.';
+}
+
+function showCardError(msg) {
+  const el = document.getElementById('cardError');
+  el.textContent = msg;
+  el.style.display = 'flex';
 }
 
 function loadCartItems(containerId, totalId) {
@@ -302,93 +637,6 @@ async function buscarCEP() {
   } catch (error) {
     showNotification('Erro ao buscar CEP', 'error');
     campos.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  }
-}
-
-async function handleCheckout(event) {
-  event.preventDefault();
-  const token = localStorage.getItem('techvault-token');
-  if (!token || !currentUser) {
-    showNotification('Você precisa estar logado', 'error');
-    setTimeout(() => { window.location.href = '/login'; }, 1500);
-    return;
-  }
-
-  const endereco = {
-    cep: document.getElementById('cep').value,
-    logradouro: document.getElementById('logradouro').value,
-    numero: document.getElementById('numero').value,
-    complemento: document.getElementById('complemento').value,
-    bairro: document.getElementById('bairro').value,
-    cidade: document.getElementById('cidade').value,
-    estado: document.getElementById('estado').value
-  };
-
-  const brStates = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
-  const cepClean = (endereco.cep || '').replace(/\D/g, '');
-  if (cepClean.length !== 8 || !brStates.includes(endereco.estado)) {
-    showNotification('Só realizamos entregas dentro do Brasil. Verifique o CEP e o estado do endereço.', 'error');
-    return;
-  }
-
-  const nomeCompleto = document.getElementById('nomeCompleto').value;
-  const telefone = document.getElementById('telefone').value;
-  const cpf = document.getElementById('cpfCheckout').value;
-
-  const cartData = loadCartItems('orderCartItems2', 'orderTotal2');
-  if (!cartData || cartData.cart.length === 0) {
-    showNotification('Seu carrinho está vazio', 'error');
-    return;
-  }
-
-  const { cart, total } = cartData;
-  let finalTotal = total;
-  if (appliedCoupon) {
-    finalTotal = total - appliedCoupon.discountValue;
-  }
-
-  const orderData = {
-    userId: currentUser.id,
-    endereco,
-    itens: cart.map(item => ({
-      id: item.id, nome: item.nome, categoria: item.categoria,
-      preco: item.preco, quantidade: item.quantidade,
-      variantSpecs: item.variantSpecs || null
-    })),
-    total: finalTotal,
-    totalOriginal: total,
-    cupom: appliedCoupon ? { code: appliedCoupon.code, desconto: appliedCoupon.discountValue } : null,
-    cliente: { nome: nomeCompleto, telefone, cpf }
-  };
-
-  const errorMessage = document.getElementById('errorMessage');
-  const loadingOverlay = document.getElementById('loadingOverlay');
-
-  try {
-    loadingOverlay.style.display = 'flex';
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(orderData)
-    });
-    const data = await response.json();
-    console.log('Order response:', response.status, data);
-    if (response.ok && data.success && data.checkout_url) {
-      localStorage.removeItem('techvault-cart');
-      fetch('/api/cart/clear', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }).catch(() => {});
-      window.location.href = data.checkout_url;
-    } else {
-      loadingOverlay.style.display = 'none';
-      let msg = data.error || 'Erro ao processar pedido';
-      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento: ' + (data.payment_error || 'tente novamente.');
-      errorMessage.textContent = msg;
-      errorMessage.style.display = 'block';
-    }
-  } catch (error) {
-    console.error('Erro:', error);
-    document.getElementById('loadingOverlay').style.display = 'none';
-    errorMessage.textContent = 'Erro de conexão. Tente novamente.';
-    errorMessage.style.display = 'block';
   }
 }
 

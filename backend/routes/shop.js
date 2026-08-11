@@ -136,88 +136,6 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 // ========== PEDIDOS ==========
 
-const MP_API = 'https://api.mercadopago.com';
-const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-const MP_TIMEOUT_MS = 10000;
-
-function cents(value) {
-  return Math.round((parseFloat(value) || 0) * 100);
-}
-
-// Distribui o desconto do cupom proporcionalmente entre os itens (em centavos inteiros),
-// garantindo que a soma dos itens bata exatamente com o total final do pedido.
-// NOTA: a API do Mercado Pago espera unit_price em REAIS (moeda corrente), nao em centavos.
-function buildMpItems(itens, baseCents, totalCents) {
-  if (!itens || itens.length === 0 || baseCents <= 0 || totalCents <= 0) return [];
-  const items = itens.map(it => ({
-    title: String(it.nome || 'Produto').slice(0, 256),
-    quantity: Math.max(1, parseInt(it.quantidade) || 1),
-    unit_price: cents(it.preco),
-    category_id: 'others'
-  }));
-  if (baseCents === totalCents) return toMpCurrency(items);
-  let allocated = 0;
-  const n = items.length;
-  return toMpCurrency(items.map((it, i) => {
-    if (i === n - 1) return { ...it, unit_price: totalCents - allocated };
-    const price = Math.floor(it.unit_price * totalCents / baseCents);
-    allocated += price;
-    return { ...it, unit_price: price };
-  }));
-}
-
-// Converte valores de centavos inteiros para REAIS (com 2 casas decimais), que eh a
-// unidade que a API do Mercado Pago usa em unit_price.
-function toMpCurrency(items) {
-  return items.map(it => ({ ...it, unit_price: Math.round(it.unit_price) / 100 }));
-}
-
-function buildMpPayer(cliente, user) {
-  const nome = String(cliente?.nome || user.nome || '').trim();
-  const email = cliente?.email || user.email || '';
-  const tel = String(cliente?.telefone || user.telefone || '').replace(/\D/g, '');
-  let area_code = '', number = '';
-  if (tel.length >= 10) { area_code = tel.slice(0, 2); number = tel.slice(2); }
-  else { number = tel; }
-
-  const parts = nome.split(/\s+/);
-  const payer = { name: parts[0] || 'Cliente' };
-  if (parts.length > 1) payer.surname = parts.slice(1).join(' ');
-  if (email) payer.email = email;
-  if (area_code || number) payer.phone = { area_code, number };
-  const cpf = String(cliente?.cpf || '').replace(/\D/g, '');
-  if (cpf.length === 11) payer.identification = { type: 'CPF', number: cpf };
-  return payer;
-}
-
-async function createMercadoPagoPreference(payload) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), MP_TIMEOUT_MS);
-  try {
-    const res = await fetch(`${MP_API}/checkout/preferences`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      const msg = data.message || data.error || 'Erro desconhecido da API';
-      console.error('Mercado Pago preference error:', res.status, JSON.stringify(data));
-      return { error: `HTTP ${res.status}: ${msg}` };
-    }
-    return data;
-  } catch (e) {
-    console.error('Mercado Pago preference fetch error:', e.message);
-    return { error: e.name === 'AbortError' ? 'Timeout (10s) chamando Mercado Pago' : 'Falha de rede: ' + e.message };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 router.post('/orders', requireAuth, async (req, res) => {
   try {
     const { endereco, itens, total, totalOriginal, cupom, cliente } = req.body;
@@ -284,65 +202,239 @@ router.post('/orders', requireAuth, async (req, res) => {
       html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
     }).catch(e => console.error('Erro email:', e.message));
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const paymentRef = newOrder.paymentRef;
-    const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}&ref=${paymentRef}`;
-    const failureUrl = `${baseUrl}/pedido-cancelado?id=${newOrder.id}&ref=${paymentRef}`;
+    // Pedido criado sem pagamento: o checkout integrado cria o pagamento em seguida
+    // (PIX ou cartão) via /api/payments/*. O pedido só sai de "pendente" quando o
+    // webhook do Mercado Pago confirmar o pagamento.
+    res.json({
+      success: true,
+      orderId: newOrder.id,
+      paymentRef: newOrder.paymentRef,
+      total: finalTotal,
+      message: 'Pedido criado! Escolha a forma de pagamento.'
+    });
+  } catch (e) { console.error('ERRO PEDIDO:', e.message, e.stack); res.status(500).json({ error: 'Erro ao processar pedido: ' + (e.message || '') }); }
+});
 
-    const baseCents = Math.round((serverTotal || 0) * 100);
-    const totalCents = Math.round((finalTotal || 0) * 100);
-    const mpItems = buildMpItems(itens || [], baseCents, totalCents);
+// ========== PAGAMENTOS INTEGRADOS (Payment API) ==========
 
-    // Cria preference no Mercado Pago (Checkout Pro) → link de pagamento
-    let checkoutUrl = null;
-    let paymentError = null;
-    if (!MP_ACCESS_TOKEN) {
-      paymentError = 'MERCADO_PAGO_ACCESS_TOKEN não configurado no servidor';
-      console.error('Mercado Pago: access token ausente. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
-    } else if (mpItems.length === 0) {
-      paymentError = 'Pedido sem itens válidos';
-      console.error('Mercado Pago: pedido sem itens. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
-    } else {
-      const pref = await createMercadoPagoPreference({
-        items: mpItems,
-        payer: buildMpPayer(cliente, user),
-        external_reference: String(newOrder.id),
-        back_urls: {
-          success: successUrl,
-          pending: successUrl,
-          failure: failureUrl
-        },
-        ...(baseUrl.startsWith('https://') ? { auto_return: 'approved' } : {}),
-        binary_mode: true,
-        expires: true,
-        expiration_date_from: new Date().toISOString(),
-        expiration_date_to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        notification_url: `${baseUrl}/api/webhooks/mercadopago`,
-        statement_descriptor: 'TECHVAULT STORE',
-        shipments: { mode: 'not_specified' }
-      });
-      if (pref && pref.init_point) {
-        checkoutUrl = pref.init_point;
-      } else if (pref && pref.error) {
-        paymentError = 'Mercado Pago: ' + pref.error;
-        console.error(paymentError + ' (pedido #' + newOrder.id + ')');
-      } else {
-        paymentError = 'Mercado Pago: resposta sem init_point';
-        console.error(paymentError + ' (pedido #' + newOrder.id + ')');
-      }
+const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+const MP_API = 'https://api.mercadopago.com';
+const MP_TIMEOUT_MS = 15000;
+
+async function mpPost(path, payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MP_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${MP_API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const data = await res.json();
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: e.name === 'AbortError' ? 'Timeout chamando Mercado Pago' : 'Falha de rede: ' + e.message } };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function mpGet(path) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MP_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${MP_API}${path}`, {
+      headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+      signal: controller.signal
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) {
+    console.error('Mercado Pago GET error:', e.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildPayer(cliente, user) {
+  const nome = String(cliente?.nome || user.nome || '').trim();
+  const parts = nome.split(/\s+/);
+  const payer = {
+    email: cliente?.email || user.email || '',
+    first_name: parts[0] || 'Cliente'
+  };
+  if (parts.length > 1) payer.last_name = parts.slice(1).join(' ').slice(0, 30);
+  const cpf = String(cliente?.cpf || '').replace(/\D/g, '');
+  if (cpf.length === 11) payer.identification = { type: 'CPF', number: cpf };
+  return payer;
+}
+
+function paymentStatusLabel(status) {
+  switch ((status || '').toLowerCase()) {
+    case 'approved': return 'aprovado';
+    case 'rejected': return 'reprovado';
+    case 'cancelled': return 'cancelado';
+    case 'refunded': return 'reembolsado';
+    case 'charged_back': return 'estornado';
+    case 'in_process':
+    case 'pending':
+    case 'authorized': return 'pendente';
+    default: return null;
+  }
+}
+
+function notifyBaseUrl(req) {
+  const host = req.get('host') || '';
+  if (/^(localhost|127\.0\.0\.1|\[::1\])/.test(host)) return null;
+  const baseUrl = `${req.protocol}://${host}`;
+  return `${baseUrl}/api/webhooks/mercadopago`;
+}
+
+// Cria pagamento PIX e retorna QR Code + copia-e-cola para exibir no próprio checkout
+router.post('/payments/pix', requireAuth, async (req, res) => {
+  try {
+    const order = await db.orderById(parseInt(req.body.orderId));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    if (order.userId != req.user.id && !req.user.admin) return res.status(403).json({ error: 'Acesso negado' });
+    if (order.status === 'aprovado') return res.json({ success: true, alreadyPaid: true, status: 'approved' });
+    if (!MP_ACCESS_TOKEN) return res.status(500).json({ error: 'Pagamento PIX indisponível no momento' });
+
+    const total = Math.round(order.total * 100) / 100;
+    if (total <= 0) return res.status(400).json({ error: 'Pedido sem valor válido' });
+
+    const payer = buildPayer(order.cliente, order.usuario);
+    const expiration = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+    const notifyUrl = notifyBaseUrl(req);
+
+    const { ok, status: httpStatus, data } = await mpPost('/v1/payments', {
+      transaction_amount: total,
+      description: `Pedido #${order.id} TechVault`,
+      payment_method_id: 'pix',
+      payer,
+      external_reference: String(order.id),
+      ...(notifyUrl ? { notification_url: notifyUrl } : {}),
+      statement_descriptor: 'TECHVAULT STORE',
+      date_of_expiration: expiration
+    });
+
+    if (!ok) {
+      console.error('PIX error:', httpStatus, JSON.stringify(data));
+      const msg = data?.message || data?.error || 'Erro ao gerar pagamento PIX';
+      return res.status(500).json({ error: 'Erro ao gerar PIX: ' + msg });
     }
 
-    if (!checkoutUrl) {
-      console.error('Checkout URL é null! Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
+    const tx = data.point_of_interaction && data.point_of_interaction.transaction_data;
+    if (data.id) await db.updateOrderMpPayment(order.id, data.id);
+
+    res.json({
+      success: true,
+      paymentId: data.id,
+      status: data.status,
+      qr_code: tx?.qr_code || '',
+      qr_code_base64: tx?.qr_code_base64 || '',
+      ticket_url: tx?.ticket_url || '',
+      expires_at: expiration
+    });
+  } catch (e) { console.error('ERRO PIX:', e.message); res.status(500).json({ error: 'Erro ao gerar PIX: ' + (e.message || '') }); }
+});
+
+// Cria pagamento no cartão usando token gerado pelo MercadoPago.js (frontend)
+router.post('/payments/card', requireAuth, async (req, res) => {
+  try {
+    const { orderId, token, installments, paymentMethodId, cpf } = req.body;
+    const order = await db.orderById(parseInt(orderId));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    if (order.userId != req.user.id && !req.user.admin) return res.status(403).json({ error: 'Acesso negado' });
+    if (order.status === 'aprovado') return res.json({ success: true, alreadyPaid: true, status: 'approved' });
+    if (!token) return res.status(400).json({ error: 'Token do cartão ausente' });
+    if (!MP_ACCESS_TOKEN) return res.status(500).json({ error: 'Pagamento no cartão indisponível no momento' });
+
+    const total = Math.round(order.total * 100) / 100;
+    const user = order.usuario || {};
+    const cliente = order.cliente || {};
+    const payer = {
+      email: cliente.email || user.email || '',
+      identification: { type: 'CPF', number: String(cpf || cliente.cpf || '').replace(/\D/g, '') }
+    };
+    if (!payer.identification.number) delete payer.identification;
+
+    const { ok, status: httpStatus, data } = await mpPost('/v1/payments', {
+      transaction_amount: total,
+      description: `Pedido #${order.id} TechVault`,
+      installments: Math.max(1, parseInt(installments) || 1),
+      payment_method_id: paymentMethodId || undefined,
+      token,
+      payer,
+      external_reference: String(order.id),
+      ...(notifyBaseUrl(req) ? { notification_url: notifyBaseUrl(req) } : {}),
+      statement_descriptor: 'TECHVAULT STORE'
+    });
+
+    if (data && data.id) await db.updateOrderMpPayment(order.id, data.id);
+
+    if (!ok) {
+      console.error('CARD error:', httpStatus, JSON.stringify(data));
+      const msg = data?.message || data?.error || 'Erro ao processar cartão';
+      return res.status(500).json({ error: 'Erro ao processar cartão: ' + msg, mpError: data });
+    }
+
+    if (data.status === 'approved') {
+      await db.updateOrderStatus(order.id, 'aprovado');
+      await db.updateOrderPaymentInfo(order.id, {
+        paymentId: data.id, status: data.status, statusDetail: data.status_detail || '',
+        method: data.payment_method_id || '', installments: data.installments || 1
+      });
+      console.log(`>>> Pedido #${order.id} aprovado via cartão (payment ${data.id})`);
     }
 
     res.json({
-      success: true, orderId: newOrder.id, paymentRef,
-      message: 'Pedido criado! Redirecionando para o pagamento...',
-      checkout_url: checkoutUrl,
-      payment_error: paymentError
+      success: true,
+      paymentId: data.id,
+      status: data.status,
+      statusDetail: data.status_detail || '',
+      installments: data.installments || 1,
+      method: data.payment_method_id || ''
     });
-  } catch (e) { console.error('ERRO PEDIDO:', e.message, e.stack); res.status(500).json({ error: 'Erro ao processar pedido: ' + (e.message || '') }); }
+  } catch (e) { console.error('ERRO CARTÃO:', e.message); res.status(500).json({ error: 'Erro ao processar cartão: ' + (e.message || '') }); }
+});
+
+// Consulta status do pagamento (polling do frontend, mais confiável que esperar webhook)
+router.get('/payments/:orderId/status', requireAuth, async (req, res) => {
+  try {
+    const order = await db.orderById(parseInt(req.params.orderId));
+    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
+    if (order.userId != req.user.id && !req.user.admin) return res.status(403).json({ error: 'Acesso negado' });
+
+    let payment = null;
+    if (order.mpPaymentId) {
+      payment = await mpGet(`/v1/payments/${order.mpPaymentId}`);
+    }
+    if (!payment && MP_ACCESS_TOKEN) {
+      const search = await mpGet(`/v1/payments/search?external_reference=${encodeURIComponent(String(order.id))}&sort=date_created&criteria=desc`);
+      payment = (search && search.results && search.results[0]) || null;
+    }
+
+    const mpStatus = payment ? payment.status : null;
+    const status = paymentStatusLabel(mpStatus);
+    if (status && order.status !== status && status === 'aprovado') {
+      await db.updateOrderStatus(order.id, status);
+      await db.updateOrderPaymentInfo(order.id, {
+        paymentId: payment.id, status: payment.status, statusDetail: payment.status_detail || '',
+        method: payment.payment_method_id || '', installments: payment.installments || 1
+      });
+      console.log(`>>> Pedido #${order.id} aprovado via polling (payment ${payment.id})`);
+    }
+
+    res.json({
+      success: true,
+      orderStatus: order.status,
+      mpStatus,
+      status,
+      paymentId: payment ? payment.id : null
+    });
+  } catch (e) { console.error('ERRO STATUS:', e.message); res.status(500).json({ error: 'Erro ao consultar status' }); }
 });
 
 router.get('/orders/user/:userId', async (req, res) => {

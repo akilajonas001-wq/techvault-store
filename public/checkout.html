@@ -479,6 +479,77 @@
     .hamburger.active span:nth-child(1){transform:rotate(45deg)translate(5px,5px)}
     .hamburger.active span:nth-child(2){opacity:0}
     .hamburger.active span:nth-child(3){transform:rotate(-45deg)translate(5px,-5px)}
+
+    /* ===== Checkout integrado (PIX / cartão) ===== */
+    .payment-methods { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .pm-option {
+      display: flex; align-items: center; gap: 16px;
+      border: 2px solid var(--border); border-radius: 14px; padding: 18px 20px;
+      cursor: pointer; transition: all 0.2s; background: var(--white);
+    }
+    .pm-option:hover { border-color: var(--primary-light); }
+    .pm-option.selected { border-color: var(--primary); background: rgba(26,115,232,0.04); box-shadow: 0 0 0 4px rgba(26,115,232,0.08); }
+    .pm-option input[type="radio"] { width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+    .pm-icon {
+      width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .pm-icon.pix { background: rgba(16,185,129,0.12); color: #10b981; }
+    .pm-icon.card { background: rgba(26,115,232,0.12); color: var(--primary); }
+    .pm-info { flex: 1; }
+    .pm-info strong { display: block; font-size: 15px; font-weight: 700; color: var(--text); }
+    .pm-info span { font-size: 13px; color: var(--text-light); }
+
+    .pix-panel { text-align: center; }
+    .pix-panel h2 { justify-content: center; letter-spacing: 1px; }
+    .pix-qr {
+      width: 220px; height: 220px; margin: 8px auto 20px; padding: 8px; background: var(--white);
+      border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-md);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .pix-qr img { width: 100%; height: 100%; object-fit: contain; }
+    .pix-copy-label { font-size: 13px; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pix-copy { display: flex; gap: 8px; margin-bottom: 24px; }
+    .pix-copy input {
+      flex: 1; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px;
+      font-size: 11px; color: var(--text-light); background: var(--bg-cool);
+      font-family: 'Inter', sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pix-copy button {
+      padding: 12px 18px; border: none; border-radius: 10px; background: var(--success); color: white;
+      font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap;
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .pix-copy button:hover { opacity: 0.9; }
+    .pix-waiting { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
+    .pix-waiting .spinner {
+      width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--success);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    .pix-waiting p { font-size: 15px; font-weight: 700; color: var(--text); }
+    .pix-waiting small { font-size: 12px; color: var(--text-light); }
+    .pix-paid {
+      display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 0;
+      color: var(--success); font-size: 40px;
+    }
+
+    .card-form { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+    .card-form .form-row { margin-bottom: 0; }
+    .card-form input, .card-form select {
+      width: 100%; padding: 14px 16px; border: 2px solid var(--border); border-radius: 12px;
+      font-size: 15px; font-family: 'Inter', sans-serif; color: var(--text); background: var(--white);
+      transition: all 0.3s ease; outline: none;
+    }
+    .card-form input:focus, .card-form select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(26,115,232,0.1); }
+    .card-brand-icon { display: flex; align-items: center; gap: 10px; }
+    .card-brand-icon span { font-size: 12px; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; }
+    .secure-pay {
+      background: linear-gradient(135deg, rgba(16,185,129,0.05), rgba(52,211,153,0.05));
+      border-radius: 10px; padding: 12px; font-size: 12px; color: var(--success); font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .checkout-section { margin-bottom: 24px; }
+    .pm-option input[type="radio"] { pointer-events: none; }
 .auth-buttons-desktop{display:flex;gap:10px;align-items:center}
     .login-link{color:var(--text-light);text-decoration:none;font-size:14px;font-weight:500}
     .register-link{background:var(--primary-gradient);color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:600;box-shadow:var(--shadow-sm)}
@@ -549,9 +620,9 @@
             </div>
           </div>
           
-          <button class="btn btn-primary btn-large" onclick="handleQuickCheckout()">
+          <button class="btn btn-primary btn-large" onclick="goToPaymentStep('quick')">
             <i class="fas fa-lock"></i>
-            Finalizar Pedido
+            Continuar para o pagamento
           </button>
           
           <div style="text-align:center;margin-top:12px;">
@@ -564,7 +635,7 @@
         <!-- Formulário completo (fallback / edição manual) -->
         <div class="checkout-section" id="fullFormSection">
           <h2><i class="fas fa-map-marker-alt"></i> Endereço de Entrega</h2>
-          <form id="checkoutForm" onsubmit="handleCheckout(event)">
+          <form id="checkoutForm" onsubmit="goToPaymentStep('full'); return false;">
             <div class="form-row">
               <div class="form-group">
                 <label for="cep">CEP *</label>
@@ -631,13 +702,125 @@
             
             <button type="submit" class="btn btn-primary btn-large">
               <i class="fas fa-lock"></i>
-              Finalizar Pedido
+              Continuar para o pagamento
             </button>
             
             <div class="secure-badge">
               <i class="fas fa-shield-alt"></i>
               Ambiente 100% seguro - Seus dados estão protegidos
             </div>
+          </form>
+        </div>
+
+        <!-- Passo 2: Forma de pagamento (integrado, sem sair da loja) -->
+        <div class="checkout-section" id="paymentSection" style="display:none;">
+          <h2><i class="fas fa-credit-card"></i> Pagamento</h2>
+
+          <div class="order-summary" style="margin-top:0;">
+            <h3><i class="fas fa-shopping-cart"></i> Seu pedido</h3>
+            <div id="paymentCartItems">
+              <!-- Itens serão carregados aqui -->
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-light);padding:8px 0;">
+              <span><i class="fas fa-truck" style="margin-right:6px;"></i> Frete</span>
+              <span style="color:var(--success);font-weight:600;"><i class="fas fa-check"></i> Grátis</span>
+            </div>
+            <div class="order-total">
+              <span>Total:</span>
+              <span class="total-value" id="paymentTotal">R$ 0,00</span>
+            </div>
+          </div>
+
+          <div class="payment-methods">
+            <label class="pm-option selected" id="pmPixOption" onclick="selectPaymentMethod('pix')">
+              <input type="radio" name="paymentMethod" value="pix" checked>
+              <div class="pm-icon pix"><i class="fab fa-pix"></i></div>
+              <div class="pm-info">
+                <strong>PIX</strong>
+                <span>Pagamento instantâneo — aprovação na hora</span>
+              </div>
+            </label>
+            <label class="pm-option" id="pmCardOption" onclick="selectPaymentMethod('card')">
+              <input type="radio" name="paymentMethod" value="card">
+              <div class="pm-icon card"><i class="far fa-credit-card"></i></div>
+              <div class="pm-info">
+                <strong>Cartão de crédito</strong>
+                <span>Parcele em até 12x</span>
+              </div>
+            </label>
+          </div>
+
+          <button class="btn btn-primary btn-large" onclick="finalizePayment()">
+            <i class="fas fa-lock"></i>
+            FINALIZAR PAGAMENTO
+          </button>
+
+          <div id="paymentError" class="error-message" style="display:none;"></div>
+        </div>
+
+        <!-- Passo 3a: PIX (QR code + copia e cola) -->
+        <div class="checkout-section pix-panel" id="pixPanel" style="display:none;">
+          <h2><i class="fab fa-pix" style="color:var(--success);"></i> PAGAMENTO VIA PIX</h2>
+          <div class="pix-qr" id="pixQr"></div>
+          <p class="pix-copy-label">Pix Copia e Cola</p>
+          <div class="pix-copy">
+            <input type="text" readonly id="pixCopyPaste" value="">
+            <button onclick="copyPixCode()"><i class="fas fa-copy"></i> COPIAR PIX</button>
+          </div>
+          <div class="pix-waiting" id="pixWaiting">
+            <div class="spinner"></div>
+            <p>Aguardando pagamento...</p>
+            <small>O pedido será confirmado automaticamente ao receber o pagamento</small>
+          </div>
+          <div id="pixExpiry" style="font-size:12px;color:var(--text-light);margin-top:8px;"></div>
+        </div>
+
+        <!-- Passo 3b: Cartão de crédito -->
+        <div class="checkout-section" id="cardPanel" style="display:none;">
+          <h2><i class="far fa-credit-card"></i> Cartão de crédito</h2>
+          <form id="cardForm" class="card-form" onsubmit="processCardPayment(event)">
+            <div class="card-brand-icon" id="cardBrandLabel" style="display:none;">
+              <i class="far fa-credit-card" style="color:var(--primary);font-size:24px;"></i>
+              <span id="cardBrandText"></span>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cardNumber">Número do cartão *</label>
+                <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" inputmode="numeric" oninput="mascaraCartao(this); detectCardBrand()" required>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="cardholderName">Nome impresso no cartão *</label>
+              <input type="text" id="cardholderName" placeholder="Como está escrito no cartão" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cardExpiry">Validade *</label>
+                <input type="text" id="cardExpiry" placeholder="MM/AA" maxlength="5" inputmode="numeric" oninput="mascaraValidade(this)" required>
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label for="cardCvv">CVV *</label>
+                <input type="text" id="cardCvv" placeholder="123" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')" required>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="cardCpf">CPF do titular *</label>
+              <input type="text" id="cardCpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" oninput="mascaraCPF(this)" required>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="cardInstallments">Parcelas</label>
+              <select id="cardInstallments">
+                <option value="1">1x de R$ 0,00</option>
+              </select>
+            </div>
+            <div class="secure-pay">
+              <i class="fas fa-lock"></i>
+              Pagamento processado com segurança pelo Mercado Pago
+            </div>
+            <button type="submit" class="btn btn-primary" id="cardPayButton" style="margin-top:4px;">
+              <i class="fas fa-lock"></i> Pagar R$ 0,00
+            </button>
+            <div id="cardError" class="error-message" style="display:none;"></div>
           </form>
         </div>
 
@@ -698,8 +881,8 @@
   <div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(30,41,59,0.8);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center;flex-direction:column;">
     <div style="background:white;padding:40px;border-radius:16px;text-align:center;max-width:400px;">
       <div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#1a73e8;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px;"></div>
-      <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px;">Redirecionando para pagamento...</h3>
-      <p style="font-size:14px;color:#64748b;">Você será redirecionado para o ambiente seguro do Mercado Pago para concluir o pagamento.</p>
+      <h3 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px;" id="loadingTitle">Processando pagamento...</h3>
+      <p style="font-size:14px;color:#64748b;" id="loadingText">Aguarde um instante.</p>
     </div>
   </div>
 
@@ -713,9 +896,10 @@
     </div>
   </footer>
 
+  <script src="https://sdk.mercadopago.com/js/v3"></script>
   <script src="/js/header.js?v=1"></script>
   <script src="/js/main.js?v=4"></script>
-  <script src="/js/checkout.js?v=3"></script>
+  <script src="/js/checkout.js?v=5"></script>
   <div id="cartModal" class="cart-modal">
     <div class="cart-modal-content">
       <div class="cart-modal-header">

@@ -281,7 +281,11 @@ app.use('/api', authenticate);
 
 // Public order info (no auth required)
 app.get('/api/config', (req, res) => {
-  res.json({ status: 'ok', mercadoPagoConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN });
+  res.json({
+    status: 'ok',
+    mercadoPagoConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN,
+    mercadoPagoPublicKey: process.env.MERCADO_PAGO_PUBLIC_KEY || ''
+  });
 });
 
 app.get('/api/check-order-status/:id', async (req, res) => {
