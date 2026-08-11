@@ -39,152 +39,144 @@ app.use(cors({
 
 const webhookLogs = [];
 
-// Capture raw body for webhook regardless of content type
-app.post('/api/webhooks/infinitepay', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+const MP_API = 'https://api.mercadopago.com';
+const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+async function fetchMpPayment(paymentId) {
+  if (!MP_ACCESS_TOKEN || !paymentId) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const rawBody = req.body ? req.body.toString('utf8') : '';
-    let parsed = {};
-    try { parsed = JSON.parse(rawBody); } catch { try { parsed = Object.fromEntries(new URLSearchParams(rawBody)); } catch {} }
-
-    const body = parsed;
-    if (Object.keys(body).length === 0) {
-      // Try to use the raw body directly
-      if (rawBody) body._raw = rawBody;
-    }
-
-    webhookLogs.unshift({
-      timestamp: new Date().toISOString(),
-      raw: rawBody.slice(0, 2000),
-      parsed: JSON.stringify(body),
-      headers: req.headers
+    const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
+      headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+      signal: controller.signal
     });
-    if (webhookLogs.length > 50) webhookLogs.pop();
-    console.log('=== InfinitePay Webhook ===');
-    console.log('Raw:', rawBody.slice(0, 500));
-    console.log('Parsed:', JSON.stringify(body));
-
-    // Extract possible identifiers from webhook body
-    const paymentRef = body.paymentRef || body.payment_ref || body.external_id || body.externalId ||
-                       body.order_nsu || body.orderNsu || body.nsu ||
-                       body.reference_id || body.reference ||
-                       (body.metadata && (body.metadata.paymentRef || body.metadata.payment_ref ||
-                        body.metadata.order_nsu || body.metadata.external_id)) ||
-                       (body.items && body.items[0] && (body.items[0].external_id || body.items[0].order_nsu || body.items[0].paymentRef)) ||
-                       (body.customer && (body.customer.external_id || body.customer.order_nsu));
-
-    const orderIdNum = body.id || body.order_id || body.orderId || body.transaction_id || body.transactionId ||
-                       body.pedido_id || body.pedidoId || body.checkout_id;
-
-    const infinitepayId = String(body.id || body.transaction_id || body.transactionId || body.checkout_id || '');
-
-    const status = (body.status || body.payment_status || body.paymentStatus ||
-                    body.transaction_status || body.transactionStatus || body.checkout_status ||
-                    body.event || body.type || body.event_type || body.action ||
-                    body.current_status || '').toLowerCase();
-
-    const isApproved = ['paid', 'approved', 'completed', 'confirmed', 'success',
-      'payment.approved', 'charge.paid', 'payment_confirmed', 'pago',
-      'aprovado', 'concluido', 'finalizado'].includes(status);
-
-    const isCanceled = ['canceled', 'cancelled', 'refunded', 'refund', 'chargeback',
-      'voided', 'expired', 'failed', 'cancelado', 'estornado'].includes(status);
-
-    console.log('Parsed: paymentRef=', paymentRef, 'orderIdNum=', orderIdNum, 'status=', status);
-
-    // 1) Try matching by paymentRef (UUID) — most reliable
-    if (paymentRef && paymentRef.includes('-')) {
-      const order = await db.orderByPaymentRef(paymentRef);
-      if (order) {
-        if (isApproved) {
-          await db.updateOrderStatus(order.id, 'aprovado');
-          console.log(`>>> Pedido #${order.id} APROVADO via paymentRef ${paymentRef}!`);
-          return res.status(200).json({ received: true, action: 'approved', orderId: order.id, method: 'paymentRef' });
-        } else if (isCanceled) {
-          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
-          await db.updateOrderStatus(order.id, newStatus);
-          console.log(`>>> Pedido #${order.id} atualizado para ${newStatus} via paymentRef`);
-          return res.status(200).json({ received: true, action: 'updated', orderId: order.id, method: 'paymentRef' });
-        }
-      }
+    if (!res.ok) {
+      console.error('Mercado Pago payment fetch error:', res.status);
+      return null;
     }
-
-    // 2) Try matching by numeric order ID
-    const orderNumber = parseInt(paymentRef || orderIdNum);
-    if (!isNaN(orderNumber) && orderNumber > 0) {
-      const order = await db.orderById(orderNumber);
-      if (order) {
-        if (isApproved) {
-          await db.updateOrderStatus(orderNumber, 'aprovado');
-          console.log(`>>> Pedido #${orderNumber} APROVADO via webhook!`);
-          return res.status(200).json({ received: true, action: 'approved', orderId: orderNumber, method: 'orderId' });
-        } else if (isCanceled) {
-          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
-          await db.updateOrderStatus(orderNumber, newStatus);
-          console.log(`>>> Pedido #${orderNumber} atualizado para ${newStatus}`);
-          return res.status(200).json({ received: true, action: 'updated', orderId: orderNumber, method: 'orderId' });
-        } else {
-          console.log(`Webhook recebeu status "${status}" para pedido #${orderNumber}, nenhuma ação`);
-        }
-      }
-    }
-
-    // 3) Try matching by InfinitePay's own transaction ID (from previous fallback matches)
-    if (infinitepayId && !isNaN(parseInt(infinitepayId)) && parseInt(infinitepayId) > 0) {
-      const order = await db.orderByInfinitepayId(infinitepayId);
-      if (order) {
-        if (isApproved) {
-          await db.updateOrderStatus(order.id, 'aprovado');
-          console.log(`>>> Pedido #${order.id} APROVADO via infinitepayId ${infinitepayId}!`);
-          return res.status(200).json({ received: true, action: 'approved', orderId: order.id, method: 'infinitepayId' });
-        } else if (isCanceled) {
-          const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
-          await db.updateOrderStatus(order.id, newStatus);
-          console.log(`>>> Pedido #${order.id} atualizado para ${newStatus} via infinitepayId`);
-          return res.status(200).json({ received: true, action: 'updated', orderId: order.id, method: 'infinitepayId' });
-        }
-      }
-    }
-
-    // 4) Fallback: try matching by amount + customer email if available
-    const amount = parseFloat(body.amount || body.valor || body.total || body.price || body.value);
-    const customerEmail = body.customer?.email || body.email || body.buyer?.email || '';
-    if (amount > 0) {
-      const allOrders = await db.allOrders();
-      const pending = allOrders.filter(o => o.status === 'pendente' && Math.abs(o.total - amount) < 0.01);
-
-      // If customer email available, try to narrow down
-      const byEmail = customerEmail ? pending.filter(o => o.usuario?.email === customerEmail || o.cliente?.email === customerEmail) : [];
-      const match = byEmail.length === 1 ? byEmail[0] : pending.length === 1 ? pending[0] : null;
-
-      if (match && isApproved) {
-        await db.updateOrderStatus(match.id, 'aprovado');
-        if (infinitepayId) await db.updateOrderInfinitepayId(match.id, infinitepayId);
-        console.log(`>>> Pedido #${match.id} aprovado via match de valor R$${amount}!`);
-        return res.status(200).json({ received: true, action: 'approved', orderId: match.id, method: 'amount_match' });
-      } else if (match && isCanceled) {
-        const newStatus = status.match(/refund|chargeback|estorno/i) ? 'reembolsado' : 'cancelado';
-        await db.updateOrderStatus(match.id, newStatus);
-        if (infinitepayId) await db.updateOrderInfinitepayId(match.id, infinitepayId);
-        console.log(`>>> Pedido #${match.id} atualizado para ${newStatus} via amount`);
-        return res.status(200).json({ received: true, action: 'updated', orderId: match.id, method: 'amount_match' });
-      } else if (pending.length > 1) {
-        console.log(`Múltiplos pedidos R$${amount}: ${pending.map(o=>o.id).join(',')}`);
-      } else {
-        console.log(`Nenhum pedido pendente com R$${amount}`);
-      }
-    }
-
-    console.log('Webhook não conseguiu identificar pedido. Campos:', Object.keys(body));
-
-    res.status(200).json({ received: true });
+    return await res.json();
   } catch (e) {
-    console.error('Erro no webhook:', e);
-    res.status(200).json({ received: true });
+    console.error('Mercado Pago payment fetch exception:', e.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
   }
+}
+
+async function searchMpPaymentsByOrder(orderId) {
+  if (!MP_ACCESS_TOKEN) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(`${MP_API}/v1/payments/search?external_reference=${encodeURIComponent(String(orderId))}&sort=date_created&criteria=desc`, {
+      headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+      signal: controller.signal
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.results && data.results[0]) || null;
+  } catch (e) {
+    console.error('Mercado Pago payment search exception:', e.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// Mapeia o status do pagamento do Mercado Pago para o status interno do pedido
+function mapMpStatus(payment) {
+  if (!payment) return null;
+  const s = (payment.status || '').toLowerCase();
+  switch (s) {
+    case 'approved': return 'aprovado';
+    case 'rejected': return 'reprovado';
+    case 'cancelled': return 'cancelado';
+    case 'refunded': return 'reembolsado';
+    case 'charged_back': return 'estornado';
+    case 'in_process':
+    case 'pending':
+    case 'authorized': return 'pendente';
+    default: return null;
+  }
+}
+
+function buildPaymentInfo(payment) {
+  return {
+    paymentId: payment.id,
+    status: payment.status,
+    statusDetail: payment.status_detail || '',
+    method: payment.payment_method_id || '',
+    type: payment.payment_type_id || '',
+    installments: payment.installments || 1,
+    cardBrand: payment.payment_method?.id || (payment.card && payment.card.cardholder && payment.card.cardholder.name) || '',
+    externalReference: payment.external_reference || '',
+    dateCreated: payment.date_created || '',
+    dateApproved: payment.date_approved || ''
+  };
+}
+
+async function applyMpPaymentToOrder(payment) {
+  if (!payment || !payment.id) return false;
+  const orderId = parseInt(payment.external_reference || '');
+  let order = orderId > 0 ? await db.orderById(orderId) : null;
+  if (!order) order = await db.orderByMpPaymentId(payment.id);
+  if (!order) return false;
+
+  const newStatus = mapMpStatus(payment);
+  if (newStatus && order.status !== newStatus) {
+    await db.updateOrderStatus(order.id, newStatus);
+    console.log(`>>> Pedido #${order.id} atualizado para "${newStatus}" via Mercado Pago (payment ${payment.id})`);
+  }
+  if (String(order.mpPaymentId || '') !== String(payment.id)) {
+    await db.updateOrderMpPayment(order.id, payment.id);
+  }
+  await db.updateOrderPaymentInfo(order.id, buildPaymentInfo(payment));
+  return true;
+}
+
+// Capture raw body for webhook regardless of content type
+app.post('/api/webhooks/mercadopago', express.raw({ type: '*/*', limit: '1mb' }), (req, res) => {
+  // Responder 200 imediatamente para evitar retentativas do Mercado Pago
+  res.status(200).json({ received: true });
+
+  const rawBody = req.body ? req.body.toString('utf8') : '';
+  let body = {};
+  try { body = JSON.parse(rawBody); } catch { /* corpo não-JSON */ }
+
+  webhookLogs.unshift({
+    timestamp: new Date().toISOString(),
+    type: body.type || 'unknown',
+    paymentId: body.data && body.data.id,
+    raw: rawBody.slice(0, 2000),
+    headers: req.headers
+  });
+  if (webhookLogs.length > 50) webhookLogs.pop();
+  console.log('=== Mercado Pago Webhook ===');
+  console.log('Type:', body.type, '| data:', JSON.stringify(body.data));
+
+  // Teste de configuração do Mercado Pago → só confirma
+  if (body.type === 'test' || !body.data || !body.data.id) {
+    console.log('Webhook: tipo teste ou sem data.id, ignorado.');
+    return;
+  }
+  if (body.type !== 'payment') {
+    console.log('Webhook: tipo não é payment (' + body.type + '), ignorado.');
+    return;
+  }
+
+  // Nunca confiar no payload: buscar o pagamento real na API do Mercado Pago
+  fetchMpPayment(body.data.id).then(async (payment) => {
+    if (!payment) {
+      console.log(`Webhook: pagamento ${body.data.id} não encontrado na API.`);
+      return;
+    }
+    await applyMpPaymentToOrder(payment);
+  }).catch(e => console.error('Erro processando webhook MP:', e.message));
 });
 
 // ===================== PUBLIC CONFIRM PAYMENT =====================
-// InfinitePay can redirect here after payment to auto-confirm the order
+// Mercado Pago can redirect here after payment to show the order status page
 // URL: /api/confirm-payment/:paymentRef
 app.get('/api/confirm-payment/:ref', async (req, res) => {
   try {
@@ -569,7 +561,8 @@ app.get('/api/images/:id', async (req, res) => {
 });
 
 // ===================== MANUAL PAYMENT VERIFICATION =====================
-// Called by the success page when user returns from checkout
+// Called by the success page when user returns from checkout.
+// Consulta o Mercado Pago diretamente para confirmar o status (webhook pode atrasar).
 
 app.post('/api/verify-payment/:id', async (req, res) => {
   try {
@@ -588,13 +581,30 @@ app.post('/api/verify-payment/:id', async (req, res) => {
 
     if (!order) return res.json({ verified: false, error: 'not_found' });
 
-    // Do NOT auto-approve here - only the webhook should approve orders
-    // This endpoint only returns the current status
+    // Já aprovado → retorna direto
+    if (order.status === 'aprovado') {
+      return res.json({ verified: true, status: order.status, orderId: order.id, paymentRef: order.paymentRef });
+    }
+
+    // Tenta consultar o pagamento no Mercado Pago para atualização em tempo real
+    let payment = order.mpPaymentId ? await fetchMpPayment(order.mpPaymentId) : null;
+    if (!payment) payment = await searchMpPaymentsByOrder(order.id);
+    if (payment) {
+      await applyMpPaymentToOrder(payment);
+      order = await db.orderById(order.id);
+    }
+
     res.json({ verified: order.status === 'aprovado', status: order.status, orderId: order.id, paymentRef: order.paymentRef });
   } catch (e) {
     console.error('Erro verify-payment:', e);
     res.json({ verified: false, error: 'server_error' });
   }
+});
+
+// ===================== WEBHOOK DEBUG (ADMIN) =====================
+
+app.get('/api/admin/webhook-logs', adminAuth, (req, res) => {
+  res.json({ logs: webhookLogs });
 });
 
 // ===================== RECEIPT ROUTES =====================
@@ -642,8 +652,28 @@ app.get('/pedido-cancelado', (req, res) => res.send(renderPage('pedido-cancelado
 app.get('/comprovante', (req, res) => res.send(renderPage('comprovante.html')));
 app.get('/comprovante/:id', (req, res) => res.send(renderPage('comprovante.html')));
 
+// ===================== CLEANUP DE PEDIDOS ABANDONADOS =====================
+// Marca como "abandonado" pedidos pendentes sem pagamento iniciado (sem mp_payment_id)
+// e mais antigos que 24h — ou seja, clientes que desistiram antes de pagar.
+async function markAbandonedOrders() {
+  try {
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const orders = await db.allOrders();
+    for (const o of orders) {
+      if (o.status === 'pendente' && !o.mpPaymentId && o.createdAt && o.createdAt < cutoff) {
+        await db.updateOrderStatus(o.id, 'abandonado');
+        console.log(`>>> Pedido #${o.id} marcado como abandonado (sem pagamento iniciado em 24h)`);
+      }
+    }
+  } catch (e) {
+    console.error('Erro no cleanup de pedidos abandonados:', e.message);
+  }
+}
+
 startServer().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`TechVault Store rodando em http://localhost:${PORT}`);
   });
+  markAbandonedOrders();
+  setInterval(markAbandonedOrders, 60 * 60 * 1000);
 });

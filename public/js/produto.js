@@ -490,7 +490,6 @@ function getSelectedVariantData() {
       imagem: selectedVariant.imagem || currentProduct.imagem,
       quantidade: 1,
       categoria: currentProduct.categoria,
-      checkoutLink: selectedVariant.checkoutLink || currentProduct.checkoutLink || '',
       variantSpecs: selectedVariant.especificacoes || null
     };
   }
@@ -500,8 +499,7 @@ function getSelectedVariantData() {
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,
     quantidade: 1,
-    categoria: currentProduct.categoria,
-    checkoutLink: currentProduct.checkoutLink || ''
+    categoria: currentProduct.categoria
   };
 }
 
@@ -586,11 +584,6 @@ function addToCartFromProduct() {
 }
 
 function buyNow() {
-  const cartItem = getSelectedVariantData();
-  if (cartItem && cartItem.checkoutLink) {
-    window.location.href = cartItem.checkoutLink;
-    return;
-  }
   addToCartFromProduct();
   window.location.href = '/checkout';
 }

@@ -44,7 +44,7 @@
     <div id="statusPending">
       <div class="icon-big icon-pending"><i class="fas fa-clock"></i></div>
       <h1>Aguardando pagamento</h1>
-      <p id="pendingText">Seu pedido foi registrado. Estamos aguardando a confirmação da InfinitePay.</p>
+      <p id="pendingText">Seu pedido foi registrado. Estamos aguardando a confirmação do Mercado Pago.</p>
       <div class="order-id" id="orderIdDisplay">Pedido #---</div>
       <div id="orderDetailsPending" class="order-info">
         <div class="row"><span class="label">Total</span><span class="value" id="pendingTotal">---</span></div>
@@ -113,7 +113,7 @@
     function showPending(data) {
       if (!data) return;
       document.getElementById('pendingTotal').textContent = 'R$ ' + (data.total || 0).toFixed(2).replace('.', ',');
-      document.getElementById('pendingPayment').textContent = data.pagamento || 'InfinitePay';
+      document.getElementById('pendingPayment').textContent = data.pagamento || 'Mercado Pago';
       if (data.itens) {
         document.getElementById('pendingItems').innerHTML = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8;">' +
           data.itens.map(i => '<div style="display:flex;justify-content:space-between;padding:4px 0;">' +

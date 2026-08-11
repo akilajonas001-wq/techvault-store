@@ -136,8 +136,79 @@ router.delete('/products/:id/comments/:commentId', async (req, res) => {
 
 // ========== PEDIDOS ==========
 
-const INFINITE_PAY_API = 'https://api.infinitepay.io/invoices/public/checkout/links';
-const INFINITE_PAY_HANDLE = 'akila-jonas';
+const MP_API = 'https://api.mercadopago.com';
+const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+const MP_TIMEOUT_MS = 10000;
+
+function cents(value) {
+  return Math.round((parseFloat(value) || 0) * 100);
+}
+
+// Distribui o desconto do cupom proporcionalmente entre os itens (em centavos inteiros),
+// garantindo que a soma dos itens bata exatamente com o total final do pedido.
+function buildMpItems(itens, baseCents, totalCents) {
+  if (!itens || itens.length === 0 || baseCents <= 0 || totalCents <= 0) return [];
+  const items = itens.map(it => ({
+    title: String(it.nome || 'Produto').slice(0, 256),
+    quantity: Math.max(1, parseInt(it.quantidade) || 1),
+    unit_price: cents(it.preco),
+    category_id: 'others'
+  }));
+  if (baseCents === totalCents) return items;
+  let allocated = 0;
+  const n = items.length;
+  return items.map((it, i) => {
+    if (i === n - 1) return { ...it, unit_price: totalCents - allocated };
+    const price = Math.floor(it.unit_price * totalCents / baseCents);
+    allocated += price;
+    return { ...it, unit_price: price };
+  });
+}
+
+function buildMpPayer(cliente, user) {
+  const nome = String(cliente?.nome || user.nome || '').trim();
+  const email = cliente?.email || user.email || '';
+  const tel = String(cliente?.telefone || user.telefone || '').replace(/\D/g, '');
+  let area_code = '', number = '';
+  if (tel.length >= 10) { area_code = tel.slice(0, 2); number = tel.slice(2); }
+  else { number = tel; }
+
+  const parts = nome.split(/\s+/);
+  const payer = { name: parts[0] || 'Cliente' };
+  if (parts.length > 1) payer.surname = parts.slice(1).join(' ');
+  if (email) payer.email = email;
+  if (area_code || number) payer.phone = { area_code, number };
+  const cpf = String(cliente?.cpf || '').replace(/\D/g, '');
+  if (cpf.length === 11) payer.identification = { type: 'CPF', number: cpf };
+  return payer;
+}
+
+async function createMercadoPagoPreference(payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MP_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${MP_API}/checkout/preferences`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('Mercado Pago preference error:', res.status, JSON.stringify(data));
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('Mercado Pago preference fetch error:', e.message);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 router.post('/orders', requireAuth, async (req, res) => {
   try {
@@ -184,7 +255,7 @@ router.post('/orders', requireAuth, async (req, res) => {
       endereco, itens, total: finalTotal, totalOriginal: serverTotal,
       cupom: cupom && serverDiscount > 0 ? { code: cupom.code, desconto: serverDiscount } : null, cliente: cliente || {},
       taxas: {},
-      pagamento: 'InfinitePay', status: 'pendente',
+      pagamento: 'Mercado Pago', status: 'pendente',
       createdAt: new Date().toISOString()
     });
 
@@ -216,57 +287,38 @@ router.post('/orders', requireAuth, async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const paymentRef = newOrder.paymentRef;
     const successUrl = `${baseUrl}/pedido-sucesso?id=${newOrder.id}&ref=${paymentRef}`;
-    const webhookUrl = `${baseUrl}/api/webhooks/infinitepay`;
+    const failureUrl = `${baseUrl}/pedido-cancelado?id=${newOrder.id}&ref=${paymentRef}`;
 
-    // Always try to create a dynamic checkout via API first (ensures webhook has order_nsu/redirect)
+    const baseCents = Math.round((serverTotal || 0) * 100);
+    const totalCents = Math.round((finalTotal || 0) * 100);
+    const mpItems = buildMpItems(itens || [], baseCents, totalCents);
+
+    // Cria preference no Mercado Pago (Checkout Pro) → link de pagamento
     let checkoutUrl = null;
-
-    // Try InfinitePay API to create dynamic checkout with proper webhook data
-    const apiPayload = {
-      handle: INFINITE_PAY_HANDLE,
-      itens: (itens || []).map(item => {
-        const serverPrice = Math.round((item.preco || 0) * 100);
-        return {
-          quantity: item.quantidade || 1,
-          price: serverPrice,
-          description: item.nome || 'Produto'
-        };
-      }),
-      order_nsu: paymentRef,
-      redirect_url: successUrl,
-      webhook_url: webhookUrl,
-      customer: {
-        name: cliente?.nome || user.nome,
-        email: cliente?.email || user.email,
-        phone_number: cliente?.telefone || user.telefone || ''
-      }
-    };
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10000);
-      const apiRes = await fetch(INFINITE_PAY_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiPayload),
-        signal: controller.signal
+    if (MP_ACCESS_TOKEN && mpItems.length > 0) {
+      const pref = await createMercadoPagoPreference({
+        items: mpItems,
+        payer: buildMpPayer(cliente, user),
+        external_reference: String(newOrder.id),
+        back_urls: {
+          success: successUrl,
+          pending: successUrl,
+          failure: failureUrl
+        },
+        ...(baseUrl.startsWith('https://') ? { auto_return: 'approved' } : {}),
+        binary_mode: true,
+        expires: true,
+        expiration_date_from: new Date().toISOString(),
+        expiration_date_to: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        notification_url: `${baseUrl}/api/webhooks/mercadopago`,
+        statement_descriptor: 'TECHVAULT STORE',
+        shipments: { mode: 'not_specified' }
       });
-      clearTimeout(timeout);
-      const apiData = await apiRes.json();
-      if (apiRes.ok && apiData.url) {
-        checkoutUrl = apiData.url;
-      } else {
-        console.error('InfinitePay API error:', apiRes.status, JSON.stringify(apiData));
+      if (pref && pref.init_point) {
+        checkoutUrl = pref.init_point;
       }
-    } catch (e) {
-      console.error('InfinitePay API fetch error:', e.message);
-    }
-
-    if (!checkoutUrl) {
-      checkoutUrl = `https://checkout.infinitepay.io/${INFINITE_PAY_HANDLE}/JlFvnPXXzd?order_nsu=${paymentRef}&paymentRef=${paymentRef}&redirect_url=${encodeURIComponent(successUrl)}`;
-      console.log('Checkout: usando link hardcoded InfinitePay');
     } else {
-      console.log('Checkout: usando link da API InfinitePay:', checkoutUrl);
+      console.error('Mercado Pago: access token ausente ou pedido sem itens. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
     }
 
     if (!checkoutUrl) {

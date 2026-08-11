@@ -77,10 +77,12 @@ async function initDb() {
       cupom TEXT,
       cliente TEXT DEFAULT '{}',
       taxas TEXT DEFAULT '{}',
-      pagamento TEXT DEFAULT 'PicPay PIX',
+       pagamento TEXT DEFAULT 'PicPay PIX',
       status TEXT DEFAULT 'pendente',
       trackingNumber TEXT DEFAULT '',
       trackingStatus TEXT DEFAULT '[]',
+      mp_payment_id TEXT DEFAULT '',
+      payment_info TEXT DEFAULT '{}',
       createdAt TEXT DEFAULT (NOW())
     );
     CREATE TABLE IF NOT EXISTS comments (
@@ -207,9 +209,14 @@ async function migrateUserProfileColumns() {
     console.error('Erro ao adicionar paymentRef:', e.message);
   }
   try {
-    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS infinitepayId TEXT`);
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS mp_payment_id TEXT DEFAULT ''`);
   } catch (e) {
-    console.error('Erro ao adicionar infinitepayId:', e.message);
+    console.error('Erro ao adicionar mp_payment_id:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_info TEXT DEFAULT '{}'`);
+  } catch (e) {
+    console.error('Erro ao adicionar payment_info:', e.message);
   }
   try {
     await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS supplierLink TEXT DEFAULT ''`);
@@ -594,7 +601,8 @@ const parseOrder = (o) => {
     id: o.id,
     userId: o.userid,
     paymentRef: o.paymentref || o.paymentRef || null,
-    infinitepayId: o.infinitepayid || o.infinitepayId || null,
+    mpPaymentId: o.mp_payment_id || o.mppaymentid || o.mpPaymentId || '',
+    paymentInfo: JSON.parse(o.payment_info || o.paymentinfo || o.paymentInfo || '{}'),
     totalOriginal: o.totaloriginal,
     createdAt: o.createdat || o.createdAt,
     deliveredAt: o.deliveredat || o.deliveredAt || null,
@@ -695,12 +703,16 @@ async function updateOrderStatusByRef(ref, status) {
   await query(`UPDATE orders SET status = $1 WHERE paymentRef = $2`, [status, ref]);
 }
 
-async function updateOrderInfinitepayId(id, infinitepayId) {
-  await query(`UPDATE orders SET infinitepayId = $1 WHERE id = $2`, [infinitepayId, id]);
+async function updateOrderMpPayment(id, mpPaymentId) {
+  await query(`UPDATE orders SET mp_payment_id = $1 WHERE id = $2`, [String(mpPaymentId), id]);
 }
 
-async function orderByInfinitepayId(infinitepayId) {
-  const result = await query(`SELECT * FROM orders WHERE infinitepayId = $1`, [infinitepayId]);
+async function updateOrderPaymentInfo(id, info) {
+  await query(`UPDATE orders SET payment_info = $1 WHERE id = $2`, [JSON.stringify(info || {}), id]);
+}
+
+async function orderByMpPaymentId(mpPaymentId) {
+  const result = await query(`SELECT * FROM orders WHERE mp_payment_id = $1`, [String(mpPaymentId)]);
   return result.rows.length ? parseOrder(result.rows[0]) : null;
 }
 
@@ -1014,7 +1026,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderInfinitepayId, orderByInfinitepayId, deleteOrderById, updateOrderTracking, updateOrderProcessado,
+  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderMpPayment, updateOrderPaymentInfo, orderByMpPaymentId, deleteOrderById, updateOrderTracking, updateOrderProcessado,
   cancelOrderItem, returnOrderItem, setOrderDelivered,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,

@@ -587,11 +587,6 @@
               <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
             </div>
             <div class="cpFull" style="grid-column:1/-1;">
-              <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Checkout InfinitePay</label>
-              <input type="url" id="cpCheckoutLink" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
-              <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Se deixar vazio, usará o link geral da loja.</span>
-            </div>
-            <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Compra (Fornecedor)</label>
               <input type="url" id="cpSupplierLink" placeholder="https://www.aliexpress.com/item/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
               <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Link onde você compra o produto. Será usado no botão "Comprar" nos pedidos.</span>
@@ -1004,7 +999,7 @@
         else if (isReturned) label += ' <span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:10px;padding:1px 6px;border-radius:8px;font-weight:600;">DEVOLVIDO</span>';
         return label;
       }).join(', ');
-      const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : o.status === 'entregue' ? 'badge-green' : o.status === 'chamado de devolução' ? 'badge-orange' : o.status === 'chamado de cancelamento' ? 'badge-red' : 'badge-gray');
+      const statusClass = (o.status === 'aprovado' ? 'badge-green' : o.status === 'pendente' ? 'badge-orange' : o.status === 'entregue' ? 'badge-green' : o.status === 'reprovado' ? 'badge-red' : o.status === 'chamado de devolução' ? 'badge-orange' : o.status === 'chamado de cancelamento' ? 'badge-red' : o.status === 'abandonado' ? 'badge-gray' : o.status === 'estornado' ? 'badge-gray' : 'badge-gray');
       const hasSupplierLink = o.itens.some(item => {
         const product = allProducts.find(p => p.id == item.id);
         return product && product.supplierLink;
@@ -1259,7 +1254,7 @@
         return '<div class="cart-item-row" style="' + (isCancelled ? 'opacity:0.5;text-decoration:line-through;' : isReturned ? 'opacity:0.6;' : '') + '"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + statusLabel + specs + buyBtn + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
       }).join('');
 
-      const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', cancelado: 'badge-red', reembolsado: 'badge-gray', entregue: 'badge-blue', 'chamado de devolução': 'badge-orange', 'chamado de cancelamento': 'badge-red' };
+      const statusColors = { aprovado: 'badge-green', pendente: 'badge-orange', reprovado: 'badge-red', cancelado: 'badge-red', reembolsado: 'badge-gray', estornado: 'badge-gray', abandonado: 'badge-gray', entregue: 'badge-blue', 'chamado de devolução': 'badge-orange', 'chamado de cancelamento': 'badge-red' };
       const statusBadge = '<span class="badge ' + (statusColors[order.status] || 'badge-orange') + '">' + (order.status || 'pendente') + '</span>';
       const deliveredInfo = order.deliveredAt ? '<br><span style="font-size:12px;color:var(--success);"><i class="fas fa-check-circle"></i> Entregue em: ' + new Date(order.deliveredAt).toLocaleString('pt-BR') + '</span>' : '';
 
@@ -1309,6 +1304,20 @@
         <div class="detail-section">
           <div class="label">Pagamento</div>
           ${order.pagamento || 'PIX'}${order.cupom ? ' | Cupom: ' + order.cupom.code : ''}
+          ${order.paymentInfo && order.paymentInfo.paymentId ? (() => {
+            const p = order.paymentInfo;
+            const methodLabel = {
+              'pix': 'PIX', 'credit_card': 'Cartão de Crédito', 'debit_card': 'Cartão de Débito',
+              'bank_transfer': 'Transferência', 'ticket': 'Boleto'
+            }[p.type] || p.type || '';
+            return '<br><span style="font-size:12px;color:var(--text-muted)">' +
+              '<i class="fab fa-mercadopago" style="color:#00b5ff;"></i> ' +
+              'Mercado Pago · ' + (methodLabel ? methodLabel + (p.installments > 1 ? ' ' + p.installments + 'x' : '') : '') +
+              (p.cardBrand ? ' · ' + p.cardBrand : '') +
+              '<br>Status: ' + (p.statusDetail || p.status || '') +
+              '<br>ID pagamento: ' + p.paymentId +
+              '</span>';
+          })() : ''}
         </div>
         <div class="detail-section">
           <div class="label">Status</div>
@@ -1316,8 +1325,11 @@
             <option value="pendente" ${order.status === 'pendente' ? 'selected' : ''}>Pendente</option>
             <option value="aprovado" ${order.status === 'aprovado' ? 'selected' : ''}>Aprovado</option>
             <option value="entregue" ${order.status === 'entregue' ? 'selected' : ''}>Entregue</option>
+            <option value="reprovado" ${order.status === 'reprovado' ? 'selected' : ''}>Reprovado</option>
             <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
             <option value="reembolsado" ${order.status === 'reembolsado' ? 'selected' : ''}>Reembolsado</option>
+            <option value="estornado" ${order.status === 'estornado' ? 'selected' : ''}>Estornado (chargeback)</option>
+            <option value="abandonado" ${order.status === 'abandonado' ? 'selected' : ''}>Abandonado (desistiu)</option>
           </select>
           <button class="order-detail-btn" onclick="updateOrderStatus(${order.id})" style="margin-left:8px;border-color:var(--primary);color:var(--primary);"><i class="fas fa-save"></i> Salvar</button>
         </div>
@@ -1640,7 +1652,6 @@
       document.getElementById('cpImagem').value = p.imagem || '';
       document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
       document.getElementById('cpDestaque').checked = p.destaque;
-      document.getElementById('cpCheckoutLink').value = p.checkoutLink || '';
       document.getElementById('cpSupplierLink').value = p.supplierLink || '';
 
       // Rebuild variants (subcategorias)
@@ -1677,7 +1688,6 @@
       const preco = v.preco != null && v.preco !== '' ? v.preco : '';
       const imagem = esc(v.imagem);
       const descricao = esc(v.descricao);
-      const checkoutLink = esc(v.checkoutLink);
       const espesc = v.especificacoes || v.specs || {};
       let specHtml = '';
       Object.entries(espesc).forEach(function(kv) {
@@ -1701,7 +1711,6 @@
           '<div class="vpImagemPreview" style="width:46px;height:46px;border:2px solid var(--border);border-radius:8px;background:#fff;overflow:hidden;' + (imagem ? '' : 'display:none;') + '"><img src="' + imagem + '" style="width:100%;height:100%;object-fit:cover;" alt=""></div>' +
         '</div>' +
         '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Descrição da Subcategoria</label><textarea class="vpDescricao" rows="2" placeholder="Descrição exibida no produto quando o cliente escolher esta subcategoria" style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;">' + descricao + '</textarea></div>' +
-        '<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:500;display:block;margin-bottom:2px;">Link de Checkout InfinitePay</label><input type="url" class="vpCheckoutLink" value="' + checkoutLink + '" placeholder="https://checkout.infinitepay.io/..." style="width:100%;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;"><span style="font-size:11px;color:var(--text-muted);margin-top:2px;display:block;">Se vazio, usa o link geral do produto no botão "Comprar agora".</span></div>' +
         '<div>' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
             '<label style="font-size:12px;font-weight:500;">Especificações da Subcategoria</label>' +
@@ -1831,20 +1840,18 @@
         const vPreco = parseFloat(card.querySelector('.vpPreco').value) || 0;
         const vImagem = card.querySelector('.vpImagem').value.trim();
         const vDescricao = card.querySelector('.vpDescricao').value.trim();
-        const vCheckoutLink = card.querySelector('.vpCheckoutLink').value.trim();
         const vSpecs = {};
         card.querySelectorAll('.vpSpec-row').forEach(function(row) {
           const key = row.querySelector('.vpSpecKey').value.trim();
           const value = row.querySelector('.vpSpecValue').value.trim();
           if (key && value) vSpecs[key] = value;
         });
-        variants.push({ nome: vNome, preco: vPreco, imagem: vImagem, descricao: vDescricao, checkoutLink: vCheckoutLink, especificacoes: vSpecs });
+        variants.push({ nome: vNome, preco: vPreco, imagem: vImagem, descricao: vDescricao, especificacoes: vSpecs });
 
         // Also collect specs from the first variant for the base specs
         Object.assign(specs, vSpecs);
       });
 
-      const checkoutLink = document.getElementById('cpCheckoutLink').value.trim();
       const supplierLink = document.getElementById('cpSupplierLink').value.trim();
       const editId = document.getElementById('cpEditId').value;
 
@@ -1862,7 +1869,6 @@
         reviews: 0,
         specs: specs,
         variants: variants,
-        checkoutLink: checkoutLink,
         supplierLink: supplierLink
       };
 
@@ -1894,7 +1900,6 @@
           document.getElementById('cpImagem').value = '';
           document.getElementById('cpImagens').value = '';
           document.getElementById('cpDestaque').checked = false;
-          document.getElementById('cpCheckoutLink').value = '';
           document.getElementById('cpSupplierLink').value = '';
           document.getElementById('cpEditId').value = '';
           document.getElementById('variantsContainer').innerHTML = '';
