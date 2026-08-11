@@ -198,13 +198,14 @@ async function createMercadoPagoPreference(payload) {
     });
     const data = await res.json();
     if (!res.ok) {
+      const msg = data.message || data.error || 'Erro desconhecido da API';
       console.error('Mercado Pago preference error:', res.status, JSON.stringify(data));
-      return null;
+      return { error: `HTTP ${res.status}: ${msg}` };
     }
     return data;
   } catch (e) {
     console.error('Mercado Pago preference fetch error:', e.message);
-    return null;
+    return { error: e.name === 'AbortError' ? 'Timeout (10s) chamando Mercado Pago' : 'Falha de rede: ' + e.message };
   } finally {
     clearTimeout(timeout);
   }
@@ -295,7 +296,14 @@ router.post('/orders', requireAuth, async (req, res) => {
 
     // Cria preference no Mercado Pago (Checkout Pro) → link de pagamento
     let checkoutUrl = null;
-    if (MP_ACCESS_TOKEN && mpItems.length > 0) {
+    let paymentError = null;
+    if (!MP_ACCESS_TOKEN) {
+      paymentError = 'MERCADO_PAGO_ACCESS_TOKEN não configurado no servidor';
+      console.error('Mercado Pago: access token ausente. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
+    } else if (mpItems.length === 0) {
+      paymentError = 'Pedido sem itens válidos';
+      console.error('Mercado Pago: pedido sem itens. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
+    } else {
       const pref = await createMercadoPagoPreference({
         items: mpItems,
         payer: buildMpPayer(cliente, user),
@@ -316,9 +324,13 @@ router.post('/orders', requireAuth, async (req, res) => {
       });
       if (pref && pref.init_point) {
         checkoutUrl = pref.init_point;
+      } else if (pref && pref.error) {
+        paymentError = 'Mercado Pago: ' + pref.error;
+        console.error(paymentError + ' (pedido #' + newOrder.id + ')');
+      } else {
+        paymentError = 'Mercado Pago: resposta sem init_point';
+        console.error(paymentError + ' (pedido #' + newOrder.id + ')');
       }
-    } else {
-      console.error('Mercado Pago: access token ausente ou pedido sem itens. Pedido #' + newOrder.id + ' criado sem URL de pagamento.');
     }
 
     if (!checkoutUrl) {
@@ -328,7 +340,8 @@ router.post('/orders', requireAuth, async (req, res) => {
     res.json({
       success: true, orderId: newOrder.id, paymentRef,
       message: 'Pedido criado! Redirecionando para o pagamento...',
-      checkout_url: checkoutUrl
+      checkout_url: checkoutUrl,
+      payment_error: paymentError
     });
   } catch (e) { console.error('ERRO PEDIDO:', e.message, e.stack); res.status(500).json({ error: 'Erro ao processar pedido: ' + (e.message || '') }); }
 });

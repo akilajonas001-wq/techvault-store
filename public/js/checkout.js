@@ -219,7 +219,7 @@ async function handleQuickCheckout() {
     } else {
       loadingOverlay.style.display = 'none';
       let msg = data.error || 'Erro ao processar pedido';
-      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento. Tente novamente.';
+      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento: ' + (data.payment_error || 'tente novamente.');
       errorMessage.textContent = msg;
       errorMessage.style.display = 'block';
     }
@@ -380,7 +380,7 @@ async function handleCheckout(event) {
     } else {
       loadingOverlay.style.display = 'none';
       let msg = data.error || 'Erro ao processar pedido';
-      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento. Tente novamente.';
+      if (!data.checkout_url && data.success) msg = 'Pedido criado, mas houve um erro ao gerar o link de pagamento: ' + (data.payment_error || 'tente novamente.');
       errorMessage.textContent = msg;
       errorMessage.style.display = 'block';
     }

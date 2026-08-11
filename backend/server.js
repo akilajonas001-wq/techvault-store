@@ -280,6 +280,10 @@ async function startServer() {
 app.use('/api', authenticate);
 
 // Public order info (no auth required)
+app.get('/api/config', (req, res) => {
+  res.json({ status: 'ok', mercadoPagoConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN });
+});
+
 app.get('/api/check-order-status/:id', async (req, res) => {
   try {
     const order = await db.orderById(parseInt(req.params.id));
