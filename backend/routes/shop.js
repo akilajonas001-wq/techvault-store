@@ -221,13 +221,17 @@ const MP_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 const MP_API = 'https://api.mercadopago.com';
 const MP_TIMEOUT_MS = 15000;
 
-async function mpPost(path, payload) {
+async function mpPost(path, payload, idempotencyKey) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), MP_TIMEOUT_MS);
   try {
     const res = await fetch(`${MP_API}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+        'X-Idempotency-Key': idempotencyKey || require('crypto').randomUUID()
+      },
       body: JSON.stringify(payload),
       signal: controller.signal
     });
