@@ -347,7 +347,7 @@ router.post('/payments/pix', requireAuth, async (req, res) => {
 // Cria pagamento no cartão usando token gerado pelo MercadoPago.js (frontend)
 router.post('/payments/card', requireAuth, async (req, res) => {
   try {
-    const { orderId, token, installments, paymentMethodId, cpf } = req.body;
+    const { orderId, token, paymentMethodId, cpf } = req.body;
     const order = await db.orderById(parseInt(orderId));
     if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
     if (order.userId != req.user.id && !req.user.admin) return res.status(403).json({ error: 'Acesso negado' });
@@ -367,7 +367,7 @@ router.post('/payments/card', requireAuth, async (req, res) => {
     const { ok, status: httpStatus, data } = await mpPost('/v1/payments', {
       transaction_amount: total,
       description: `Pedido #${order.id} TechVault`,
-      installments: Math.max(1, parseInt(installments) || 1),
+      installments: 1,
       payment_method_id: paymentMethodId || undefined,
       token,
       payer,

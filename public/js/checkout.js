@@ -412,29 +412,13 @@ function detectCardBrand() {
       lastCardBrand = res[0].id;
       document.getElementById('cardBrandLabel').style.display = 'flex';
       document.getElementById('cardBrandText').textContent = lastCardBrand;
-      loadInstallments(bin);
     }
   }).catch(() => {});
 }
 
-async function loadInstallments(bin) {
-  const amount = pendingOrderData ? pendingOrderData.total : 0;
-  if (!mpInstance || !bin || bin.length < 6 || amount <= 0) return;
-  try {
-    const res = await mpInstance.getInstallments({ amount, bin, paymentTypeId: 'credit_card' });
-    if (res && res[0] && res[0].payer_costs && res[0].payer_costs.length) {
-      const sel = document.getElementById('cardInstallments');
-      sel.innerHTML = res[0].payer_costs.map(c =>
-        '<option value="' + c.installments + '">' + escapeHtml(c.recommended_message) + '</option>'
-      ).join('');
-      updateCardAmounts(amount);
-    }
-  } catch (e) {}
-}
-
 function updateCardAmounts(total) {
   const btn = document.getElementById('cardPayButton');
-  if (btn) btn.innerHTML = '<i class="fas fa-lock"></i> Pagar ' + formatMoney(total);
+  if (btn) btn.innerHTML = '<i class="fas fa-lock"></i> Pagar à vista ' + formatMoney(total);
 }
 
 function mascaraCartao(input) {
@@ -469,7 +453,6 @@ async function processCardPayment(event) {
   const expiry = document.getElementById('cardExpiry').value.trim();
   const securityCode = document.getElementById('cardCvv').value;
   const identificationNumber = document.getElementById('cardCpf').value.replace(/\D/g, '');
-  const installments = parseInt(document.getElementById('cardInstallments').value) || 1;
 
   if (cardNumber.length < 13) return showCardError('Número do cartão inválido.');
   if (!cardholderName) return showCardError('Informe o nome impresso no cartão.');
@@ -510,7 +493,7 @@ async function processCardPayment(event) {
       body: JSON.stringify({
         orderId: currentOrderId,
         token: cardTokenData.id,
-        installments,
+        installments: 1,
         cpf: identificationNumber,
         paymentMethodId
       })
@@ -554,7 +537,6 @@ function rejectDetail(detail) {
     'cc_rejected_card_error': 'Erro ao processar cartão.',
     'cc_rejected_insufficient_amount': 'Limite insuficiente.',
     'cc_rejected_high_risk': 'Pagamento recusado por segurança.',
-    'cc_rejected_invalid_installments': 'Parcelas inválidas.',
     'cc_rejected_call_for_authorize': 'Contate seu banco para autorizar a compra.'
   };
   return map[detail] || 'Pagamento recusado pelo emissor do cartão. Tente novamente.';
