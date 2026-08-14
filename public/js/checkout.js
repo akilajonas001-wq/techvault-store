@@ -210,6 +210,7 @@ async function goToPaymentStep(mode) {
     itens: cart.map(item => ({
       id: item.id, nome: item.nome, categoria: item.categoria,
       preco: item.preco, quantidade: item.quantidade,
+      variantIndex: item.variantIndex,
       variantSpecs: item.variantSpecs || null
     })),
     total: finalTotal,

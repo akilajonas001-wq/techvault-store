@@ -190,7 +190,7 @@ function addToCart(produto) {
     showNotification('Produto indisponível no momento', 'error');
     return;
   }
-  const existingItem = cart.find(item => String(item.id) === String(produto.id));
+  const existingItem = cart.find(item => String(item.cartKey || item.id) === String(produto.cartKey || produto.id));
 
   if (existingItem) {
     existingItem.quantidade += 1;
@@ -204,7 +204,7 @@ function addToCart(produto) {
 }
 
 function removeFromCart(productId) {
-  cart = cart.filter(item => String(item.id) !== String(productId));
+  cart = cart.filter(item => String(item.cartKey || item.id) !== String(productId));
   saveCart();
   syncCartToServer();
   renderCartItems();
@@ -278,14 +278,14 @@ function renderCartItems() {
           <strong style="font-size: 14px; color: var(--text);">${escapeHtml(item.nome)}</strong>
           ${specsInfo}
           <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-            <button onclick="changeQuantity('${item.id}', -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
+            <button onclick="changeQuantity('${item.cartKey || item.id}', -1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">−</button>
             <span style="font-weight: 600; min-width: 24px; text-align: center;">${item.quantidade}</span>
-            <button onclick="changeQuantity('${item.id}', 1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
+            <button onclick="changeQuantity('${item.cartKey || item.id}', 1)" style="width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-cool); cursor: pointer; font-size: 14px; color: var(--text); display: flex; align-items: center; justify-content: center; transition: all 0.2s;">+</button>
           </div>
         </div>
         <div style="text-align: right;">
           <div style="font-weight: 700; color: var(--text); font-size: 16px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</div>
-          <button onclick="removeFromCart('${item.id}')" style="margin-top: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; transition: all 0.2s;">
+          <button onclick="removeFromCart('${item.cartKey || item.id}')" style="margin-top: 8px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 13px; transition: all 0.2s;">
             <i class="fas fa-trash-alt"></i> Remover
           </button>
         </div>
@@ -299,7 +299,7 @@ function renderCartItems() {
 }
 
 function changeQuantity(productId, delta) {
-  const item = cart.find(i => String(i.id) === String(productId));
+  const item = cart.find(i => String(i.cartKey || i.id) === String(productId));
   if (!item) return;
 
   item.quantidade += delta;

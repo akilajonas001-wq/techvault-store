@@ -156,7 +156,13 @@ router.post('/orders', requireAuth, async (req, res) => {
     for (const item of (itens || [])) {
       const product = await db.productById(item.id || item.productId);
       if (!product) return res.status(400).json({ error: 'Produto não encontrado: ' + (item.nome || item.id) });
-      serverTotal += (product.preco || 0) * (item.quantidade || 1);
+      let unitPrice = product.preco || 0;
+      const vi = parseInt(item.variantIndex);
+      const variantes = product.variantes || product.variants || [];
+      if (!isNaN(vi) && variantes[vi] && variantes[vi].preco && variantes[vi].preco > 0) {
+        unitPrice = variantes[vi].preco;
+      }
+      serverTotal += unitPrice * (item.quantidade || 1);
     }
     serverTotal = Math.round(serverTotal * 100) / 100;
 

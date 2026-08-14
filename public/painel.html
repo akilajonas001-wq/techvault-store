@@ -569,18 +569,18 @@
             <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagem Principal</label>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <input type="url" id="cpImagem" placeholder="/images/products/produto-xxx.svg" style="flex:1;min-width:150px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+                <input type="url" id="cpImagem" oninput="renderProductImagesPreview()" placeholder="/images/products/produto-xxx.svg" style="flex:1;min-width:150px;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
                 <span style="color:var(--text-muted);font-size:12px;">ou</span>
                 <label class="upload-btn upload-btn-label" style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:2px dashed var(--primary);border-radius:10px;color:var(--primary);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all 0.2s;" onmouseenter="this.style.background='rgba(26,115,232,0.05)'" onmouseleave="this.style.background=''">
-                  <i class="fas fa-cloud-upload-alt"></i> Enviar arquivo
-                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none;" onchange="uploadImage(this, 'cpImagem')">
+                  <i class="fas fa-cloud-upload-alt"></i> Enviar arquivos
+                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" multiple style="display:none;" onchange="uploadImage(this)">
                 </label>
               </div>
-              <div id="cpImagemPreview" style="margin-top:6px;display:none;"><img style="max-height:80px;border-radius:8px;border:1px solid var(--border);"></div>
+              <div id="cpImagensPreview" style="display:none;margin-top:8px;flex-wrap:wrap;gap:8px;"></div>
             </div>
             <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Imagens Adicionais (URLs, uma por linha)</label>
-              <textarea id="cpImagens" placeholder="/images/products/produto-xxx-1.svg&#10;/images/products/produto-xxx-2.svg" rows="2" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
+              <textarea id="cpImagens" oninput="renderProductImagesPreview()" placeholder="/images/products/produto-xxx-1.svg&#10;/images/products/produto-xxx-2.svg" rows="2" style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;resize:vertical;"></textarea>
             </div>
             <div class="cpFull" style="grid-column:1/-1;display:flex;align-items:center;gap:8px;">
               <input type="checkbox" id="cpDestaque" style="width:18px;height:18px;">
@@ -1651,6 +1651,7 @@
       document.getElementById('cpEstoque').value = p.paused ? '0' : '1';
       document.getElementById('cpImagem').value = p.imagem || '';
       document.getElementById('cpImagens').value = (p.imagens || []).join('\n');
+      renderProductImagesPreview();
       document.getElementById('cpDestaque').checked = p.destaque;
       document.getElementById('cpSupplierLink').value = p.supplierLink || '';
 
@@ -1785,36 +1786,86 @@
       container.appendChild(row);
     }
 
-    async function uploadImage(input, targetId) {
-      const file = input.files[0];
-      if (!file) return;
-      const preview = document.getElementById(targetId + 'Preview');
-      const previewImg = preview ? preview.querySelector('img') : null;
-      if (previewImg) {
-        preview.style.display = 'block';
-        previewImg.src = URL.createObjectURL(file);
+    function getAdditionalImages() {
+      return document.getElementById('cpImagens').value.trim().split('\n').map(s => s.trim()).filter(Boolean);
+    }
+
+    function flagBadImage(img) {
+      img.style.outline = '2px solid var(--error)';
+    }
+
+    function renderProductImagesPreview() {
+      const main = document.getElementById('cpImagem').value.trim();
+      const addImgs = getAdditionalImages();
+      const container = document.getElementById('cpImagensPreview');
+      if (!container) return;
+      if (!main && !addImgs.length) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
       }
-      const formData = new FormData();
-      formData.append('image', file);
-      try {
-        const res = await fetch('/api/admin/upload', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + getToken() },
-          body: formData
-        });
-        const data = await res.json();
-        if (data.success) {
-          document.getElementById(targetId).value = data.url;
-          if (previewImg) previewImg.src = data.url;
-        } else {
-          alert(data.error || 'Erro ao enviar imagem');
-          if (preview) preview.style.display = 'none';
+      container.style.display = 'flex';
+      let html = '';
+      if (main) {
+        html += '<div style="position:relative;border:2px solid var(--primary);border-radius:8px;overflow:hidden;" title="Imagem Principal">' +
+          '<img src="' + main + '" style="width:80px;height:80px;object-fit:cover;display:block;" onerror="flagBadImage(this)">' +
+          '<button type="button" onclick="removeMainImage()" title="Remover imagem principal" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+          '<span style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;text-align:center;padding:2px 0;">Principal</span>' +
+        '</div>';
+      }
+      addImgs.forEach(function(url, i) {
+        html += '<div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;" title="Imagem adicional ' + (i + 1) + '">' +
+          '<img src="' + url + '" style="width:80px;height:80px;object-fit:cover;display:block;" onerror="flagBadImage(this)">' +
+          '<button type="button" onclick="removeAdditionalImage(' + i + ')" title="Remover imagem" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;">&times;</button>' +
+        '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function removeMainImage() {
+      document.getElementById('cpImagem').value = '';
+      renderProductImagesPreview();
+    }
+
+    function removeAdditionalImage(i) {
+      const imgs = getAdditionalImages();
+      imgs.splice(i, 1);
+      document.getElementById('cpImagens').value = imgs.join('\n');
+      renderProductImagesPreview();
+    }
+
+    async function uploadImage(input) {
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+      const mainInput = document.getElementById('cpImagem');
+      let firstSet = false;
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+          const res = await fetch('/api/admin/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+            body: formData
+          });
+          const data = await res.json();
+          if (data.success) {
+            if (!firstSet && !mainInput.value.trim()) {
+              mainInput.value = data.url;
+              firstSet = true;
+            }
+            const ta = document.getElementById('cpImagens');
+            const cur = ta.value.trim();
+            ta.value = cur ? cur + '\n' + data.url : data.url;
+          } else {
+            alert(data.error || 'Erro ao enviar imagem: ' + file.name);
+          }
+        } catch (err) {
+          alert('Erro de conexão ao enviar imagem: ' + file.name);
         }
-      } catch (err) {
-        alert('Erro de conexão ao enviar imagem');
-        if (preview) preview.style.display = 'none';
       }
       input.value = '';
+      renderProductImagesPreview();
     }
 
     async function submitCreateProduct() {
@@ -1846,7 +1897,9 @@
           const value = row.querySelector('.vpSpecValue').value.trim();
           if (key && value) vSpecs[key] = value;
         });
-        variants.push({ nome: vNome, preco: vPreco, imagem: vImagem, descricao: vDescricao, especificacoes: vSpecs });
+        if (vNome) {
+          variants.push({ nome: vNome, preco: vPreco, imagem: vImagem, descricao: vDescricao, especificacoes: vSpecs });
+        }
 
         // Also collect specs from the first variant for the base specs
         Object.assign(specs, vSpecs);
@@ -1854,6 +1907,16 @@
 
       const supplierLink = document.getElementById('cpSupplierLink').value.trim();
       const editId = document.getElementById('cpEditId').value;
+
+      let avaliacao = 0;
+      let reviews = 0;
+      if (editId) {
+        const existing = allProducts.find(x => x.id == editId);
+        if (existing) {
+          avaliacao = existing.avaliacao || 0;
+          reviews = existing.reviews || 0;
+        }
+      }
 
       const productData = {
         nome: nome,
@@ -1866,8 +1929,8 @@
         stock: disponivel ? -1 : 0,
         paused: !disponivel,
         destaque: destaque,
-        avaliacao: 0,
-        reviews: 0,
+        avaliacao: avaliacao,
+        reviews: reviews,
         specs: specs,
         variants: variants,
         supplierLink: supplierLink
@@ -1900,6 +1963,7 @@
           document.getElementById('cpEstoque').value = '1';
           document.getElementById('cpImagem').value = '';
           document.getElementById('cpImagens').value = '';
+          renderProductImagesPreview();
           document.getElementById('cpDestaque').checked = false;
           document.getElementById('cpSupplierLink').value = '';
           document.getElementById('cpEditId').value = '';

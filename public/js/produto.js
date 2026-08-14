@@ -3,7 +3,9 @@ let currentProduct = null;
 let selectedRating = 0;
 let currentUserId = null;
 let selectedVariant = null;
+let selectedVariantIndex = null;
 let baseSpecs = null;
+let baseGalleryImages = [];
 
 const specLabels = {
   sistema_operacional: 'Sistema Operacional',
@@ -299,7 +301,9 @@ async function loadProduct(productId) {
     
     currentProduct = product;
     selectedVariant = null;
+    selectedVariantIndex = null;
     baseSpecs = product.especificacoes ? { ...product.especificacoes } : null;
+    product.variantes = (product.variantes || []).filter(v => v && ((v.nome && String(v.nome).trim()) || v.imagem || (v.preco && v.preco > 0)));
     const inWish = isInWishlist(product.id);
     
     const breadcrumbCategory = document.getElementById('breadcrumbCategory');
@@ -311,8 +315,8 @@ async function loadProduct(productId) {
     
     // Build variant selector
     let variantHtml = '';
-    if (product.variantes && product.variantes.length > 1) {
-      variantHtml = '<div class="variant-section"><h3><i class="fas fa-layer-group"></i> Variantes do Produto</h3><div class="variant-list">';
+    if (product.variantes && product.variantes.length > 0) {
+      variantHtml = '<div class="variant-section"><h3><i class="fas fa-layer-group"></i> Opções do Produto</h3><div class="variant-list">';
       product.variantes.forEach(function(v, idx) {
         const selected = idx === 0 ? ' selected' : '';
         const vPreco = v.preco || product.preco;
@@ -327,6 +331,7 @@ async function loadProduct(productId) {
     }
     
     const allImages = (product.imagens && product.imagens.length > 0) ? product.imagens : [product.imagem];
+    baseGalleryImages = allImages;
     const thumbsHtml = allImages.map((img, i) =>
       '<div class="thumb-item' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" onclick="goToSlide(' + i + ')">' +
         '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(product.nome) + ' ' + (i+1) + '">' +
@@ -397,7 +402,9 @@ async function loadProduct(productId) {
     loadRelatedProducts(product.categoria, product.id);
     loadComments(product.id);
     updateCommentAuth();
-    initCarousel(allImages.length);
+    if (!product.variantes || product.variantes.length === 0) {
+      initCarousel(allImages.length);
+    }
   } catch (error) {
     console.error('Erro ao carregar produto:', error);
     document.getElementById('productContent').innerHTML = 
@@ -425,6 +432,7 @@ function generateStars(rating) {
 function selectVariant(idx) {
   if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes[idx]) return;
   selectedVariant = currentProduct.variantes[idx];
+  selectedVariantIndex = idx;
   
   // Update price (use || to fallback to main price when variant preco is 0)
   const priceEl = document.getElementById('productPrice');
@@ -439,8 +447,8 @@ function selectVariant(idx) {
     descEl.textContent = selectedVariant.descricao || currentProduct.descricao || 'Descrição não disponível';
   }
 
-  // Update gallery image with subcategory image (if any)
-  updateVariantImageOverlay(selectedVariant.imagem);
+  // Update gallery with the subcategory's photos (falls back to product photos)
+  applyVariantGallery(selectedVariant);
   
   // Highlight selected
   document.querySelectorAll('.variant-item').forEach(function(el) {
@@ -460,31 +468,46 @@ function selectVariant(idx) {
   }
 }
 
-function updateVariantImageOverlay(src) {
-  const carousel = document.getElementById('carouselTrack');
-  if (!carousel) return;
-  const container = carousel.closest('.carousel-container');
-  if (!container) return;
-  let overlay = document.getElementById('variantImageOverlay');
-  if (!src) {
-    if (overlay) overlay.remove();
-    return;
+function applyVariantGallery(variant) {
+  let images;
+  if (variant && variant.imagem) {
+    images = [variant.imagem];
+  } else {
+    images = baseGalleryImages.length > 0 ? baseGalleryImages : [currentProduct.imagem];
   }
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'variantImageOverlay';
-    overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:4;background:var(--bg-cool,#f1f5f9);display:flex;align-items:center;justify-content:center;';
-    overlay.innerHTML = '<img style="max-width:100%;max-height:100%;object-fit:contain;" alt="Subcategoria">';
-    container.appendChild(overlay);
+  rebuildGallery(images);
+}
+
+function rebuildGallery(images) {
+  const track = document.getElementById('carouselTrack');
+  if (!track || !images || !images.length) return;
+  const hasMulti = images.length > 1;
+  track.innerHTML = images.map((img, i) =>
+    '<div class="carousel-slide' + (i === 0 ? ' active' : '') + '" data-index="' + i + '">' +
+      '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(currentProduct.nome) + ' ' + (i + 1) + '">' +
+    '</div>').join('');
+  const thumbsRow = document.querySelector('.thumbs-row');
+  if (thumbsRow) {
+    thumbsRow.innerHTML = images.map((img, i) =>
+      '<div class="thumb-item' + (i === 0 ? ' active' : '') + '" data-index="' + i + '" onclick="goToSlide(' + i + ')">' +
+        '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(currentProduct.nome) + ' ' + (i + 1) + '">' +
+      '</div>').join('');
+    thumbsRow.style.display = hasMulti ? '' : 'none';
   }
-  overlay.querySelector('img').src = src;
+  document.querySelectorAll('.carousel-arrow').forEach(function(arrow) {
+    arrow.style.display = hasMulti ? '' : 'none';
+  });
+  initCarousel(images.length);
 }
 
 function getSelectedVariantData() {
   if (!currentProduct) return null;
   if (selectedVariant) {
+    const idx = selectedVariantIndex != null ? selectedVariantIndex : 0;
     return {
-      id: selectedVariant.id || currentProduct.id,
+      id: currentProduct.id,
+      cartKey: currentProduct.id + '-v' + idx,
+      variantIndex: idx,
       nome: selectedVariant.nome || currentProduct.nome,
       preco: selectedVariant.preco || currentProduct.preco,
       imagem: selectedVariant.imagem || currentProduct.imagem,
@@ -495,6 +518,7 @@ function getSelectedVariantData() {
   }
   return {
     id: currentProduct.id,
+    cartKey: currentProduct.id,
     nome: currentProduct.nome,
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,
