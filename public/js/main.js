@@ -133,7 +133,7 @@ function showUserMenu() {
     userMenu.classList.add('shown');
     const firstName = (currentUser?.nome || '').split(' ')[0];
     let adminLink = '';
-    if (currentUser && currentUser.admin) {
+    if (currentUser && (currentUser.admin || currentUser.role === 'admin' || currentUser.role === 'funcionario')) {
       adminLink = `<a href="/painel" style="order:7;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);transition:all .2s;white-space:nowrap;"><i class="fas fa-shield-alt"></i> Painel</a>`;
     }
     userMenu.innerHTML = `
@@ -157,7 +157,7 @@ function showUserMenu() {
   if (mobileMyAccount) mobileMyAccount.style.display = 'flex';
   if (mobileMyOrders) mobileMyOrders.style.display = 'flex';
   if (mobileLogout) mobileLogout.style.display = 'flex';
-  if (mobileAdminLink && currentUser && currentUser.admin) {
+  if (mobileAdminLink && currentUser && (currentUser.admin || currentUser.role === 'admin' || currentUser.role === 'funcionario')) {
     mobileAdminLink.style.display = 'flex';
   }
 }
