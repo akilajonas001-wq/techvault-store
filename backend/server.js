@@ -283,6 +283,7 @@ app.use('/api', authenticate);
 app.get('/api/config', (req, res) => {
   res.json({
     status: 'ok',
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
     mercadoPagoConfigured: !!process.env.MERCADO_PAGO_ACCESS_TOKEN,
     mercadoPagoPublicKey: process.env.MERCADO_PAGO_PUBLIC_KEY || ''
   });
