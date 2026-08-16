@@ -211,7 +211,8 @@ async function goToPaymentStep(mode) {
       id: item.id, nome: item.nome, categoria: item.categoria,
       preco: item.preco, quantidade: item.quantidade,
       variantIndex: item.variantIndex,
-      variantSpecs: item.variantSpecs || null
+      variantSpecs: item.variantSpecs || null,
+      cor: item.cor || null
     })),
     total: finalTotal,
     totalOriginal: total,
@@ -567,6 +568,9 @@ function loadCartItems(containerId, totalId) {
     if (item.variantSpecs) {
       const specs = Object.values(item.variantSpecs).filter(Boolean).join(' | ');
       if (specs) specsInfo = '<br><small style="color: var(--text-muted); font-size: 11px;">' + escapeHtml(specs) + '</small>';
+    }
+    if (item.cor) {
+      specsInfo += '<br><small style="color: var(--text-muted); font-size: 11px;"><i class="fas fa-palette"></i> Cor: ' + escapeHtml(item.cor) + '</small>';
     }
     return `
       <div class="cart-item">

@@ -272,6 +272,9 @@ function renderCartItems() {
       const specs = Object.values(item.variantSpecs).filter(Boolean).join(' | ');
       if (specs) specsInfo = '<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">' + escapeHtml(specs) + '</div>';
     }
+    if (item.cor) {
+      specsInfo += '<div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;"><i class="fas fa-palette"></i> Cor: ' + escapeHtml(item.cor) + '</div>';
+    }
     return `
       <div class="cart-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border);">
         <div style="flex: 1;">

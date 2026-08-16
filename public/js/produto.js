@@ -4,8 +4,23 @@ let selectedRating = 0;
 let currentUserId = null;
 let selectedVariant = null;
 let selectedVariantIndex = null;
+let selectedColor = null;
+let selectedColorIndex = null;
 let baseSpecs = null;
 let baseGalleryImages = [];
+
+const colorMap = {
+  preto: '#1a1a1a', branco: '#ffffff', cinza: '#9e9e9e', prata: '#c0c0c0',
+  grafite: '#37474f', azul: '#1e88e5', 'azul-marinho': '#1a237e', 'azul claro': '#90caf9',
+  vermelho: '#e53935', vinho: '#7f1d1d', verde: '#43a047', amarelo: '#fdd835',
+  rosa: '#ec407a', roxo: '#8e24aa', lilas: '#9c8fb8', laranja: '#fb8c00',
+  dourado: '#d4af37', bege: '#e8d5b7', marrom: '#6d4c41', champagne: '#f7e7ce',
+  gelo: '#f3f8fb', turquesa: '#26c6da', ciano: '#00acc1', salmao: '#fa8072'
+};
+function colorSwatch(cor) {
+  const key = String(cor || '').trim().toLowerCase();
+  return colorMap[key] || null;
+}
 
 const specLabels = {
   sistema_operacional: 'Sistema Operacional',
@@ -302,6 +317,8 @@ async function loadProduct(productId) {
     currentProduct = product;
     selectedVariant = null;
     selectedVariantIndex = null;
+    selectedColor = null;
+    selectedColorIndex = null;
     baseSpecs = product.especificacoes ? { ...product.especificacoes } : null;
     product.variantes = (product.variantes || []).filter(v => v && ((v.nome && String(v.nome).trim()) || v.imagem || (v.preco && v.preco > 0)));
     const inWish = isInWishlist(product.id);
@@ -328,6 +345,20 @@ async function loadProduct(productId) {
         '</div>';
       });
       variantHtml += '</div></div>';
+    }
+    
+    // Build color selector
+    let colorHtml = '';
+    if (product.colors && product.colors.length > 0) {
+      colorHtml = '<div class="color-section"><h3><i class="fas fa-palette"></i> Cor</h3><div class="color-list">' +
+        product.colors.map(function(c, i) {
+          const swatch = colorSwatch(c);
+          return '<div class="color-item' + (i === 0 ? ' selected' : '') + '" data-color-index="' + i + '" onclick="selectColor(' + i + ')">' +
+            (swatch ? '<span class="color-swatch" style="background:' + swatch + ';"></span>' : '<span class="color-swatch color-swatch-text">' + escapeHtml(String(c).charAt(0).toUpperCase()) + '</span>') +
+            '<span class="color-name">' + escapeHtml(c) + '</span>' +
+          '</div>';
+        }).join('') +
+      '</div></div>';
     }
     
     const allImages = (product.imagens && product.imagens.length > 0) ? product.imagens : [product.imagem];
@@ -366,12 +397,13 @@ async function loadProduct(productId) {
             '<div class="stars">' + generateStars(product.avaliacao) + '</div>' +
             '<span class="rating-text">' + product.avaliacao.toFixed(1) + ' (' + product.reviews + ' avaliações)</span>' +
           '</div>' +
+          variantHtml +
+          colorHtml +
           '<div class="price-section">' +
             '<div class="price" id="productPrice">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
             '<div class="shipping-price"><span class="old-shipping">R$ 14,99</span> <span class="free-shipping-badge"><i class="fas fa-truck"></i> Frete Grátis</span></div>' +
             '<div class="stock-info">' + (!product.paused ? '<i class="fas fa-check-circle" style="color:#00a650;"></i> Disponível' : '<i class="fas fa-times-circle" style="color:var(--danger);"></i> <span style="color:var(--danger);">Indisponível</span>') + '</div>' +
           '</div>' +
-          variantHtml +
           '<div class="action-buttons">' +
             '<button class="btn btn-primary" onclick="addToCartFromProduct()"' + (product.paused ? ' disabled' : '') + '>' +
               '<i class="fas fa-cart-plus"></i> Adicionar ao carrinho' +
@@ -397,6 +429,10 @@ async function loadProduct(productId) {
     // Auto-select first variant
     if (product.variantes && product.variantes.length > 0) {
       selectVariant(0);
+    }
+    // Auto-select first color
+    if (product.colors && product.colors.length > 0) {
+      selectColor(0);
     }
 
     loadRelatedProducts(product.categoria, product.id);
@@ -468,6 +504,15 @@ function selectVariant(idx) {
   }
 }
 
+function selectColor(idx) {
+  if (!currentProduct || !currentProduct.colors || !currentProduct.colors[idx]) return;
+  selectedColor = currentProduct.colors[idx];
+  selectedColorIndex = idx;
+  document.querySelectorAll('.color-item').forEach(function(el, i) {
+    el.classList.toggle('selected', i === idx);
+  });
+}
+
 function applyVariantGallery(variant) {
   let images;
   if (variant && variant.imagem) {
@@ -506,8 +551,9 @@ function getSelectedVariantData() {
     const idx = selectedVariantIndex != null ? selectedVariantIndex : 0;
     return {
       id: currentProduct.id,
-      cartKey: currentProduct.id + '-v' + idx,
+      cartKey: currentProduct.id + '-v' + idx + (selectedColorIndex != null ? '-c' + selectedColorIndex : ''),
       variantIndex: idx,
+      cor: selectedColor || null,
       nome: selectedVariant.nome || currentProduct.nome,
       preco: selectedVariant.preco || currentProduct.preco,
       imagem: selectedVariant.imagem || currentProduct.imagem,
@@ -518,7 +564,8 @@ function getSelectedVariantData() {
   }
   return {
     id: currentProduct.id,
-    cartKey: currentProduct.id,
+    cartKey: currentProduct.id + (selectedColorIndex != null ? '-c' + selectedColorIndex : ''),
+    cor: selectedColor || null,
     nome: currentProduct.nome,
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,

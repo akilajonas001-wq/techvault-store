@@ -143,7 +143,7 @@ router.post('/products', async (req, res) => {
       paused: p.paused === true,
       destaque: p.destaque === true, avaliacao: parseFloat(p.avaliacao) || 0,
       reviews: parseInt(p.reviews) || 0,
-      specs: p.specs || {}, variants: p.variants || [],
+      specs: p.specs || {}, variants: p.variants || [], colors: p.colors || [],
       checkoutLink: p.checkoutLink || '',
       supplierLink: p.supplierLink || '',
       createdAt: new Date().toISOString()

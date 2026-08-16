@@ -61,6 +61,7 @@ async function initDb() {
       reviews INTEGER DEFAULT 0,
       specs TEXT DEFAULT '{}',
       variants TEXT DEFAULT '[]',
+      colors TEXT DEFAULT '[]',
       frete TEXT DEFAULT '',
       checkoutLink TEXT DEFAULT '',
       createdAt TEXT DEFAULT (NOW())
@@ -222,6 +223,11 @@ async function migrateUserProfileColumns() {
     await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS supplierLink TEXT DEFAULT ''`);
   } catch (e) {
     console.error('Erro ao adicionar supplierLink:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS colors TEXT DEFAULT '[]'`);
+  } catch (e) {
+    console.error('Erro ao adicionar colors:', e.message);
   }
   try {
     await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingnumber TEXT DEFAULT ''`);
@@ -496,6 +502,7 @@ const parseProduct = (p) => p ? {
   imagens: JSON.parse(p.imagens || '[]'),
   specs: JSON.parse(p.specs || '{}'),
   variants: JSON.parse(p.variants || '[]'),
+  colors: JSON.parse(p.colors || '[]'),
   especificacoes: JSON.parse(p.specs || '{}'),
   variantes: JSON.parse(p.variants || '[]'),
   frete: p.frete || '',
@@ -522,7 +529,7 @@ async function updateProduct(id, data) {
   let idx = 1;
   for (const [key, val] of Object.entries(data)) {
     if (key === 'id') continue;
-    if (key === 'imagens' || key === 'specs' || key === 'variants') {
+    if (key === 'imagens' || key === 'specs' || key === 'variants' || key === 'colors') {
       fields.push(`${key} = $${idx++}`); values.push(JSON.stringify(val));
     } else if (key === 'paused' || key === 'precoAlterado' || key === 'destaque') {
       fields.push(`${key} = $${idx++}`); values.push(val ? 1 : 0);
@@ -539,13 +546,14 @@ async function updateProduct(id, data) {
 async function createProduct(data) {
   try {
     await query(
-      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, supplierLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, frete, checkoutLink, supplierLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
       [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
        data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
        data.estoque || 'N/A', data.stock != null ? data.stock : -1,
        data.destaque ? 1 : 0, data.paused ? 1 : 0,
        data.avaliacao || 0,
        data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+       JSON.stringify(data.colors || []),
        data.frete || '', data.checkoutLink || '', data.supplierLink || '',
        data.createdAt || new Date().toISOString()]
     );
@@ -553,13 +561,14 @@ async function createProduct(data) {
     if (e.message && e.message.includes('checkoutlink')) {
       try { await query(`ALTER TABLE products ADD COLUMN checkoutLink TEXT DEFAULT ''`); } catch {}
       await query(
-        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)`,
+        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
         [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
          data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
          data.estoque || 'N/A', data.stock != null ? data.stock : -1,
          data.destaque ? 1 : 0, data.paused ? 1 : 0,
          data.avaliacao || 0,
          data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
+         JSON.stringify(data.colors || []),
          data.frete || '', data.checkoutLink || '',
          data.createdAt || new Date().toISOString()]
       );
@@ -917,7 +926,7 @@ async function offerProducts(limit = 10) {
 }
 
 async function adminProducts(search, pausedFilter) {
-  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, destaque, paused, precoAlterado, imagem, imagens, estoque, stock, avaliacao, reviews, checkoutLink, supplierLink, specs, variants FROM products WHERE 1=1`;
+  let sql = `SELECT id, nome, descricao, categoria, preco, precoOriginal, destaque, paused, precoAlterado, imagem, imagens, estoque, stock, avaliacao, reviews, checkoutLink, supplierLink, specs, variants, colors FROM products WHERE 1=1`;
   const params = [];
   let idx = 1;
   if (search) {
@@ -939,6 +948,7 @@ async function adminProducts(search, pausedFilter) {
     reviews: parseInt(p.reviews) || 0,
     specs: JSON.parse(p.specs || '{}'),
     variants: JSON.parse(p.variants || '[]'),
+    colors: JSON.parse(p.colors || '[]'),
     modified: (p.paused === 1 || p.paused === true) || (p.precoAlterado === 1 || p.precoAlterado === true)
   }));
 }

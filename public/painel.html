@@ -587,6 +587,14 @@
               <label for="cpDestaque" style="font-size:14px;font-weight:500;">Produto em Destaque</label>
             </div>
             <div class="cpFull" style="grid-column:1/-1;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <label style="font-size:13px;font-weight:600;">Cores do Produto (opcional)</label>
+                <button type="button" class="order-detail-btn" onclick="addColor()" style="border-color:var(--primary);color:var(--primary);font-size:12px;"><i class="fas fa-plus"></i> Adicionar Cor</button>
+              </div>
+              <span style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:8px;">Ex: se o produto tem 3 cores, adicione as 3 (Preto, Branco, Azul). O cliente escolhe a cor na página do produto.</span>
+              <div id="colorsContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+            <div class="cpFull" style="grid-column:1/-1;">
               <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px;">Link de Compra (Fornecedor)</label>
               <input type="url" id="cpSupplierLink" placeholder="https://www.aliexpress.com/item/..." style="width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
               <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Link onde você compra o produto. Será usado no botão "Comprar" nos pedidos.</span>
@@ -1245,6 +1253,7 @@
           const vals = Object.values(i.variantSpecs).filter(Boolean).join(' | ');
           if (vals) specs = '<br><span style="font-size:11px;color:var(--text-muted)">' + vals + '</span>';
         }
+        if (i.cor) specs += '<br><span style="font-size:11px;color:var(--text-muted)">Cor: ' + i.cor + '</span>';
         let statusLabel = '';
         if (isCancelled) statusLabel = ' <span style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;">CANCELADO</span>';
         else if (isReturned) statusLabel = ' <span style="background:rgba(245,158,11,0.15);color:#d97706;font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600;">DEVOLVIDO</span>';
@@ -1430,6 +1439,7 @@
             const vals = Object.values(i.variantSpecs).filter(Boolean).join(' | ');
             if (vals) specs = ' <span style="font-size:11px;color:var(--text-muted)">(' + vals + ')</span>';
           }
+          if (i.cor) specs += ' <span style="font-size:11px;color:var(--text-muted)">Cor: ' + i.cor + '</span>';
           return '<div class="cart-item-row"><span>' + (i.quantidade || 1) + 'x <strong>' + i.nome + '</strong>' + specs + '</span><span>R$ ' + (i.preco * (i.quantidade || 1)).toFixed(2).replace('.', ',') + '</span></div>';
         }).join('');
 
@@ -1629,6 +1639,7 @@
       document.getElementById('cpEditId').value = '';
       document.getElementById('productModalTitle').innerHTML = '<i class="fas fa-plus-circle" style="color:var(--success)"></i> Novo Produto';
       document.getElementById('variantsContainer').innerHTML = '';
+      document.getElementById('colorsContainer').innerHTML = '';
       addVariant();
       document.getElementById('createProductModal').classList.add('active');
       document.body.dataset.scrollY = window.scrollY;
@@ -1654,6 +1665,13 @@
       renderProductImagesPreview();
       document.getElementById('cpDestaque').checked = p.destaque;
       document.getElementById('cpSupplierLink').value = p.supplierLink || '';
+
+      // Fill colors
+      const colorsContainer = document.getElementById('colorsContainer');
+      colorsContainer.innerHTML = '';
+      (p.colors && p.colors.length ? p.colors : []).forEach(function(c) {
+        addColor(c);
+      });
 
       // Rebuild variants (subcategorias)
       const vc = document.getElementById('variantsContainer');
@@ -1786,6 +1804,35 @@
       container.appendChild(row);
     }
 
+    function addColor(nome) {
+      const container = document.getElementById('colorsContainer');
+      const idx = container.querySelectorAll('.cpColor-row').length;
+      const esc = function(s) { return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
+      const row = document.createElement('div');
+      row.className = 'cpColor-row';
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+      row.innerHTML =
+        '<span style="font-size:12px;color:var(--text-muted);width:50px;">Cor ' + (idx + 1) + '</span>' +
+        '<input type="text" class="cpColor" value="' + esc(nome || '') + '" placeholder="Ex: Preto" style="flex:1;padding:8px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;outline:none;">' +
+        '<button type="button" onclick="this.closest(\'.cpColor-row\').remove(); renumberColors()" title="Remover cor" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:16px;padding:4px;"><i class="fas fa-times"></i></button>';
+      container.appendChild(row);
+      renumberColors();
+    }
+
+    function renumberColors() {
+      const container = document.getElementById('colorsContainer');
+      container.querySelectorAll('.cpColor-row').forEach(function(row, i) {
+        row.querySelector('span').textContent = 'Cor ' + (i + 1);
+      });
+    }
+
+    function getColors() {
+      const container = document.getElementById('colorsContainer');
+      return Array.from(container.querySelectorAll('.cpColor')).map(function(input) {
+        return input.value.trim();
+      }).filter(Boolean);
+    }
+
     function getAdditionalImages() {
       return document.getElementById('cpImagens').value.trim().split('\n').map(s => s.trim()).filter(Boolean);
     }
@@ -1906,6 +1953,7 @@
       });
 
       const supplierLink = document.getElementById('cpSupplierLink').value.trim();
+      const colors = getColors();
       const editId = document.getElementById('cpEditId').value;
 
       let avaliacao = 0;
@@ -1933,6 +1981,7 @@
         reviews: reviews,
         specs: specs,
         variants: variants,
+        colors: colors,
         supplierLink: supplierLink
       };
 
@@ -1966,6 +2015,7 @@
           renderProductImagesPreview();
           document.getElementById('cpDestaque').checked = false;
           document.getElementById('cpSupplierLink').value = '';
+          document.getElementById('colorsContainer').innerHTML = '';
           document.getElementById('cpEditId').value = '';
           document.getElementById('variantsContainer').innerHTML = '';
           addVariant();

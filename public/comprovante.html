@@ -226,8 +226,10 @@
                 <tbody>
                   ${(data.itens || []).map(item => {
                     const specs = item.variantSpecs ? Object.values(item.variantSpecs).filter(Boolean).join(' | ') : '';
+                    const cor = item.cor ? '<span style="font-size:11px;color:#94a3b8;">Cor: ' + item.cor + '</span>' : '';
+                    const extras = [specs, cor].filter(Boolean).join('<br>');
                     return '<tr>' +
-                      '<td>' + item.nome + (specs ? '<br><span style="font-size:11px;color:#94a3b8;">' + specs + '</span>' : '') + '</td>' +
+                      '<td>' + item.nome + (extras ? '<br><span style="font-size:11px;color:#94a3b8;">' + extras + '</span>' : '') + '</td>' +
                       '<td style="text-align:center;">' + (item.quantidade || 1) + '</td>' +
                       '<td>R$ ' + ((item.preco * (item.quantidade || 1)).toFixed(2).replace('.', ',')) + '</td>' +
                     '</tr>';
