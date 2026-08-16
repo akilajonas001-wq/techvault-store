@@ -1018,7 +1018,7 @@
       actions += '<button class="order-detail-btn" onclick="showOrderDetail(' + o.id + ')" title="Ver detalhes" style="' + btnStyle + 'border-color:var(--primary);color:var(--primary);"><i class="fas fa-eye"></i></button>';
       actions += '<button class="order-detail-btn" onclick="openTrackingModal(' + o.id + ')" title="Rastreio" style="' + btnStyle + 'border-color:#8b5cf6;color:#8b5cf6;"><i class="fas fa-shipping-fast"></i></button>';
 
-      if (hasSupplierLink) actions += '<button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar no fornecedor" style="' + btnStyle + 'border-color:var(--success);color:var(--success);' + (isProcessado ? 'opacity:0.4;pointer-events:none;' : '') + '"><i class="fas fa-cart-shopping"></i></button>';
+      if (hasSupplierLink) actions += '<button class="order-detail-btn" onclick="buyOrderItems(' + o.id + ')" title="Comprar no fornecedor" style="' + btnStyle + 'border-color:' + (isProcessado ? 'var(--success)' : 'var(--error)') + ';color:' + (isProcessado ? 'var(--success)' : 'var(--error)') + ';' + (isProcessado ? 'opacity:0.4;pointer-events:none;' : '') + '"><i class="fas fa-cart-shopping"></i></button>';
       if (currentUserRole === 'admin') actions += '<button class="order-detail-btn" onclick="deleteOrder(' + o.id + ')" title="Excluir" style="' + btnStyle + 'border-color:var(--error);color:var(--error);"><i class="fas fa-trash"></i></button>';
       actions += '</div>';
       const dotColor = isProcessado ? '#00a650' : '#ef4444';
@@ -1260,7 +1260,7 @@
         const product = allProducts.find(p => p.id == i.id);
         const orderProcessado = order.processado === 1 || order.processado === true;
         const buyBtn = product && product.supplierLink ?
-          '<button onclick="' + (orderProcessado ? '' : 'openSupplierLink(' + i.id + ')') + '" title="Comprar no fornecedor" style="background:var(--success);color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;margin-left:8px;' + (orderProcessado ? 'opacity:0.4;pointer-events:none;' : '') + '"><i class="fas fa-shopping-cart"></i> Comprar</button>' : '';
+          '<button onclick="' + (orderProcessado ? '' : 'openSupplierLink(' + i.id + ')') + '" title="Comprar no fornecedor" style="background:' + (orderProcessado ? 'var(--success)' : 'var(--error)') + ';color:white;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600;margin-left:8px;' + (orderProcessado ? 'opacity:0.4;pointer-events:none;' : '') + '"><i class="fas fa-shopping-cart"></i> Comprar</button>' : '';
         return '<div class="cart-item-row" style="' + (isCancelled ? 'opacity:0.5;text-decoration:line-through;' : isReturned ? 'opacity:0.6;' : '') + '"><span>' + i.quantidade + 'x <strong>' + i.nome + '</strong>' + statusLabel + specs + buyBtn + '</span><span>R$ ' + (i.preco * i.quantidade).toFixed(2).replace('.', ',') + '</span></div>';
       }).join('');
 
