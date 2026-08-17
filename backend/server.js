@@ -247,6 +247,23 @@ function renderPage(fileName) {
     }
   }
 
+  // PWA: manifest + service worker em todas páginas com <head>
+  if (html.includes('</head>')) {
+    const pwaTags = `
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff7a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TechVault">
+    <link rel="apple-touch-icon" href="/images/favicon.png">
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+      }
+    </script>`;
+    html = html.replace('</head>', pwaTags + '\n</head>');
+  }
+
   return html;
 }
 
@@ -313,6 +330,7 @@ app.use('/api', require('./routes/profile'));
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/visits'));
+app.use('/api/push', require('./routes/push').pushRouter);
 
 // ===================== CHAT ROUTES =====================
 // Key format: support:userId  → Atendimento

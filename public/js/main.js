@@ -146,6 +146,7 @@ function showUserMenu() {
     `;
     checkNotifications();
     checkPendingOrders();
+    subscribeToPush();
   }
   
   // Mobile nav
@@ -823,6 +824,59 @@ async function checkPendingOrders() {
       } else {
         mobileBadge.style.display = 'none';
       }
+    }
+  } catch {}
+}
+
+async function subscribeToPush() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const token = getToken();
+    if (!token || !currentUser) return;
+    if (!currentUser.admin && currentUser.role !== 'admin' && currentUser.role !== 'funcionario') return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      const res = await fetch('/api/push/vapid-key');
+      const { publicKey } = await res.json();
+      if (!publicKey) return;
+      const keyBuf = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+      const serverKey = keyBuf.buffer;
+      const sub = existing.toJSON();
+      const p256dh = sub.keys && sub.keys.p256dh;
+      const auth = sub.keys && sub.keys.auth;
+      if (p256dh && auth) {
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ endpoint: sub.endpoint, p256dh, auth })
+        });
+      }
+      return;
+    }
+
+    const res = await fetch('/api/push/vapid-key');
+    const { publicKey } = await res.json();
+    if (!publicKey) return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const keyBuf = Uint8Array.from(atob(publicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: keyBuf.buffer
+    });
+    const sub = subscription.toJSON();
+    const p256dh = sub.keys && sub.keys.p256dh;
+    const auth = sub.keys && sub.keys.auth;
+    if (p256dh && auth) {
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ endpoint: sub.endpoint, p256dh, auth })
+      });
     }
   } catch {}
 }

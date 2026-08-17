@@ -208,6 +208,14 @@ router.post('/orders', requireAuth, async (req, res) => {
       html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
     }).catch(e => console.error('Erro email:', e.message));
 
+    // Push notification para admin/funcionários
+    const { sendPushToAdmins } = require('./push');
+    sendPushToAdmins(
+      'Novo Pedido #' + newOrder.id,
+      user.nome + ' fez um pedido de R$ ' + finalTotal.toFixed(2),
+      '/painel'
+    ).catch(e => console.error('Erro push:', e.message));
+
     // Pedido criado sem pagamento: o checkout integrado cria o pagamento em seguida
     // (PIX ou cartão) via /api/payments/*. O pedido só sai de "pendente" quando o
     // webhook do Mercado Pago confirmar o pagamento.

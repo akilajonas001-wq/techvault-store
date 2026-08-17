@@ -166,6 +166,14 @@ async function initDb() {
       fingerprint TEXT NOT NULL,
       PRIMARY KEY (date, fingerprint)
     );
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT DEFAULT (NOW())
+    );
   `);
   await migrateUserProfileColumns();
 }
@@ -1030,6 +1038,35 @@ async function closeDb() {
   await pool.end();
 }
 
+async function savePushSubscription(userId, subscription) {
+  const { endpoint, p256dh, auth } = subscription;
+  await query(
+    `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (endpoint) DO UPDATE SET user_id = $1, p256dh = $3, auth = $4`,
+    [userId, endpoint, p256dh, auth]
+  );
+}
+
+async function removePushSubscription(endpoint) {
+  await query(`DELETE FROM push_subscriptions WHERE endpoint = $1`, [endpoint]);
+}
+
+async function allPushSubscriptions() {
+  const result = await query(`SELECT * FROM push_subscriptions`);
+  return result.rows;
+}
+
+async function pushSubscriptionsByRole(role) {
+  const result = await query(
+    `SELECT ps.* FROM push_subscriptions ps
+     JOIN users u ON ps.user_id = u.id
+     WHERE u.admin = 1 OR u.role = $1`,
+    [role]
+  );
+  return result.rows;
+}
+
 module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
@@ -1047,5 +1084,6 @@ module.exports = {
   adminProducts, adminStaff,
   userAddresses, createAddress, updateAddress, deleteAddress,
   saveImage, getImage, deleteImage, deleteProductImages,
-  trackVisit, countVisits, countVisitsRange, countVisitsAll
+  trackVisit, countVisits, countVisitsRange, countVisitsAll,
+  savePushSubscription, removePushSubscription, allPushSubscriptions, pushSubscriptionsByRole
 };
