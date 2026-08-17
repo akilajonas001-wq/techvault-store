@@ -1202,6 +1202,14 @@
 
     html += '<div class="btn-row">';
     html += '<button class="btn btn-outline" onclick="openTrackingSheet()"><i class="fas fa-shipping-fast"></i>Rastreio</button>';
+    const hasSupplier = (o.itens || []).some(item => {
+      const prod = allProducts.find(p => p.id == item.id);
+      return prod && prod.supplierLink;
+    });
+    if (hasSupplier) {
+      const isProc = o.processado === 1 || o.processado === true;
+      html += '<button class="btn" onclick="buyOrderItems(' + o.id + ')" style="background:' + (isProc ? 'var(--green)' : 'var(--red)') + ';color:#fff;' + (isProc ? 'opacity:.5;' : '') + '"><i class="fas fa-cart-shopping"></i>Fornecedor</button>';
+    }
     if (phone) html += '<button class="btn btn-green" onclick="openWAOrder(\'' + phone + '\')"><i class="fab fa-whatsapp"></i>WhatsApp</button>';
     html += '</div>';
     if (isAdmin) html += '<div class="btn-row"><button class="btn btn-danger" onclick="deleteOrder()"><i class="fas fa-trash-alt"></i>Excluir pedido</button></div>';
@@ -1219,6 +1227,25 @@
     const o = allOrders.find(x => x.id == activeOrderId);
     const msg = 'Olá! Sobre seu pedido #' + o.id + ' na TechVault, status: ' + statusLabel(o.status) + '.';
     window.open(waLink(phone, msg), '_blank');
+  }
+
+  function buyOrderItems(orderId) {
+    const order = allOrders.find(o => o.id == orderId);
+    if (!order) return;
+    const end = order.endereco || {};
+    const enderecoFormatado = [end.logradouro, end.numero, end.complemento, end.bairro, end.cidade, end.estado, end.cep].filter(Boolean).join(', ');
+    const links = order.itens.map(item => {
+      const product = allProducts.find(p => p.id == item.id);
+      return product && product.supplierLink ? { nome: item.nome, link: product.supplierLink } : null;
+    }).filter(Boolean);
+    if (!links.length) { toast('Nenhum link de fornecedor encontrado', true); return; }
+    if (links.length === 1) {
+      toast('Abrindo: ' + links[0].nome + '\nEndereço: ' + enderecoFormatado);
+      window.open(links[0].link, '_blank');
+      return;
+    }
+    const msg = links.length + ' itens com links:\n' + links.map((l, i) => (i + 1) + '. ' + l.nome).join('\n') + '\n\nEndereço: ' + enderecoFormatado + '\n\nAbrir todos?';
+    if (confirm(msg)) links.forEach(l => window.open(l.link, '_blank'));
   }
 
   async function changeOrderStatus(status) {
