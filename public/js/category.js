@@ -23,18 +23,14 @@ const slugToCategory = {
 };
 
 const iconMap = {
-  'Celulares e Smartphones': 'fa-mobile-alt',
-  'Informática': 'fa-laptop',
-  'Moda e Vestuário': 'fa-tshirt',
-  'Esportes e Fitness': 'fa-football-ball',
-  'Casa e Decoração': 'fa-couch',
-  'Cozinha e Utensílios': 'fa-utensils',
-  'Livros e Papelaria': 'fa-book',
-  'Eletrônicos': 'fa-tv',
-  'Móveis': 'fa-chair',
-  'Beleza e Perfumaria': 'fa-pump-soap',
-  'Games': 'fa-gamepad',
-  'Eletrodomésticos': 'fa-blender'
+  'Acessórios & Moda': 'fa-gem',
+  'Beleza, Cuidados & Bem-estar': 'fa-spa',
+  'Casa & Organização': 'fa-couch',
+  'Eletrônicos & Acessórios Tech': 'fa-microchip',
+  'Escritório, Papelaria & Hobby': 'fa-pen-fancy',
+  'Ferramentas & Utilidades': 'fa-screwdriver-wrench',
+  'Misc / Curiosidades': 'fa-box-open',
+  'Pets': 'fa-paw'
 };
 
 let currentPage = 1;

@@ -48,25 +48,14 @@
   };
 
   const CATEGORY_ICONS = {
-    'Celulares e Smartphones': 'fa-mobile-alt',
-    'Informática': 'fa-laptop',
-    'Moda e Vestuário': 'fa-tshirt',
-    'Acessórios e Moda': 'fa-tshirt',
-    'Esportes e Fitness': 'fa-football-ball',
-    'Casa e Decoração': 'fa-couch',
-    'Casa e Organização': 'fa-couch',
-    'Cozinha e Utensílios': 'fa-utensils',
-    'Livros e Papelaria': 'fa-book',
-    'Escritório e Papelaria': 'fa-pen',
-    'Eletrônicos': 'fa-tv',
-    'Beleza e Perfumaria': 'fa-pump-soap',
-    'Beleza e Bem-Estar': 'fa-pump-soap',
-    'Móveis': 'fa-chair',
-    'Games': 'fa-gamepad',
-    'Eletrodomésticos': 'fa-blender',
-    'Ferramentas': 'fa-tools',
-    'Pets': 'fa-paw',
-    'Diversos': 'fa-store'
+    'Acessórios & Moda': 'fa-gem',
+    'Beleza, Cuidados & Bem-estar': 'fa-spa',
+    'Casa & Organização': 'fa-couch',
+    'Eletrônicos & Acessórios Tech': 'fa-microchip',
+    'Escritório, Papelaria & Hobby': 'fa-pen-fancy',
+    'Ferramentas & Utilidades': 'fa-screwdriver-wrench',
+    'Misc / Curiosidades': 'fa-box-open',
+    'Pets': 'fa-paw'
   };
 
   function categoryIcon(cat) {
