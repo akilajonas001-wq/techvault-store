@@ -134,7 +134,7 @@ function showUserMenu() {
     const firstName = (currentUser?.nome || '').split(' ')[0];
     let adminLink = '';
     if (currentUser && (currentUser.admin || currentUser.role === 'admin' || currentUser.role === 'funcionario')) {
-      adminLink = `<a href="/painel" style="order:7;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);transition:all .2s;white-space:nowrap;"><i class="fas fa-shield-alt"></i> Painel</a>`;
+      adminLink = `<a href="/painel" style="order:7;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);transition:all .2s;white-space:nowrap;position:relative;"><i class="fas fa-shield-alt"></i> Painel<span id="pendingBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 4px rgba(0,0,0,.3);">0</span></a>`;
     }
     userMenu.innerHTML = `
       <div id="notifBell" style="order:5;position:relative;display:inline-flex;align-items:center;cursor:pointer;font-size:20px;color:#fff;padding:10px;" onclick="toggleNotifs()" title="Notificações">
@@ -145,6 +145,7 @@ function showUserMenu() {
       <a href="#" onclick="logout()" style="order:8;font-size:14px;font-weight:600;color:#ff7a1a;text-decoration:none;padding:10px 14px;border-radius:10px;background:rgba(255,122,26,0.18);display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .2s;"><i class="fas fa-sign-out-alt"></i> Sair</a>
     `;
     checkNotifications();
+    checkPendingOrders();
   }
   
   // Mobile nav
@@ -796,6 +797,36 @@ function hideNotifBadge() {
   if (mobileBadge) { mobileBadge.style.display = 'none'; }
 }
 
+async function checkPendingOrders() {
+  try {
+    const token = getToken();
+    if (!token) return;
+    const res = await fetch('/api/admin/orders/pending-count', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) return;
+    const { count } = await res.json();
+    const badge = document.getElementById('pendingBadge');
+    const mobileBadge = document.getElementById('mobilePendingBadge');
+    if (badge) {
+      if (count > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = count > 99 ? '99+' : count;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    if (mobileBadge) {
+      if (count > 0) {
+        mobileBadge.style.display = 'inline';
+        mobileBadge.textContent = count > 99 ? '99+' : count;
+      } else {
+        mobileBadge.style.display = 'none';
+      }
+    }
+  } catch {}
+}
+
 function toggleNotifs() {
   const existing = document.getElementById('notifDropdown');
   if (existing) { existing.remove(); return; }
@@ -856,7 +887,7 @@ async function readNotif(notifId, couponCode) {
 
 // Check notifications when tab becomes visible again
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) checkNotifications();
+  if (!document.hidden) { checkNotifications(); checkPendingOrders(); }
 });
 
 // Modal para escolher nome de usuário (quando Google não fornece)

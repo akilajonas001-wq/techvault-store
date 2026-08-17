@@ -56,6 +56,11 @@ router.get('/orders', async (req, res) => {
   catch (e) { console.error(e); res.status(500).json({ error: 'Erro ao carregar pedidos' }); }
 });
 
+router.get('/orders/pending-count', async (req, res) => {
+  try { res.json({ count: await db.pendingOrdersCount() }); }
+  catch (e) { console.error(e); res.status(500).json({ count: 0 }); }
+});
+
 router.delete('/orders/:id', async (req, res) => {
   try {
     if (req.adminUser.role !== 'admin') {

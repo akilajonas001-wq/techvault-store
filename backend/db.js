@@ -668,6 +668,11 @@ async function updateOrderProcessado(id, processado) {
   await query(`UPDATE orders SET processado = $1 WHERE id = $2`, [processado ? 1 : 0, id]);
 }
 
+async function pendingOrdersCount() {
+  const result = await query(`SELECT COUNT(*) as c FROM orders WHERE processado = 0`);
+  return parseInt(result.rows[0].c, 10);
+}
+
 async function cancelOrderItem(id, itemId) {
   const order = await orderById(id);
   if (!order) return null;
@@ -1029,7 +1034,7 @@ module.exports = {
   initDb, migrateFromJson, initDefaultData, closeDb,
   allUsers, userByEmail, userById, createUser, updateUser, getUserProfile, updateUserProfile, deleteUser,
   allProducts, productById, updateProduct, createProduct, deleteProduct,
-  allOrders, orderById, ordersByUserId, createOrder, updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderMpPayment, updateOrderPaymentInfo, orderByMpPaymentId, deleteOrderById, updateOrderTracking, updateOrderProcessado,
+  allOrders, orderById, ordersByUserId, createOrder,   updateOrderStatus, orderByPaymentRef, updateOrderStatusByRef, updateOrderMpPayment, updateOrderPaymentInfo, orderByMpPaymentId, deleteOrderById, updateOrderTracking, updateOrderProcessado, pendingOrdersCount,
   cancelOrderItem, returnOrderItem, setOrderDelivered,
   allComments, createComment, deleteComment,
   getCart, saveCart, clearCart, allCartsWithUsers,
