@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a1930">
+  <title>Painel - TechVault</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #071227;
+      --bg2: #0a1930;
+      --card: #101f3a;
+      --card2: #0e1d33;
+      --line: #1c3154;
+      --txt: #e8eefc;
+      --muted: #7d8db0;
+      --orange: #ff7a1a;
+      --orange-grad: linear-gradient(135deg, #ff8a00, #ff5e3a);
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --purple: #a78bfa;
+      --blue: #38bdf8;
+      --radius: 14px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--txt);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app { height: 100%; display: flex; flex-direction: column; }
+
+    /* ===== HEADER ===== */
+    .app-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--line);
+      z-index: 30;
+    }
+    .h-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .h-back {
+      display: none;
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--card);
+      color: var(--txt); font-size: 15px; cursor: pointer;
+      align-items: center; justify-content: center;
+    }
+    .h-back.show { display: flex; }
+    .logo-chip {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--orange-grad);
+      color: #fff; font-weight: 800; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(255, 122, 26, .35);
+      flex-shrink: 0;
+    }
+    .h-title { display: flex; flex-direction: column; min-width: 0; }
+    .h-title strong { font-size: 15px; font-weight: 700; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-title span { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-right { display: flex; align-items: center; gap: 8px; }
+    .user-chip {
+      height: 34px; min-width: 34px; padding: 0 10px;
+      border-radius: 17px; background: var(--card); border: 1px solid var(--line);
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 600;
+    }
+    .user-avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--orange-grad); color: #fff;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .role-tag {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--orange);
+      background: rgba(255, 122, 26, .12);
+      padding: 2px 6px; border-radius: 6px;
+    }
+    .h-logout {
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--line); background: var(--card);
+      color: var(--muted); font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .h-logout:active { color: var(--red); }
+
+    /* ===== CONTENT ===== */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+      padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    }
+    .page { display: none; overflow-x: hidden; }
+    .page.active { display: block; animation: slideIn .22s ease; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+
+    .pad { padding: 14px 14px 20px; }
+
+    /* refresh spinner */
+    .refresh-wrap { position: relative; }
+    .refresh-ind {
+      position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--card); border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--orange); font-size: 14px;
+      transition: top .2s;
+    }
+    .refresh-wrap.pulling .refresh-ind { top: 10px; }
+    .refresh-wrap.refreshing .refresh-ind { top: 10px; }
+    .fa-spin { animation: fa-spin 1s linear infinite; }
+
+    /* ===== CARDS / LISTS ===== */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .list-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 13px 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: transform .08s ease, border-color .15s;
+    }
+    .list-card:active { transform: scale(.985); border-color: var(--orange); }
+    .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card-title { font-size: 14px; font-weight: 700; }
+
+    .pill {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .4px; padding: 3px 9px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .st-pendente   { background: rgba(245, 158, 11, .14); color: var(--amber); }
+    .st-aprovado   { background: rgba(34, 197, 94, .14);  color: var(--green); }
+    .st-entregue   { background: rgba(56, 189, 248, .14); color: var(--blue); }
+    .st-cancelado  { background: rgba(239, 68, 68, .14);  color: var(--red); }
+    .st-reembolsado{ background: rgba(167, 139, 250, .14); color: var(--purple); }
+    .st-ativo      { background: rgba(34, 197, 94, .14);  color: var(--green); }
+    .st-pausado    { background: rgba(125, 141, 176, .18); color: var(--muted); }
+    .st-destaque   { background: rgba(255, 122, 26, .16); color: var(--orange); }
+    .st-funcionario{ background: rgba(56, 189, 248, .14); color: var(--blue); }
+    .st-admin      { background: rgba(255, 122, 26, .16); color: var(--orange); }
+
+    .o-name { font-size: 14px; font-weight: 600; margin-top: 8px; color: var(--txt); }
+    .o-meta { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+    .unproc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,.7); flex-shrink: 0; }
+    .id-stack { display: flex; align-items: center; gap: 7px; }
+
+    /* ===== SECTION HEADERS ===== */
+    .section-title {
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 16px 0 10px;
+    }
+
+    /* ===== SEARCH ===== */
+    .search-box {
+      display: flex; align-items: center; gap: 9px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 0 13px; height: 46px;
+    }
+    .search-box i { color: var(--muted); font-size: 14px; }
+    .search-box input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--txt); font-size: 14px; font-family: inherit;
+    }
+    .search-box input::placeholder { color: var(--muted); }
+
+    /* ===== CHIPS ===== */
+    .chips {
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 2px 4px; scrollbar-width: none;
+    }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0; padding: 8px 15px; border-radius: 20px;
+      background: var(--card); border: 1px solid var(--line);
+      color: var(--muted); font-size: 12px; font-weight: 600; font-family: inherit;
+      cursor: pointer; white-space: nowrap;
+    }
+    .chip.active { background: var(--orange-grad); color: #fff; border-color: transparent; box-shadow: 0 3px 10px rgba(255,122,26,.3); }
+
+    /* ===== BOTTOM NAV ===== */
+    .tabbar {
+      flex-shrink: 0;
+      display: flex;
+      background: var(--bg2);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 30;
+    }
+    .tab {
+      flex: 1; height: 58px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      background: none; border: none; color: var(--muted);
+      font-size: 9px; font-weight: 600; font-family: inherit; cursor: pointer;
+      position: relative;
+    }
+    .tab i { font-size: 17px; }
+    .tab.active { color: var(--orange); }
+    .tab.active::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 40px; height: 3px; border-radius: 0 0 4px 4px;
+      background: var(--orange-grad);
+    }
+    .tab-badge {
+      position: absolute; top: 7px; left: 50%; transform: translateX(8px);
+      min-width: 17px; height: 17px; padding: 0 4px;
+      background: var(--orange-grad); color: #fff;
+      font-size: 9px; font-weight: 800; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tab-badge.red { background: var(--red); }
+    .tab-badge.hide { display: none; }
+
+    /* ===== STATS ===== */
+    .greeting { font-size: 20px; font-weight: 800; line-height: 1.3; }
+    .greeting-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .hero-revenue {
+      margin-top: 14px;
+      background: linear-gradient(135deg, rgba(255,122,26,.16), rgba(255,94,58,.08));
+      border: 1px solid rgba(255,122,26,.35);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .hero-revenue .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .hero-revenue .val { font-size: 28px; font-weight: 800; color: #fff; margin-top: 4px; }
+    .hero-revenue .sub { font-size: 12px; color: var(--orange); margin-top: 4px; font-weight: 600; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 13px 14px;
+    }
+    .stat-card .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+    .stat-card .val { font-size: 21px; font-weight: 800; margin-top: 5px; }
+    .stat-card.c-green .val { color: var(--green); }
+    .stat-card.c-amber .val { color: var(--amber); }
+    .stat-card.c-blue .val { color: var(--blue); }
+    .stat-card.c-purple .val { color: var(--purple); }
+
+    .quick-row { display: flex; gap: 9px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
+    .quick-row::-webkit-scrollbar { display: none; }
+    .quick {
+      flex-shrink: 0; min-width: 104px;
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      padding: 12px 10px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius); color: var(--txt);
+      font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer;
+    }
+    .quick i { font-size: 18px; color: var(--orange); }
+    .quick:active { border-color: var(--orange); }
+
+    .alert-card {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(245, 158, 11, .08); border: 1px solid rgba(245, 158, 11, .3);
+      border-radius: var(--radius); padding: 13px 14px; margin-top: 12px;
+      color: var(--txt); font-size: 13px; cursor: pointer; text-align: left; width: 100%; font-family: inherit;
+    }
+    .alert-card i { font-size: 17px; color: var(--amber); }
+    .alert-card .cnt { font-weight: 800; color: var(--amber); }
+    .alert-card.gray { background: rgba(125, 141, 176, .07); border-color: rgba(125, 141, 176, .3); }
+    .alert-card.gray i { color: var(--muted); }
+    .alert-card.gray .cnt { color: var(--muted); }
+
+    /* ===== MENU (MAIS) ===== */
+    .menu-item {
+      display: flex; align-items: center; gap: 13px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 15px 14px;
+      margin-bottom: 10px; cursor: pointer; color: var(--txt);
+      font-size: 14px; font-weight: 600; font-family: inherit; width: 100%; text-align: left;
+    }
+    .menu-item .ic {
+      width: 38px; height: 38px; border-radius: 11px;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      flex-shrink: 0;
+    }
+    .menu-item .mi-arrow { margin-left: auto; color: var(--muted); font-size: 13px; }
+    .ic-orange { background: rgba(255,122,26,.13); color: var(--orange); }
+    .ic-blue   { background: rgba(56,189,248,.13); color: var(--blue); }
+    .ic-green  { background: rgba(34,197,94,.13);  color: var(--green); }
+    .ic-purple { background: rgba(167,139,250,.13); color: var(--purple); }
+    .ic-red    { background: rgba(239,68,68,.13);  color: var(--red); }
+    .menu-item .mi-sub { font-size: 11px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+
+    /* ===== PRODUCT CARD ===== */
+    .prod-card { display: flex; gap: 12px; align-items: center; }
+    .thumb {
+      width: 62px; height: 62px; border-radius: 12px;
+      background: var(--card2); border: 1px solid var(--line);
+      flex-shrink: 0; overflow: hidden; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb.noimg::after { content: 'TV'; font-weight: 800; color: var(--muted); font-size: 16px; }
+    .prod-body { flex: 1; min-width: 0; }
+    .p-name { font-size: 13px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .p-price { margin-top: 5px; font-weight: 800; font-size: 15px; color: #fff; }
+    .p-price del { color: var(--muted); font-weight: 500; font-size: 12px; margin-left: 6px; }
+    .p-pills { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+    /* ===== USER / CHAT CARDS ===== */
+    .u-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--orange-grad); color: #fff;
+      font-weight: 700; font-size: 15px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .chat-row { display: flex; gap: 12px; align-items: center; }
+    .chat-body { flex: 1; min-width: 0; }
+    .chat-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .chat-prev { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+    .chat-time { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+    .chat-unread {
+      min-width: 18px; height: 18px; border-radius: 10px; padding: 0 5px;
+      background: var(--orange-grad); color: #fff;
+      font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat-unread.hide { display: none; }
+
+    /* ===== SHEETS ===== */
+    .sheet-backdrop {
+      position: fixed; inset: 0; z-index: 40;
+      background: rgba(3, 8, 18, .65);
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+      background: var(--bg2);
+      border: 1px solid var(--line); border-bottom: none;
+      border-radius: 20px 20px 0 0;
+      max-height: 88vh;
+      transform: translateY(105%);
+      transition: transform .28s cubic-bezier(.32,.72,.35,1);
+      display: flex; flex-direction: column;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sheet.show { transform: translateY(0); }
+    .sheet-handle { width: 42px; height: 5px; border-radius: 3px; background: var(--line); margin: 10px auto 2px; flex-shrink: 0; }
+    .sheet-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px 10px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+    }
+    .sheet-head .st-title { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sheet-close {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: var(--card); border: 1px solid var(--line);
+      color: var(--muted); cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 16px 24px; }
+
+    .s-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; font-size: 13px; }
+    .s-row .k { color: var(--muted); flex-shrink: 0; }
+    .s-row .v { text-align: right; font-weight: 600; }
+
+    .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+
+    .item-row {
+      display: flex; gap: 10px; padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-row .qty {
+      width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(255,122,26,.14); color: var(--orange);
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .item-row .iname { flex: 1; font-size: 13px; line-height: 1.35; }
+    .item-row .ispec { font-size: 11px; color: var(--muted); }
+    .item-row .iprice { font-size: 13px; font-weight: 700; white-space: nowrap; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 46px; width: 100%;
+      border-radius: 12px; border: none; outline: none;
+      font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: transform .08s;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn-orange { background: var(--orange-grad); color: #fff; box-shadow: 0 5px 16px rgba(255,122,26,.3); }
+    .btn-outline { background: transparent; border: 1px solid var(--line); color: var(--txt); }
+    .btn-green { background: var(--green); color: #06230f; }
+    .btn-danger { background: rgba(239,68,68,.12); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+    .btn-muted { background: var(--card); color: var(--muted); border: 1px solid var(--line); }
+    .btn-row { display: flex; gap: 9px; margin-top: 12px; }
+    .btn-row .btn { flex: 1; }
+
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .status-btn {
+      min-height: 44px; border-radius: 10px;
+      background: var(--card); border: 1px solid var(--line);
+      color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .status-btn .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .7; }
+    .status-btn.current { border-color: currentColor; color: var(--txt); background: var(--card2); }
+    .status-btn:active { transform: scale(.96); }
+
+    /* switch */
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 13px 14px; margin-top: 12px;
+    }
+    .switch-row .sw-label { font-size: 13px; font-weight: 600; }
+    .switch-row .sw-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .slider {
+      position: absolute; inset: 0; border-radius: 28px;
+      background: var(--line); cursor: pointer; transition: background .2s;
+    }
+    .switch .slider::before {
+      content: ''; position: absolute; width: 22px; height: 22px;
+      left: 3px; top: 3px; border-radius: 50%;
+      background: var(--muted); transition: transform .2s, background .2s;
+    }
+    .switch input:checked + .slider { background: rgba(255,122,26,.5); }
+    .switch input:checked + .slider::before { transform: translateX(20px); background: var(--orange); }
+
+    .input {
+      width: 100%; min-height: 46px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 0 14px;
+      color: var(--txt); font-family: inherit; font-size: 14px; outline: none;
+    }
+    .input:focus { border-color: var(--orange); }
+    select.input { appearance: none; -webkit-appearance: none; }
+    .field { margin-top: 12px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 7px; }
+    .check-row {
+      display: flex; align-items: center; gap: 11px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 13px 14px; margin-top: 9px; cursor: pointer;
+    }
+    .check-row i { font-size: 15px; color: var(--blue); }
+    .check-row input { width: 20px; height: 20px; accent-color: var(--orange); flex-shrink: 0; }
+    .check-row span { flex: 1; font-size: 13px; }
+
+    /* ===== CHAT VIEW ===== */
+    #page-conversa { display: none; height: 100%; flex-direction: column; }
+    #page-conversa.active { display: flex; }
+    .conv-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid var(--line);
+      background: var(--card); flex-shrink: 0;
+    }
+    .conv-head .ch-name { flex: 1; font-size: 14px; font-weight: 700; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-head .ch-btn {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      background: var(--bg2); border: 1px solid var(--line);
+      color: var(--muted); cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .conv-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .bubble {
+      max-width: 80%; padding: 10px 13px; border-radius: 16px;
+      font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word;
+    }
+    .bubble .b-time { display: block; font-size: 10px; color: inherit; opacity: .6; margin-top: 5px; }
+    .bubble.admin { align-self: flex-end; background: var(--orange-grad); color: #fff; border-bottom-right-radius: 4px; }
+    .bubble.user { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+    .conv-input {
+      flex-shrink: 0; display: flex; gap: 9px; align-items: center;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: var(--bg2); border-top: 1px solid var(--line);
+    }
+    .conv-input .input { flex: 1; min-height: 44px; }
+    .conv-send {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      background: var(--orange-grad); color: #fff; border: none; cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .conv-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 20px; line-height: 1.6; }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      background: var(--card2); border: 1px solid var(--line);
+      color: var(--txt); font-size: 13px; font-weight: 600;
+      padding: 12px 18px; border-radius: 12px;
+      z-index: 60; opacity: 0; pointer-events: none;
+      transition: opacity .25s, transform .25s;
+      max-width: 88vw; text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.err { border-color: rgba(239,68,68,.5); color: #fecaca; }
+
+    .empty {
+      text-align: center; color: var(--muted); font-size: 13px;
+      padding: 44px 20px; line-height: 1.7;
+    }
+    .empty i { font-size: 34px; color: var(--line); display: block; margin-bottom: 12px; }
+
+    .loading { text-align: center; color: var(--muted); font-size: 13px; padding: 40px 0; }
+    .loading i { color: var(--orange); margin-right: 8px; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header class="app-header">
+    <div class="h-left">
+      <button class="h-back" id="hBack" onclick="goBack()"><i class="fas fa-chevron-left"></i></button>
+      <div class="logo-chip">TV</div>
+      <div class="h-title">
+        <strong id="hTitle">Painel</strong>
+        <span id="hSub">TechVault</span>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <span id="userName" style="max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+        <span class="role-tag" id="roleTag" style="display:none;">Func.</span>
+      </div>
+      <button class="h-logout" onclick="logout()" title="Sair"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </header>
+
+  <div class="content refresh-wrap" id="content">
+    <div class="refresh-ind" id="refreshInd"><i class="fas fa-arrow-down" id="refreshIcon"></i></div>
+
+    <!-- ===== INÍCIO ===== -->
+    <div class="page" id="page-inicio">
+      <div class="pad">
+        <div class="greeting">Olá, <span id="greetName">—</span></div>
+        <div class="greeting-sub" id="greetSub">Resumo da sua loja</div>
+
+        <div class="hero-revenue">
+          <div class="lbl">Receita do mês</div>
+          <div class="val" id="heroRevenue">R$ 0,00</div>
+          <div class="sub" id="heroRevenueSub">—</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card c-green">
+            <div class="lbl">Receita hoje</div>
+            <div class="val" id="statRevenueToday">R$ 0,00</div>
+          </div>
+          <div class="stat-card c-amber">
+            <div class="lbl">Pedidos pendentes</div>
+            <div class="val" id="statPendentes">0</div>
+          </div>
+          <div class="stat-card c-blue">
+            <div class="lbl">Usuários</div>
+            <div class="val" id="statUsers">0</div>
+          </div>
+          <div class="stat-card c-purple">
+            <div class="lbl">Visitas hoje</div>
+            <div class="val" id="statVisits">0</div>
+          </div>
+        </div>
+
+        <button class="alert-card" id="alertProcess" onclick="goTo('pedidos')" style="display:none;">
+          <i class="fas fa-inbox"></i>
+          <span><span class="cnt" id="alertProcessCnt">0</span> pedidos novos para processar — toque para ver</span>
+        </button>
+        <button class="alert-card gray" id="alertPaused" onclick="productFilter='paused';renderProducts();goTo('produtos');" style="display:none;">
+          <i class="fas fa-pause-circle"></i>
+          <span><span class="cnt" id="alertPausedCnt">0</span> produtos pausados — toque para ver</span>
+        </button>
+
+        <div class="section-title">Acesso rápido</div>
+        <div class="quick-row">
+          <button class="quick" onclick="goTo('pedidos')"><i class="fas fa-box"></i>Pedidos</button>
+          <button class="quick" onclick="goTo('produtos')"><i class="fas fa-boxes"></i>Produtos</button>
+          <button class="quick" onclick="goTo('atendimento')"><i class="fas fa-headset"></i>Atendimento</button>
+          <button class="quick" onclick="goTo('whatsapp')"><i class="fab fa-whatsapp"></i>WhatsApp</button>
+        </div>
+
+        <div class="section-title">Pedidos recentes</div>
+        <div id="recentOrders"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PEDIDOS ===== -->
+    <div class="page" id="page-pedidos">
+      <div class="pad">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input id="orderSearch" placeholder="Buscar pedido, cliente, CPF..." oninput="renderOrders()">
+        </div>
+        <div class="chips" id="orderChips"></div>
+        <div id="ordersList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando pedidos...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PRODUTOS ===== -->
+    <div class="page" id="page-produtos">
+      <div class="pad">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input id="productSearch" placeholder="Buscar produto..." oninput="renderProducts()">
+        </div>
+        <div class="chips" id="productChips"></div>
+        <div id="productsList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando produtos...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== ATENDIMENTO ===== -->
+    <div class="page" id="page-atendimento">
+      <div class="pad">
+        <div class="section-title">Conversas de suporte</div>
+        <div id="chatsList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando conversas...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== CONVERSA ===== -->
+    <div class="page" id="page-conversa">
+      <div class="conv-head">
+        <div class="u-avatar" id="convAvatar">U</div>
+        <div class="ch-name" id="convName">—</div>
+        <button class="ch-btn" id="convResolveBtn" onclick="toggleResolve()" title="Resolver conversa"><i class="fas fa-check"></i></button>
+        <button class="ch-btn" onclick="deleteConv()" title="Excluir conversa"><i class="fas fa-trash-alt"></i></button>
+      </div>
+      <div class="conv-msgs" id="convMsgs"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      <div class="conv-input">
+        <input class="input" id="convInput" placeholder="Digite a mensagem..." onkeydown="if(event.key==='Enter')sendConvMsg()">
+        <button class="conv-send" onclick="sendConvMsg()"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+
+    <!-- ===== MAIS ===== -->
+    <div class="page" id="page-mais">
+      <div class="pad">
+        <div class="section-title">Gerenciamento</div>
+        <button class="menu-item" onclick="goTo('usuarios')">
+          <div class="ic ic-blue"><i class="fas fa-users"></i></div>
+          <span>Usuários<div class="mi-sub" id="miUsers">—</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+        <button class="menu-item" onclick="goTo('equipe')">
+          <div class="ic ic-orange"><i class="fas fa-user-tie"></i></div>
+          <span>Equipe<div class="mi-sub" id="miStaff">—</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+        <button class="menu-item" onclick="goTo('carrinhos')">
+          <div class="ic ic-green"><i class="fas fa-shopping-cart"></i></div>
+          <span>Carrinhos<div class="mi-sub" id="miCarts">—</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+        <button class="menu-item" onclick="goTo('devolucoes')">
+          <div class="ic ic-purple"><i class="fas fa-undo"></i></div>
+          <span>Devoluções<div class="mi-sub" id="miReturns">—</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+        <button class="menu-item" onclick="goTo('whatsapp')">
+          <div class="ic ic-green"><i class="fab fa-whatsapp"></i></div>
+          <span>WhatsApp<div class="mi-sub">Disparo de mensagens</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+        <div class="section-title">Painel</div>
+        <button class="menu-item" onclick="goDesktop()">
+          <div class="ic ic-blue"><i class="fas fa-desktop"></i></div>
+          <span>Versão completa<div class="mi-sub">Painel para computador</div></span>
+          <i class="fas fa-external-link-alt mi-arrow"></i>
+        </button>
+        <button class="menu-item" onclick="logout()" style="color:#fca5a5;">
+          <div class="ic ic-red"><i class="fas fa-sign-out-alt"></i></div>
+          <span>Sair<div class="mi-sub">Encerrar sessão</div></span>
+          <i class="fas fa-chevron-right mi-arrow"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== USUÁRIOS ===== -->
+    <div class="page" id="page-usuarios">
+      <div class="pad">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input id="userSearch" placeholder="Buscar usuário..." oninput="renderUsers()">
+        </div>
+        <div id="usersList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando usuários...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== EQUIPE ===== -->
+    <div class="page" id="page-equipe">
+      <div class="pad">
+        <div id="addStaffForm" style="display:none;">
+          <div class="section-title">Adicionar pessoa</div>
+          <div class="field">
+            <input class="input" id="staffEmail" type="email" placeholder="Email da pessoa..." inputmode="email">
+          </div>
+          <div class="field">
+            <select class="input" id="staffRole">
+              <option value="admin">Administrador</option>
+              <option value="funcionario">Funcionário</option>
+            </select>
+          </div>
+          <div class="btn-row"><button class="btn btn-orange" onclick="addStaff()"><i class="fas fa-user-plus"></i>Adicionar</button></div>
+        </div>
+        <div class="section-title">Membros</div>
+        <div id="staffList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando equipe...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== CARRINHOS ===== -->
+    <div class="page" id="page-carrinhos">
+      <div class="pad">
+        <div class="section-title">Carrinhos ativos</div>
+        <div id="cartsList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando carrinhos...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== DEVOLUÇÕES ===== -->
+    <div class="page" id="page-devolucoes">
+      <div class="pad">
+        <div class="section-title">Chamados</div>
+        <div id="returnsList"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando chamados...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== WHATSAPP ===== -->
+    <div class="page" id="page-whatsapp">
+      <div class="pad">
+        <div class="section-title">Modelo de mensagem</div>
+        <div class="chips" id="waChips"></div>
+        <div class="section-title">Contatos</div>
+        <div id="waContacts"><div class="loading"><i class="fas fa-spinner fa-spin"></i>Carregando...</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="tabbar">
+    <button class="tab" data-tab="inicio" onclick="goTo('inicio')"><i class="fas fa-home"></i>Início</button>
+    <button class="tab" data-tab="pedidos" onclick="goTo('pedidos')"><i class="fas fa-box"></i>Pedidos<span class="tab-badge red hide" id="tabBadgePend"></span></button>
+    <button class="tab" data-tab="produtos" onclick="goTo('produtos')"><i class="fas fa-boxes"></i>Produtos</button>
+    <button class="tab" data-tab="atendimento" onclick="goTo('atendimento')"><i class="fas fa-headset"></i>Atend.<span class="tab-badge red hide" id="tabBadgeChat"></span></button>
+    <button class="tab" data-tab="mais" onclick="goTo('mais')"><i class="fas fa-ellipsis-h"></i>Mais</button>
+  </nav>
+</div>
+
+<!-- ===== SHEETS ===== -->
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+
+<div class="sheet" id="sheet-order">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title" id="soTitle">Pedido</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body" id="soBody"></div>
+</div>
+
+<div class="sheet" id="sheet-tracking">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title">Rastreio do pedido</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Número de rastreio</label>
+      <input class="input" id="trackNumber" placeholder="Ex: ABC123456789BR">
+    </div>
+    <div class="field">
+      <label>Etapas concluídas</label>
+      <label class="check-row"><input type="checkbox" class="track-check" value="saiu_entrega"><i class="fas fa-truck"></i><span>O pedido saiu para a entrega</span></label>
+      <label class="check-row"><input type="checkbox" class="track-check" value="chegou_cidade"><i class="fas fa-map-marker-alt"></i><span>O pedido chegou na sua cidade</span></label>
+      <label class="check-row"><input type="checkbox" class="track-check" value="entregue"><i class="fas fa-check-circle"></i><span>O pedido foi entregue</span></label>
+    </div>
+    <div class="btn-row"><button class="btn btn-orange" onclick="saveTracking()"><i class="fas fa-save"></i>Salvar rastreio</button></div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-product">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title">Produto</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body" id="spBody"></div>
+</div>
+
+<div class="sheet" id="sheet-user">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title">Usuário</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body" id="suBody"></div>
+</div>
+
+<div class="sheet" id="sheet-cart">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title">Carrinho</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body" id="scBody"></div>
+</div>
+
+<div class="sheet" id="sheet-return">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="st-title">Chamado</div>
+    <button class="sheet-close" onclick="closeSheet()"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="sheet-body" id="srBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = '';
+  let ME = null;
+  let isAdmin = false;
+
+  let allOrders = [];
+  let allUsers = [];
+  let allCarts = [];
+  let allProducts = [];
+  let allStaff = [];
+  let allReturns = [];
+  let allChats = [];
+  let visitsData = null;
+
+  let orderFilter = 'todos';
+  let orderSearch = '';
+  let productFilter = 'all';
+  let productSearch = '';
+  let userSearch = '';
+  let activeWAMsg = 'abandono';
+
+  let pageStack = [];
+  let convKey = null;
+  let convPoll = null;
+  let activeOrderId = null;
+  let activeProductId = null;
+  let activeUserId = null;
+  let activeCartIdx = null;
+  let activeReturnId = null;
+
+  const MAIN_PAGES = ['inicio', 'pedidos', 'produtos', 'atendimento', 'mais'];
+  const PAGE_TITLES = {
+    inicio: 'Resumo', pedidos: 'Pedidos', produtos: 'Produtos',
+    atendimento: 'Atendimento', mais: 'Menu',
+    usuarios: 'Usuários', equipe: 'Equipe', carrinhos: 'Carrinhos',
+    devolucoes: 'Devoluções', whatsapp: 'WhatsApp'
+  };
+
+  const STATUS_LABEL = { pendente: 'Pendente', aprovado: 'Aprovado', entregue: 'Entregue', cancelado: 'Cancelado', reembolsado: 'Reembolsado' };
+  const STATUS_ORDER = ['pendente', 'aprovado', 'entregue', 'cancelado', 'reembolsado'];
+
+  const WHATSAPP_MSGS = {
+    abandono: 'Olá!\n\nPercebemos que você deixou alguns produtos no carrinho e eles estão reservados para você. Se precisar de qualquer ajuda ou tiver alguma dúvida sobre o produto, é só responder esta mensagem. Ficaremos felizes em ajudar! Finalize sua compra antes que o estoque acabe e garanta seu pedido.',
+    boleto: 'Olá!\n\nPassando para lembrar que o boleto do seu pedido está prestes a vencer. Se você ainda deseja concluir a compra, recomendamos realizar o pagamento o quanto antes para evitar o cancelamento automático do pedido. Caso já tenha efetuado o pagamento, desconsidere esta mensagem. Agradecemos pela preferência!',
+    promocao: 'Olá!\n\nTemos uma oferta especial disponível por tempo limitado. Selecionamos descontos exclusivos em produtos da nossa loja que podem interessar a você. Aproveite preços promocionais antes que a campanha termine. Caso tenha qualquer dúvida ou precise de ajuda para escolher o produto ideal, estamos à disposição. Boas compras!'
+  };
+
+  /* ========== HELPERS ========== */
+  const $ = id => document.getElementById(id);
+
+  function fmtBRL(v) {
+    const n = parseFloat(v) || 0;
+    return 'R$ ' + n.toFixed(2).replace('.', ',');
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('pt-BR'); } catch { return '—'; }
+  }
+  function fmtDateTime(d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('pt-BR') + ' ' + new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch { return '—'; }
+  }
+  function statusClass(s) { return 'st-' + (s || 'pendente'); }
+  function statusLabel(s) { return STATUS_LABEL[s] || (s || '—'); }
+  function cleanPhone(p) { return '55' + String(p || '').replace(/\D/g, ''); }
+  function userPhone(u) { return u && u.telefone && String(u.telefone).replace(/\D/g, '').length >= 10 ? cleanPhone(u.telefone) : null; }
+  function waLink(phone, msg) { return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg || ''); }
+  function formatItems(itens) {
+    if (!itens || !itens.length) return '';
+    return itens.slice(0, 3).map(i => i.nome || i.name || 'Item').join(', ') + (itens.length > 3 ? ' +' + (itens.length - 3) : '');
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function orderClient(o) {
+    const c = o.cliente || {}, u = o.usuario || {};
+    return { nome: c.nome || u.nome || 'Cliente', telefone: c.telefone || u.telefone || '', email: c.email || u.email || '', cpf: c.cpf || u.cpf || '' };
+  }
+  function orderItemsText(o) { return (o.itens || []).map(i => i.quantidade + 'x ' + (i.nome || 'Item')).join(', '); }
+
+  function toast(msg, isErr) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isErr ? ' err' : '');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => { t.className = 'toast'; }, 2600);
+  }
+
+  function adminFetch(url, options) {
+    const token = localStorage.getItem('techvault-token');
+    const headers = Object.assign({}, options && options.headers || {}, { 'Authorization': 'Bearer ' + token });
+    if (options && options.body && typeof options.body !== 'string') options.body = JSON.stringify(options.body);
+    if (options && options.body) headers['Content-Type'] = 'application/json';
+    return fetch(url, Object.assign({}, options, { headers })).then(r => r.json());
+  }
+
+  /* ========== NAVIGATION ========== */
+  function goTo(page) {
+    const isMain = MAIN_PAGES.includes(page);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    $('page-' + page).classList.add('active');
+
+    if (isMain) {
+      pageStack = [];
+      $('hBack').classList.remove('show');
+      $('hTitle').textContent = PAGE_TITLES[page];
+      $('hSub').textContent = page === 'inicio' ? 'TechVault' : 'TechVault';
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === page));
+    } else {
+      if (page !== 'conversa' && pageStack[pageStack.length - 1] !== page) pageStack.push(page);
+      $('hBack').classList.add('show');
+      $('hTitle').textContent = PAGE_TITLES[page] || 'Painel';
+      $('hSub').textContent = page === 'conversa' ? 'Conversa' : 'TechVault';
+      if (page === 'conversa') document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'atendimento'));
+      else document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'mais'));
+    }
+    $('content').scrollTop = 0;
+    renderActivePage();
+  }
+
+  function goBack() {
+    const prev = pageStack.pop();
+    if (pageStack.length && MAIN_PAGES.includes(pageStack[pageStack.length - 1])) {
+      goTo(pageStack[pageStack.length - 1]);
+    } else {
+      goTo('mais');
+    }
+    if (prev === 'conversa') stopConvPoll();
+  }
+
+  function goDesktop() {
+    localStorage.setItem('tv-painel-mobile', '1');
+    window.location.href = '/painel?desktop=1';
+  }
+
+  function logout() { window.location.href = '/'; }
+
+  function renderActivePage() {
+    const active = document.querySelector('.page.active');
+    if (!active) return;
+    const id = active.id.replace('page-', '');
+    if (id === 'pedidos') renderOrders();
+    if (id === 'produtos') renderProducts();
+    if (id === 'atendimento') renderChats();
+    if (id === 'usuarios') renderUsers();
+    if (id === 'equipe') renderStaff();
+    if (id === 'carrinhos') renderCarts();
+    if (id === 'devolucoes') renderReturns();
+    if (id === 'whatsapp') { renderWaChips(); renderWhatsApp(); }
+    if (id === 'inicio') { renderHome(); renderRecentOrders(); }
+  }
+
+  /* ========== AUTH + LOAD ========== */
+  document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('techvault-token');
+    if (!token) { window.location.href = '/login'; return; }
+    try {
+      const res = await fetch('/api/auth/check', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.authenticated || !data.user.admin) {
+        toast('Acesso restrito a administradores', true);
+        setTimeout(() => { window.location.href = '/'; }, 2000);
+        return;
+      }
+      ME = data.user;
+      isAdmin = ME.role === 'admin';
+      $('userAvatar').textContent = (ME.nome || 'U').charAt(0).toUpperCase();
+      $('userName').textContent = ME.nome || '—';
+      $('greetName').textContent = (ME.nome || '').split(' ')[0] || '—';
+      if (ME.role === 'funcionario') { $('roleTag').style.display = 'inline-block'; $('roleTag').textContent = 'Func.'; }
+      if (ME.role === 'admin') { $('roleTag').style.display = 'inline-block'; $('roleTag').textContent = 'Admin'; }
+      await loadAllData();
+      goTo('inicio');
+      setupPullToRefresh();
+    } catch (err) {
+      toast('Erro de autenticação', true);
+      setTimeout(() => { window.location.href = '/'; }, 2000);
+    }
+  });
+
+  async function loadAllData() {
+    try {
+      const token = localStorage.getItem('techvault-token');
+      const H = { headers: { 'Authorization': 'Bearer ' + token } };
+      const [o, u, c, s, p, r, chats, v] = await Promise.all([
+        fetch('/api/admin/orders', H).then(r => r.json()),
+        fetch('/api/admin/users', H).then(r => r.json()),
+        fetch('/api/admin/carts', H).then(r => r.json()),
+        fetch('/api/admin/staff', H).then(r => r.json()),
+        fetch('/api/admin/products', H).then(r => r.json()),
+        fetch('/api/admin/returns', H).then(r => r.json()),
+        fetch('/api/admin/chat/support', H).then(r => r.json()),
+        fetch('/api/visits').then(r => r.json())
+      ]);
+      if (Array.isArray(o)) allOrders = o;
+      if (Array.isArray(u)) allUsers = u;
+      if (Array.isArray(c)) allCarts = c;
+      if (Array.isArray(s)) allStaff = s;
+      if (Array.isArray(p)) allProducts = p;
+      if (Array.isArray(r)) allReturns = r;
+      if (Array.isArray(chats)) allChats = chats;
+      visitsData = v;
+      updateBadges();
+      renderActivePage();
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+      toast('Erro ao carregar dados', true);
+    }
+  }
+
+  function updateBadges() {
+    const pend = allOrders.filter(o => o.status === 'pendente').length;
+    const unread = allChats.reduce((s, c) => s + (c.unreadCount || 0), 0);
+    const bPend = $('tabBadgePend'), bChat = $('tabBadgeChat');
+    bPend.textContent = pend;
+    bPend.classList.toggle('hide', pend < 1);
+    bChat.textContent = unread;
+    bChat.classList.toggle('hide', unread < 1);
+  }
+
+  /* ========== HOME ========== */
+  function renderHome() {
+    const pendentes = allOrders.filter(o => o.status === 'pendente');
+    const done = allOrders.filter(o => o.status === 'aprovado' || o.status === 'entregue');
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const todayDone = done.filter(o => new Date(o.createdAt) >= startToday);
+    const monthDone = done.filter(o => new Date(o.createdAt) >= startMonth);
+    const revToday = todayDone.reduce((s, o) => s + (o.total || 0), 0);
+    const revMonth = monthDone.reduce((s, o) => s + (o.total || 0), 0);
+
+    $('heroRevenue').textContent = fmtBRL(revMonth);
+    $('heroRevenueSub').textContent = monthDone.length + ' venda' + (monthDone.length !== 1 ? 's' : '') + ' no mês';
+    $('statRevenueToday').textContent = fmtBRL(revToday);
+    $('statPendentes').textContent = pendentes.length;
+    $('statUsers').textContent = allUsers.length;
+    const visitsDay = visitsData ? (visitsData.count || 0) : '—';
+    $('statVisits').textContent = visitsDay;
+
+    const nproc = allOrders.filter(o => o.processado !== 1 && o.processado !== true).length;
+    const aP = $('alertProcess');
+    aP.style.display = nproc > 0 ? 'flex' : 'none';
+    $('alertProcessCnt').textContent = nproc;
+
+    const nPaused = allProducts.filter(p => p.paused).length;
+    const aPd = $('alertPaused');
+    aPd.style.display = nPaused > 0 ? 'flex' : 'none';
+    $('alertPausedCnt').textContent = nPaused;
+
+    $('miUsers').textContent = allUsers.length + ' usuário' + (allUsers.length !== 1 ? 's' : '');
+    $('miStaff').textContent = allStaff.length + ' membro' + (allStaff.length !== 1 ? 's' : '');
+    $('miCarts').textContent = allCarts.length + ' ativo' + (allCarts.length !== 1 ? 's' : '');
+    $('miReturns').textContent = allReturns.length + ' chamado' + (allReturns.length !== 1 ? 's' : '');
+  }
+
+  function renderRecentOrders() {
+    const recent = allOrders.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+    const el = $('recentOrders');
+    if (!recent.length) { el.innerHTML = '<div class="empty"><i class="fas fa-box-open"></i>Nenhum pedido ainda.</div>'; return; }
+    el.innerHTML = recent.map(o => {
+      const cli = orderClient(o);
+      return '<div class="list-card" onclick="openOrderSheet(' + o.id + ')">' +
+        '<div class="card-top"><span class="id-stack"><strong style="font-size:14px;">#' + o.id + '</strong>' +
+        (o.processado !== 1 && o.processado !== true ? '<span class="unproc-dot" title="Não processado"></span>' : '') + '</span>' +
+        '<span class="pill ' + statusClass(o.status) + '">' + statusLabel(o.status) + '</span></div>' +
+        '<div class="o-name">' + esc(cli.nome) + '</div>' +
+        '<div class="o-meta">' + (o.itens || []).length + ' item(ns) · ' + fmtBRL(o.total) + ' · ' + fmtDate(o.createdAt) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  /* ========== ORDERS ========== */
+  function renderOrderChips() {
+    const counts = { todos: allOrders.length };
+    STATUS_ORDER.forEach(s => counts[s] = allOrders.filter(o => o.status === s).length);
+    const el = $('orderChips');
+    el.innerHTML = [['todos', 'Todos'], ...STATUS_ORDER.map(s => [s, STATUS_LABEL[s]])].map(([k, lbl]) =>
+      '<button class="chip' + (orderFilter === k ? ' active' : '') + '" onclick="orderFilter=\'' + k + '\';renderOrderChips();renderOrders()">' + lbl + ' · ' + counts[k] + '</button>'
+    ).join('');
+  }
+
+  function renderOrders() {
+    renderOrderChips();
+    const q = $('orderSearch').value.trim().toLowerCase();
+    let list = allOrders;
+    if (orderFilter !== 'todos') list = list.filter(o => o.status === orderFilter);
+    if (q) {
+      list = list.filter(o => {
+        const cli = orderClient(o);
+        return String(o.id).includes(q) ||
+          (cli.nome || '').toLowerCase().includes(q) ||
+          (cli.cpf || '').includes(q) ||
+          (o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '').includes(q) ||
+          (o.createdAt ? new Date(o.createdAt).toISOString().split('T')[0] : '').includes(q);
+      });
+    }
+    list = list.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const el = $('ordersList');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty"><i class="fas fa-box-open"></i>' + (allOrders.length ? 'Nenhum pedido encontrado.' : 'Nenhum pedido ainda.') + '</div>';
+      return;
+    }
+    el.innerHTML = list.map(o => {
+      const cli = orderClient(o);
+      return '<div class="list-card" onclick="openOrderSheet(' + o.id + ')">' +
+        '<div class="card-top"><span class="id-stack"><strong style="font-size:14px;">#' + o.id + '</strong>' +
+        (o.processado !== 1 && o.processado !== true ? '<span class="unproc-dot" title="Não processado"></span>' : '') + '</span>' +
+        '<span class="pill ' + statusClass(o.status) + '">' + statusLabel(o.status) + '</span></div>' +
+        '<div class="o-name">' + esc(cli.nome) + '</div>' +
+        '<div class="o-meta">' + (o.itens || []).length + ' item(ns) · ' + fmtBRL(o.total) + ' · ' + fmtDate(o.createdAt) + (o.pagamento ? ' · ' + esc(o.pagamento) : '') + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function openOrderSheet(id) {
+    const o = allOrders.find(x => x.id == id);
+    if (!o) return;
+    activeOrderId = o.id;
+    $('soTitle').textContent = 'Pedido #' + o.id;
+    const cli = orderClient(o);
+    const phone = cli.telefone && String(cli.telefone).replace(/\D/g, '').length >= 10 ? cleanPhone(cli.telefone) : null;
+
+    let itemsHtml = (o.itens || []).map(i => {
+      const specs = [];
+      if (i.variantSpecs) { const vals = Object.values(i.variantSpecs).filter(Boolean); if (vals.length) specs.push(vals.join(' | ')); }
+      if (i.cor) specs.push('Cor: ' + i.cor);
+      const cancelled = (o.cancelledItems || []).includes(i.id) || (o.cancelledItems || []).includes(i.productId);
+      const returned = (o.returnedItems || []).includes(i.id) || (o.returnedItems || []).includes(i.productId);
+      const note = cancelled ? ' <span style="color:var(--red);font-size:11px;">[cancelado]</span>' : returned ? ' <span style="color:var(--amber);font-size:11px;">[devolvido]</span>' : '';
+      return '<div class="item-row"><div class="qty">' + (i.quantidade || 1) + 'x</div>' +
+        '<div class="iname">' + esc(i.nome) + (specs.length ? '<div class="ispec">' + esc(specs.join(' · ')) + '</div>' : '') + note + '</div>' +
+        '<div class="iprice">' + fmtBRL((i.preco || 0) * (i.quantidade || 1)) + '</div></div>';
+    }).join('');
+
+    const end = o.endereco || {};
+    const endereco = [end.logradouro, end.numero, end.complemento, end.bairro, end.cidade + (end.estado ? ' - ' + end.estado : ''), end.cep].filter(Boolean).join(', ');
+
+    const statusBtns = STATUS_ORDER.map(s =>
+      '<button class="status-btn' + (o.status === s ? ' current' : '') + '" style="color:' + statusColor(s) + '" onclick="changeOrderStatus(\'' + s + '\')">' +
+      '<span class="dot"></span>' + STATUS_LABEL[s] + '</button>'
+    ).join('');
+
+    let html = '';
+    html += '<div class="s-row"><span class="k">Data</span><span class="v">' + fmtDateTime(o.createdAt) + '</span></div>';
+    html += '<div class="s-row"><span class="k">Pagamento</span><span class="v">' + esc(o.pagamento || '—') + '</span></div>';
+    html += '<div class="s-row"><span class="k">Total</span><span class="v" style="color:var(--orange);">' + fmtBRL(o.total) + '</span></div>';
+    if (o.cupom) html += '<div class="s-row"><span class="k">Cupom</span><span class="v">' + esc(o.cupom.code || '') + ' (' + (o.cupom.discount || 0) + '%)</span></div>';
+
+    html += '<div class="section-label">Cliente</div>';
+    html += '<div class="s-row"><span class="k">Nome</span><span class="v">' + esc(cli.nome) + '</span></div>';
+    if (cli.email) html += '<div class="s-row"><span class="k">Email</span><span class="v">' + esc(cli.email) + '</span></div>';
+    if (cli.cpf) html += '<div class="s-row"><span class="k">CPF</span><span class="v">' + esc(cli.cpf) + '</span></div>';
+    if (cli.telefone) html += '<div class="s-row"><span class="k">Telefone</span><span class="v">' + esc(cli.telefone) + '</span></div>';
+    if (endereco) html += '<div class="s-row"><span class="k">Endereço</span><span class="v" style="text-align:right;">' + esc(endereco) + '</span></div>';
+    if (o.trackingNumber) html += '<div class="s-row"><span class="k">Rastreio</span><span class="v">' + esc(o.trackingNumber) + '</span></div>';
+
+    html += '<div class="section-label">Itens (' + (o.itens || []).length + ')</div>';
+    html += itemsHtml || '<div class="empty">Sem itens</div>';
+
+    html += '<div class="section-label">Status do pedido</div>';
+    html += '<div class="status-grid">' + statusBtns + '</div>';
+
+    html += '<div class="switch-row">' +
+      '<div><div class="sw-label">Processado</div><div class="sw-sub">Enviado ao fornecedor</div></div>' +
+      '<label class="switch"><input type="checkbox" ' + (o.processado === 1 || o.processado === true ? 'checked' : '') + ' onchange="toggleProcessado(this.checked)"><span class="slider"></span></label>' +
+      '</div>';
+
+    html += '<div class="btn-row">';
+    html += '<button class="btn btn-outline" onclick="openTrackingSheet()"><i class="fas fa-shipping-fast"></i>Rastreio</button>';
+    if (phone) html += '<button class="btn btn-green" onclick="openWAOrder(\'' + phone + '\')"><i class="fab fa-whatsapp"></i>WhatsApp</button>';
+    html += '</div>';
+    if (isAdmin) html += '<div class="btn-row"><button class="btn btn-danger" onclick="deleteOrder()"><i class="fas fa-trash-alt"></i>Excluir pedido</button></div>';
+
+    $('soBody').innerHTML = html;
+    openSheet('sheet-order');
+  }
+
+  function statusColor(s) {
+    const map = { pendente: '#f59e0b', aprovado: '#22c55e', entregue: '#38bdf8', cancelado: '#ef4444', reembolsado: '#a78bfa' };
+    return map[s] || '#7d8db0';
+  }
+
+  function openWAOrder(phone) {
+    const o = allOrders.find(x => x.id == activeOrderId);
+    const msg = 'Olá! Sobre seu pedido #' + o.id + ' na TechVault, status: ' + statusLabel(o.status) + '.';
+    window.open(waLink(phone, msg), '_blank');
+  }
+
+  async function changeOrderStatus(status) {
+    const o = allOrders.find(x => x.id == activeOrderId);
+    if (!o) return;
+    if (status === o.status) return;
+    if ((status === 'cancelado' || status === 'reembolsado') && !confirm('Confirmar marcação do pedido #' + o.id + ' como "' + STATUS_LABEL[status] + '"?')) return;
+    const res = await adminFetch('/api/admin/orders/' + o.id + '/status', { method: 'PUT', body: { status } });
+    if (res.error) { toast(res.error, true); return; }
+    o.status = status;
+    if (status === 'entregue') { o.processado = 1; }
+    toast('Pedido #' + o.id + ' atualizado para ' + STATUS_LABEL[status]);
+    updateBadges();
+    openOrderSheet(o.id);
+    renderActivePage();
+    if (document.querySelector('.page.active').id === 'page-inicio') renderHome();
+  }
+
+  async function toggleProcessado(val) {
+    const o = allOrders.find(x => x.id == activeOrderId);
+    if (!o) return;
+    const res = await adminFetch('/api/admin/orders/' + o.id + '/processado', { method: 'PUT', body: { processado: val ? 1 : 0 } });
+    if (res.error) { toast(res.error, true); return; }
+    o.processado = val ? 1 : 0;
+    toast(val ? 'Marcado como processado' : 'Marcado como não processado');
+    renderActivePage();
+  }
+
+  function openTrackingSheet() {
+    const o = allOrders.find(x => x.id == activeOrderId);
+    if (!o) return;
+    $('trackNumber').value = o.trackingNumber || '';
+    document.querySelectorAll('.track-check').forEach(c => c.checked = (o.trackingStatus || []).includes(c.value));
+    openSheet('sheet-tracking');
+  }
+
+  async function saveTracking() {
+    const num = $('trackNumber').value.trim();
+    const stages = Array.from(document.querySelectorAll('.track-check')).filter(c => c.checked).map(c => c.value);
+    const res = await adminFetch('/api/admin/orders/' + activeOrderId + '/tracking', { method: 'PUT', body: { trackingNumber: num, trackingStatus: stages } });
+    if (res.error) { toast(res.error, true); return; }
+    const o = allOrders.find(x => x.id == activeOrderId);
+    if (o) { o.trackingNumber = num; o.trackingStatus = stages; if (stages.includes('entregue')) o.status = 'entregue'; }
+    toast('Rastreio salvo');
+    closeSheet();
+    if (o) openOrderSheet(o.id);
+  }
+
+  async function deleteOrder() {
+    const o = allOrders.find(x => x.id == activeOrderId);
+    if (!o || !confirm('Excluir definitivamente o pedido #' + o.id + '?')) return;
+    const res = await adminFetch('/api/admin/orders/' + o.id, { method: 'DELETE' });
+    if (res.error) { toast(res.error, true); return; }
+    allOrders = allOrders.filter(x => x.id != o.id);
+    closeSheet();
+    toast('Pedido excluído');
+    updateBadges();
+    renderActivePage();
+    if (document.querySelector('.page.active').id === 'page-inicio') renderHome();
+  }
+
+  /* ========== PRODUCTS ========== */
+  function renderProductChips() {
+    const counts = {
+      all: allProducts.length,
+      active: allProducts.filter(p => !p.paused).length,
+      paused: allProducts.filter(p => p.paused).length
+    };
+    $('productChips').innerHTML = [
+      ['all', 'Todos · ' + counts.all],
+      ['active', 'Disponíveis · ' + counts.active],
+      ['paused', 'Pausados · ' + counts.paused]
+    ].map(([k, lbl]) =>
+      '<button class="chip' + (productFilter === k ? ' active' : '') + '" onclick="productFilter=\'' + k + '\';renderProductChips();renderProducts()">' + lbl + '</button>'
+    ).join('');
+  }
+
+  function renderProducts() {
+    renderProductChips();
+    const q = $('productSearch').value.trim().toLowerCase();
+    let list = allProducts;
+    if (productFilter === 'active') list = list.filter(p => !p.paused);
+    if (productFilter === 'paused') list = list.filter(p => p.paused);
+    if (q) list = list.filter(p => (p.nome || '').toLowerCase().includes(q) || (p.categoria || '').toLowerCase().includes(q));
+    const el = $('productsList');
+    if (!list.length) { el.innerHTML = '<div class="empty"><i class="fas fa-boxes"></i>Nenhum produto encontrado.</div>'; return; }
+    el.innerHTML = list.map(p => {
+      const img = p.imagem || (p.imagens && p.imagens[0]) || '';
+      const pills = '<span class="pill ' + (p.paused ? 'st-pausado' : 'st-ativo') + '">' + (p.paused ? 'Pausado' : 'Ativo') + '</span>' +
+        (p.destaque ? '<span class="pill st-destaque"><i class="fas fa-star"></i> Destaque</span>' : '');
+      return '<div class="list-card prod-card" onclick="openProductSheet(\'' + p.id + '\')">' +
+        '<div class="thumb"><img src="' + esc(img) + '" onerror="this.parentNode.classList.add(\'noimg\');this.style.display=\'none\'"></div>' +
+        '<div class="prod-body"><div class="p-name">' + esc(p.nome) + '</div>' +
+        '<div class="p-price">' + fmtBRL(p.preco) + (p.precoOriginal && p.preco != p.precoOriginal ? '<del>' + fmtBRL(p.precoOriginal) + '</del>' : '') + '</div>' +
+        '<div class="p-pills">' + pills + '</div></div></div>';
+    }).join('');
+  }
+
+  function openProductSheet(id) {
+    const p = allProducts.find(x => String(x.id) === String(id));
+    if (!p) return;
+    activeProductId = p.id;
+    $('sheet-product').querySelector('.st-title').textContent = 'Produto';
+    const img = p.imagem || (p.imagens && p.imagens[0]) || '';
+
+    let html = '<div style="display:flex;gap:13px;align-items:center;">' +
+      '<div class="thumb" style="width:84px;height:84px;"><img src="' + esc(img) + '" onerror="this.parentNode.classList.add(\'noimg\');this.style.display=\'none\'"></div>' +
+      '<div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:700;line-height:1.35;">' + esc(p.nome) + '</div>' +
+      '<div style="margin-top:6px;font-size:18px;font-weight:800;color:#fff;">' + fmtBRL(p.preco) +
+      (p.precoOriginal && p.preco != p.precoOriginal ? ' <del style="font-size:13px;color:var(--muted);font-weight:500;">' + fmtBRL(p.precoOriginal) + '</del>' : '') + '</div>' +
+      '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">' +
+      '<span class="pill ' + (p.paused ? 'st-pausado' : 'st-ativo') + '">' + (p.paused ? 'Pausado' : 'Ativo') + '</span>' +
+      (p.destaque ? '<span class="pill st-destaque"><i class="fas fa-star"></i> Destaque</span>' : '') +
+      '</div></div></div>';
+
+    html += '<div class="section-label">Detalhes</div>';
+    html += '<div class="s-row"><span class="k">Categoria</span><span class="v">' + esc(p.categoria || '—') + '</span></div>';
+    html += '<div class="s-row"><span class="k">Estoque</span><span class="v">' + esc(p.estoque || 'N/A') + '</span></div>';
+    html += '<div class="s-row"><span class="k">Avaliação</span><span class="v">' + (p.avaliacao || 0) + ' (' + (p.reviews || 0) + ' avaliações)</span></div>';
+
+    if (isAdmin) {
+      html += '<div class="section-label">Ações</div>';
+      html += '<button class="btn ' + (p.paused ? 'btn-orange' : 'btn-outline') + '" onclick="togglePauseProduct()">' +
+        '<i class="fas fa-' + (p.paused ? 'play' : 'pause') + '"></i>' + (p.paused ? 'Reativar produto' : 'Pausar produto') + '</button>';
+      html += '<div class="btn-row"><button class="btn btn-outline" onclick="toggleDestaqueProduct()"><i class="fas fa-star"></i>' + (p.destaque ? 'Remover destaque' : 'Marcar destaque') + '</button></div>';
+      html += '<div class="section-label">Editar preço</div>';
+      html += '<div class="field"><input class="input" id="priceInput" type="number" step="0.01" inputmode="decimal" placeholder="Novo preço (R$)" value="' + p.preco + '"></div>';
+      html += '<div class="btn-row"><button class="btn btn-orange" onclick="updatePrice()"><i class="fas fa-save"></i>Salvar preço</button></div>';
+    }
+
+    html += '<div class="btn-row">';
+    html += '<button class="btn btn-outline" onclick="window.open(\'/produto/' + p.id + '\', \'_blank\')"><i class="fas fa-eye"></i>Ver na loja</button>';
+    if (p.supplierLink) html += '<button class="btn btn-outline" onclick="window.open(\'' + esc(p.supplierLink) + '\', \'_blank\')"><i class="fas fa-link"></i>Fornecedor</button>';
+    html += '</div>';
+    if (isAdmin) html += '<div class="btn-row"><button class="btn btn-danger" onclick="deleteProduct()"><i class="fas fa-trash-alt"></i>Excluir produto</button></div>';
+
+    $('spBody').innerHTML = html;
+    openSheet('sheet-product');
+  }
+
+  async function togglePauseProduct() {
+    const res = await adminFetch('/api/admin/products/' + activeProductId + '/toggle-pause', { method: 'POST' });
+    if (res.error) { toast(res.error, true); return; }
+    const p = allProducts.find(x => String(x.id) === String(activeProductId));
+    if (p) { p.paused = !p.paused; }
+    toast(res.paused ? 'Produto pausado' : 'Produto ativado');
+    if (p) openProductSheet(p.id);
+    renderActivePage();
+  }
+
+  async function toggleDestaqueProduct() {
+    const p = allProducts.find(x => String(x.id) === String(activeProductId));
+    if (!p) return;
+    const res = await adminFetch('/api/admin/products/' + p.id, { method: 'PUT', body: { destaque: p.destaque ? 0 : 1 } });
+    if (res.error) { toast(res.error, true); return; }
+    p.destaque = p.destaque ? 0 : 1;
+    toast(p.destaque ? 'Produto marcado como destaque' : 'Destaque removido');
+    openProductSheet(p.id);
+    renderActivePage();
+  }
+
+  async function updatePrice() {
+    const val = parseFloat($('priceInput').value);
+    if (!val || val <= 0) { toast('Informe um preço válido', true); return; }
+    const res = await adminFetch('/api/admin/products/' + activeProductId + '/update-price', { method: 'POST', body: { preco: val } });
+    if (res.error) { toast(res.error, true); return; }
+    const p = allProducts.find(x => String(x.id) === String(activeProductId));
+    if (p) { p.preco = val; p.precoAlterado = true; p.precoOriginal = res.precoOriginal || p.precoOriginal; }
+    toast('Preço atualizado');
+    openProductSheet(p.id);
+    renderActivePage();
+  }
+
+  async function deleteProduct() {
+    const p = allProducts.find(x => String(x.id) === String(activeProductId));
+    if (!p || !confirm('Excluir definitivamente o produto "' + p.nome.substring(0, 40) + '"?')) return;
+    const res = await adminFetch('/api/admin/products/' + p.id, { method: 'DELETE' });
+    if (res.error) { toast(res.error, true); return; }
+    allProducts = allProducts.filter(x => String(x.id) !== String(p.id));
+    closeSheet();
+    toast('Produto excluído');
+    renderActivePage();
+  }
+
+  /* ========== CHAT ========== */
+  function renderChats() {
+    const el = $('chatsList');
+    if (!allChats.length) { el.innerHTML = '<div class="empty"><i class="fas fa-comments"></i>Nenhuma conversa iniciada.</div>'; return; }
+    el.innerHTML = allChats.map(c => {
+      const last = c.lastMessage || {};
+      const name = c.userName || 'Usuário #' + c.userId;
+      const unread = c.unreadCount || 0;
+      return '<div class="list-card chat-row" onclick="openConversation(\'' + esc(c.conversationKey) + '\',\'' + esc(name) + '\',\'' + c.userId + '\',\'' + esc(c.userEmail || '') + '\')">' +
+        '<div class="u-avatar">' + esc(name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="chat-body"><div class="chat-name">' + esc(name) + (c.resolved ? '<span class="pill st-ativo">resolvido</span>' : '') + '</div>' +
+        '<div class="chat-prev">' + esc(last.message || '') + '</div></div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">' +
+        '<span class="chat-time">' + fmtDate(last.createdAt) + '</span>' +
+        '<span class="chat-unread' + (unread < 1 ? ' hide' : '') + '">' + unread + '</span>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function openConversation(key, name, userId, email) {
+    convKey = key;
+    $('convName').textContent = name;
+    $('convAvatar').textContent = name.charAt(0).toUpperCase();
+    goTo('conversa');
+    loadConversation();
+    startConvPoll();
+  }
+
+  async function loadConversation() {
+    const res = await adminFetch('/api/admin/chat/' + encodeURIComponent(convKey));
+    if (!Array.isArray(res)) return;
+    const el = $('convMsgs');
+    if (!res.length) { el.innerHTML = '<div class="conv-empty"><i class="fas fa-comments" style="font-size:34px;display:block;margin-bottom:12px;color:var(--line);"></i>Nenhuma mensagem ainda.</div>'; return; }
+    el.innerHTML = res.map(m => {
+      const isAdmin = m.from === 'admin';
+      return '<div class="bubble ' + (isAdmin ? 'admin' : 'user') + '">' + esc(m.message) +
+        '<span class="b-time">' + (m.adminName ? esc(m.adminName) + ' · ' : '') + fmtDateTime(m.createdAt) + '</span></div>';
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function sendConvMsg() {
+    const input = $('convInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    const res = await adminFetch('/api/admin/chat/send', { method: 'POST', body: { conversationKey: convKey, message: msg } });
+    if (res.error) { toast(res.error, true); input.value = msg; return; }
+    loadConversation();
+  }
+
+  async function toggleResolve() {
+    const chat = allChats.find(c => c.conversationKey === convKey);
+    const newVal = chat ? !chat.resolved : true;
+    const res = await adminFetch('/api/admin/chat/resolve', { method: 'POST', body: { conversationKey: convKey, resolved: newVal } });
+    if (res.error) { toast(res.error, true); return; }
+    if (chat) chat.resolved = newVal;
+    const btn = $('convResolveBtn');
+    btn.style.color = newVal ? 'var(--green)' : '';
+    toast(newVal ? 'Conversa resolvida' : 'Conversa reaberta');
+    renderChats();
+  }
+
+  async function deleteConv() {
+    if (!confirm('Excluir esta conversa?')) return;
+    const res = await adminFetch('/api/admin/chat/' + encodeURIComponent(convKey), { method: 'DELETE' });
+    if (res.error) { toast(res.error, true); return; }
+    allChats = allChats.filter(c => c.conversationKey !== convKey);
+    stopConvPoll();
+    goBack();
+    toast('Conversa excluída');
+  }
+
+  function startConvPoll() {
+    stopConvPoll();
+    convPoll = setInterval(() => { if (convKey) loadConversation(); }, 5000);
+  }
+  function stopConvPoll() { if (convPoll) { clearInterval(convPoll); convPoll = null; } convKey = null; }
+
+  /* ========== USERS ========== */
+  function renderUsers() {
+    const q = $('userSearch').value.trim().toLowerCase();
+    let list = allUsers;
+    if (q) list = list.filter(u => (u.nome || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+    const el = $('usersList');
+    if (!list.length) { el.innerHTML = '<div class="empty"><i class="fas fa-users"></i>Nenhum usuário encontrado.</div>'; return; }
+    el.innerHTML = list.map(u => {
+      const rolePill = u.role === 'admin' ? '<span class="pill st-admin">Admin</span>' : u.role === 'funcionario' ? '<span class="pill st-funcionario">Funcionário</span>' : '';
+      return '<div class="list-card chat-row" onclick="openUserSheet(\'' + u.id + '\')">' +
+        '<div class="u-avatar">' + esc((u.nome || 'U').charAt(0).toUpperCase()) + '</div>' +
+        '<div class="chat-body"><div class="chat-name">' + esc(u.nome || 'Sem nome') + rolePill + '</div>' +
+        '<div class="chat-prev">' + esc(u.email || '') + (u.telefone ? ' · ' + esc(u.telefone) : '') + '</div></div>' +
+        '<i class="fas fa-chevron-right mi-arrow" style="color:var(--muted);font-size:12px;"></i></div>';
+    }).join('');
+  }
+
+  function openUserSheet(id) {
+    const u = allUsers.find(x => String(x.id) === String(id));
+    if (!u) return;
+    activeUserId = u.id;
+    const rolePill = u.role === 'admin' ? '<span class="pill st-admin">Admin</span>' : u.role === 'funcionario' ? '<span class="pill st-funcionario">Funcionário</span>' : '<span class="pill" style="background:rgba(125,141,176,.14);color:var(--muted);">Cliente</span>';
+    const phone = userPhone(u);
+
+    let html = '<div style="display:flex;gap:12px;align-items:center;">' +
+      '<div class="u-avatar" style="width:48px;height:48px;font-size:18px;">' + esc((u.nome || 'U').charAt(0).toUpperCase()) + '</div>' +
+      '<div><div style="font-size:16px;font-weight:700;">' + esc(u.nome || 'Sem nome') + '</div><div style="margin-top:4px;">' + rolePill + '</div></div></div>';
+
+    html += '<div class="section-label">Contato</div>';
+    html += '<div class="s-row"><span class="k">Email</span><span class="v">' + esc(u.email || '—') + '</span></div>';
+    html += '<div class="s-row"><span class="k">Telefone</span><span class="v">' + esc(u.telefone || '—') + '</span></div>';
+
+    if (phone) html += '<div class="btn-row"><button class="btn btn-green" onclick="window.open(\'' + waLink(phone, 'Olá! Aqui é da TechVault.') + '\', \'_blank\')"><i class="fab fa-whatsapp"></i>WhatsApp</button></div>';
+
+    if (isAdmin && String(u.id) !== String(ME.id)) {
+      html += '<div class="section-label">Cargo</div>';
+      html += '<div class="btn-row">';
+      if (u.role !== 'admin') html += '<button class="btn btn-orange" onclick="setRole(\'admin\')">Tornar Admin</button>';
+      if (u.role !== 'funcionario') html += '<button class="btn btn-outline" onclick="setRole(\'funcionario\')">Funcionário</button>';
+      if (u.role) html += '<button class="btn btn-muted" onclick="setRole(\'none\')">Remover</button>';
+      html += '</div>';
+    }
+
+    $('suBody').innerHTML = html;
+    openSheet('sheet-user');
+  }
+
+  async function setRole(role) {
+    const u = allUsers.find(x => String(x.id) === String(activeUserId));
+    if (!u) return;
+    const label = role === 'admin' ? 'administrador' : role === 'funcionario' ? 'funcionário' : 'remover o cargo';
+    if (!confirm('Definir ' + u.email + ' como ' + label + '?')) return;
+    const body = { email: u.email };
+    if (role !== 'none') body.role = role;
+    const res = await adminFetch('/api/admin/set-role', { method: 'POST', body });
+    if (res.error) { toast(res.error, true); return; }
+    if (res.user) {
+      u.role = res.user.role;
+      u.admin = res.user.admin;
+      if (u.role === 'admin') u.admin = true;
+    }
+    toast('Cargo atualizado');
+    openUserSheet(u.id);
+    renderUsers();
+    renderStaff();
+    loadAllData();
+  }
+
+  /* ========== STAFF ========== */
+  function renderStaff() {
+    if (isAdmin) $('addStaffForm').style.display = 'block';
+    const el = $('staffList');
+    if (!allStaff.length) { el.innerHTML = '<div class="empty"><i class="fas fa-user-tie"></i>Nenhum membro na equipe.</div>'; return; }
+    el.innerHTML = allStaff.map(u => {
+      const rolePill = u.role === 'admin' ? '<span class="pill st-admin">Admin</span>' : '<span class="pill st-funcionario">Funcionário</span>';
+      return '<div class="list-card chat-row" onclick="openUserSheet(\'' + u.id + '\')">' +
+        '<div class="u-avatar">' + esc((u.nome || 'U').charAt(0).toUpperCase()) + '</div>' +
+        '<div class="chat-body"><div class="chat-name">' + esc(u.nome || 'Sem nome') + rolePill + '</div>' +
+        '<div class="chat-prev">' + esc(u.email || '') + '</div></div>' +
+        '<i class="fas fa-chevron-right mi-arrow" style="color:var(--muted);font-size:12px;"></i></div>';
+    }).join('');
+  }
+
+  async function addStaff() {
+    const email = $('staffEmail').value.trim();
+    const role = $('staffRole').value;
+    if (!email) { toast('Informe o email', true); return; }
+    const res = await adminFetch('/api/admin/set-role', { method: 'POST', body: { email, role } });
+    if (res.error) { toast(res.error, true); return; }
+    $('staffEmail').value = '';
+    toast('Pessoa adicionada à equipe');
+    renderStaff();
+    loadAllData();
+  }
+
+  /* ========== CARTS ========== */
+  function renderCarts() {
+    const el = $('cartsList');
+    if (!allCarts.length) { el.innerHTML = '<div class="empty"><i class="fas fa-shopping-cart"></i>Nenhum carrinho ativo.</div>'; return; }
+    el.innerHTML = allCarts.map((c, idx) =>
+      '<div class="list-card" onclick="openCartSheet(' + idx + ')">' +
+      '<div class="card-top"><span class="card-title">' + esc(c.userName || 'Cliente') + '</span>' +
+      '<span class="pill st-destaque">' + c.itemCount + ' item' + (c.itemCount !== 1 ? 's' : '') + '</span></div>' +
+      '<div class="o-meta">' + esc(formatItems(c.items)) + '</div>' +
+      '<div class="o-meta" style="margin-top:2px;">' + fmtDateTime(c.updatedAt) + '</div></div>'
+    ).join('');
+  }
+
+  function openCartSheet(idx) {
+    const c = allCarts[idx];
+    if (!c) return;
+    activeCartIdx = idx;
+    const u = allUsers.find(x => String(x.id) === String(c.userId));
+    const phone = userPhone(u);
+    let html = '<div style="font-size:15px;font-weight:700;">' + esc(c.userName || 'Cliente') + '</div>';
+    html += '<div style="font-size:12px;color:var(--muted);margin-top:3px;">' + esc(c.userEmail || '') + '</div>';
+    html += '<div class="section-label">Itens (' + c.itemCount + ')</div>';
+    html += (c.items || []).map(i =>
+      '<div class="item-row"><div class="qty">' + (i.quantidade || 1) + 'x</div>' +
+      '<div class="iname">' + esc(i.nome || 'Item') + '</div>' +
+      '<div class="iprice">' + fmtBRL((i.preco || 0) * (i.quantidade || 1)) + '</div></div>'
+    ).join('');
+    if (phone) html += '<div class="btn-row"><button class="btn btn-green" onclick="window.open(\'' + waLink(phone, 'Olá! Percebemos que você deixou itens no carrinho da TechVault. Ainda podemos ajudar?') + '\', \'_blank\')"><i class="fab fa-whatsapp"></i>Falar com cliente</button></div>';
+    $('scBody').innerHTML = html;
+    openSheet('sheet-cart');
+  }
+
+  /* ========== RETURNS ========== */
+  function renderReturns() {
+    const el = $('returnsList');
+    if (!allReturns.length) { el.innerHTML = '<div class="empty"><i class="fas fa-check-circle"></i>Nenhum chamado pendente.</div>'; return; }
+    el.innerHTML = allReturns.map(o => {
+      const cli = orderClient(o);
+      const isReturn = (o.returnedItems || []).length > 0;
+      const isCancel = (o.cancelledItems || []).length > 0;
+      const tipo = isReturn && isCancel ? 'Devolução + Cancelamento' : isReturn ? 'Devolução' : 'Cancelamento';
+      return '<div class="list-card" onclick="openReturnSheet(\'' + o.id + '\')">' +
+        '<div class="card-top"><span class="card-title">#' + o.id + ' · ' + esc(cli.nome) + '</span>' +
+        '<span class="pill ' + statusClass(o.status) + '">' + statusLabel(o.status) + '</span></div>' +
+        '<div class="o-meta">' + esc(tipo) + ' · ' + esc(orderItemsText(o).substring(0, 60)) + '</div>' +
+        '<div class="o-meta">' + fmtDate(o.createdAt) + '</div></div>';
+    }).join('');
+  }
+
+  function openReturnSheet(id) {
+    const o = allReturns.find(x => String(x.id) === String(id));
+    if (!o) return;
+    activeReturnId = o.id;
+    const cli = orderClient(o);
+    const isReturn = (o.returnedItems || []).length > 0;
+    const isCancel = (o.cancelledItems || []).length > 0;
+    const tipo = isReturn && isCancel ? 'Devolução + Cancelamento' : isReturn ? 'Devolução' : 'Cancelamento';
+    const phone = cli.telefone && String(cli.telefone).replace(/\D/g, '').length >= 10 ? cleanPhone(cli.telefone) : null;
+
+    let html = '<div style="font-size:15px;font-weight:700;">Pedido #' + o.id + '</div>';
+    html += '<div class="s-row"><span class="k">Cliente</span><span class="v">' + esc(cli.nome) + '</span></div>';
+    html += '<div class="s-row"><span class="k">Tipo</span><span class="v">' + esc(tipo) + '</span></div>';
+    html += '<div class="s-row"><span class="k">Status</span><span class="v"><span class="pill ' + statusClass(o.status) + '">' + statusLabel(o.status) + '</span></span></div>';
+
+    html += '<div class="section-label">Itens do chamado</div>';
+    html += (o.itens || []).map(i => {
+      const canceled = (o.cancelledItems || []).includes(i.id) || (o.cancelledItems || []).includes(i.productId);
+      const returned = (o.returnedItems || []).includes(i.id) || (o.returnedItems || []).includes(i.productId);
+      const tag = canceled ? ' <span style="color:var(--red);font-size:11px;">[cancelado]</span>' : returned ? ' <span style="color:var(--amber);font-size:11px;">[devolvido]</span>' : '';
+      return '<div class="item-row"><div class="qty">' + (i.quantidade || 1) + 'x</div>' +
+        '<div class="iname">' + esc(i.nome) + tag + '</div>' +
+        '<div class="iprice">' + fmtBRL((i.preco || 0) * (i.quantidade || 1)) + '</div></div>';
+    }).join('');
+
+    html += '<div class="section-label">Atualizar status</div>';
+    html += '<div class="status-grid">' + STATUS_ORDER.map(s =>
+      '<button class="status-btn' + (o.status === s ? ' current' : '') + '" style="color:' + statusColor(s) + '" onclick="changeOrderStatus(\'' + s + '\')">' +
+      '<span class="dot"></span>' + STATUS_LABEL[s] + '</button>').join('') + '</div>';
+
+    html += '<div class="section-label">Responder ao cliente</div>';
+    html += '<div class="field"><textarea class="input" id="returnMsg" placeholder="Escreva a resposta..." rows="3" style="padding-top:12px;resize:none;"></textarea></div>';
+    html += '<div class="btn-row">';
+    html += '<button class="btn btn-orange" onclick="sendReturnMsg()"><i class="fas fa-paper-plane"></i>Enviar</button>';
+    if (phone) html += '<button class="btn btn-green" onclick="window.open(\'' + waLink(phone, 'Olá! Sobre sua solicitação de ' + tipo.toLowerCase() + ' no pedido #' + o.id + ' da TechVault.') + '\', \'_blank\')"><i class="fab fa-whatsapp"></i>WhatsApp</button>';
+    html += '</div>';
+
+    $('srBody').innerHTML = html;
+    openSheet('sheet-return');
+  }
+
+  async function sendReturnMsg() {
+    const msg = $('returnMsg').value.trim();
+    if (!msg) { toast('Escreva uma mensagem', true); return; }
+    const o = allReturns.find(x => String(x.id) === String(activeReturnId));
+    const isReturn = (o.returnedItems || []).length > 0;
+    const convKey2 = (isReturn ? 'return:' : 'cancel:') + o.id;
+    const res = await adminFetch('/api/admin/returns/send', { method: 'POST', body: { conversationKey: convKey2, message: msg } });
+    if (res.error) { toast(res.error, true); return; }
+    $('returnMsg').value = '';
+    toast('Resposta enviada ao cliente');
+  }
+
+  /* ========== WHATSAPP ========== */
+  function renderWaChips() {
+    $('waChips').innerHTML = [
+      ['abandono', 'Carrinho abandonado'],
+      ['boleto', 'Boleto próximo'],
+      ['promocao', 'Promoção exclusiva']
+    ].map(([k, lbl]) =>
+      '<button class="chip' + (activeWAMsg === k ? ' active' : '') + '" onclick="activeWAMsg=\'' + k + '\';renderWaChips();renderWhatsApp()">' + lbl + '</button>'
+    ).join('');
+  }
+
+  function renderWhatsApp() {
+    const el = $('waContacts');
+    let contacts = [];
+    if (activeWAMsg === 'abandono') {
+      allCarts.filter(c => c.items && c.items.length > 0).forEach(c => {
+        const u = allUsers.find(x => String(x.id) === String(c.userId));
+        const phone = userPhone(u);
+        if (!phone) return;
+        contacts.push({ phone, name: c.userName || 'Cliente', info: c.itemCount + ' item(ns): ' + formatItems(c.items) });
+      });
+    } else if (activeWAMsg === 'boleto') {
+      allOrders.filter(o => o.status === 'pendente' && o.pagamento && String(o.pagamento).toLowerCase().includes('boleto')).forEach(o => {
+        const cli = orderClient(o);
+        const phone = cli.telefone && String(cli.telefone).replace(/\D/g, '').length >= 10 ? cleanPhone(cli.telefone) : null;
+        if (!phone) return;
+        contacts.push({ phone, name: cli.nome || 'Cliente', info: 'Pedido #' + o.id + ' · ' + fmtBRL(o.total) });
+      });
+    } else {
+      allUsers.filter(u => u.role !== 'funcionario' && !u.admin).forEach(u => {
+        const phone = userPhone(u);
+        if (!phone) return;
+        contacts.push({ phone, name: u.nome || 'Sem nome', info: (u.telefone || '') + (u.email ? ' · ' + u.email : '') });
+      });
+    }
+    if (!contacts.length) {
+      el.innerHTML = '<div class="empty"><i class="fab fa-whatsapp"></i>Nenhum contato disponível para esta campanha.</div>';
+      return;
+    }
+    el.innerHTML = contacts.map(c =>
+      '<div class="list-card chat-row">' +
+      '<div class="u-avatar">' + esc(c.name.charAt(0).toUpperCase()) + '</div>' +
+      '<div class="chat-body"><div class="chat-name">' + esc(c.name) + '</div>' +
+      '<div class="chat-prev">' + esc(c.info) + '</div></div>' +
+      '<a class="btn btn-green" style="min-height:40px;padding:0 12px;width:auto;font-size:12px;" href="' + waLink(c.phone, WHATSAPP_MSGS[activeWAMsg]) + '" target="_blank"><i class="fab fa-whatsapp"></i>Enviar</a></div>'
+    ).join('');
+  }
+
+  /* ========== SHEETS ========== */
+  function openSheet(id) {
+    closeSheet();
+    $('sheetBackdrop').classList.add('show');
+    $(id).classList.add('show');
+  }
+  function closeSheet() {
+    $('sheetBackdrop').classList.remove('show');
+    document.querySelectorAll('.sheet').forEach(s => s.classList.remove('show'));
+  }
+
+  /* ========== PULL TO REFRESH ========== */
+  function setupPullToRefresh() {
+    const content = $('content');
+    const wrap = document.querySelector('.refresh-wrap');
+    let startY = 0, pulling = false, dist = 0;
+    content.addEventListener('touchstart', e => {
+      if (content.scrollTop <= 0) { startY = e.touches[0].clientY; pulling = true; dist = 0; }
+    }, { passive: true });
+    content.addEventListener('touchmove', e => {
+      if (!pulling) return;
+      dist = e.touches[0].clientY - startY;
+      if (dist > 0 && content.scrollTop <= 0) {
+        wrap.classList.add('pulling');
+        $('refreshIcon').className = 'fas fa-arrow-down' + (dist > 70 ? ' fa-flip' : '');
+        e.preventDefault();
+      }
+    }, { passive: false });
+    content.addEventListener('touchend', () => {
+      if (!pulling) return;
+      pulling = false;
+      wrap.classList.remove('pulling');
+      if (dist > 70) doRefresh();
+      dist = 0;
+    });
+  }
+
+  let refreshing = false;
+  async function doRefresh() {
+    if (refreshing) return;
+    refreshing = true;
+    document.querySelector('.refresh-wrap').classList.add('refreshing');
+    $('refreshIcon').className = 'fas fa-spinner fa-spin';
+    await loadAllData();
+    toast('Atualizado');
+    document.querySelector('.refresh-wrap').classList.remove('refreshing');
+    setTimeout(() => { $('refreshIcon').className = 'fas fa-arrow-down'; }, 300);
+    refreshing = false;
+  }
+
+  /* ========== INIT CHIPS ========== */
+  renderOrderChips();
+  renderProductChips();
+  renderWaChips();
+</script>
+</body>
+</html>

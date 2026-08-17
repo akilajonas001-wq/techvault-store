@@ -655,7 +655,24 @@ app.get('/frete-entrega', (req, res) => res.send(renderPage('frete-entrega.html'
 app.get('/devolucoes', (req, res) => res.send(renderPage('devolucoes.html')));
 app.get('/quem-somos', (req, res) => res.send(renderPage('quem-somos.html')));
 app.get('/trabalhe-conosco', (req, res) => res.send(renderPage('trabalhe-conosco.html')));
-app.get('/painel', (req, res) => res.send(renderPage('painel.html')));
+app.get('/painel-mobile', (req, res) => res.send(renderPage('painel-mobile.html')));
+app.get('/painel', (req, res) => {
+  let html = renderPage('painel.html');
+  if (html === null) return res.status(404).send('Página não encontrada');
+  if (req.query.desktop !== '1') {
+    html = html.replace('</head>', `<script>
+      try {
+        if (window.innerWidth < 900 && !(localStorage.getItem('tv-painel-mobile') === '1')) {
+          window.location.href = '/painel-mobile';
+        }
+      } catch (e) {}
+    </script></head>`);
+  }
+  html = html.replace('</body>', `<a id="openMobilePanelBtn" href="/painel-mobile" title="Versão Mobile"
+    style="position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1a73e8,#4285f4);color:#fff;padding:10px 16px;border-radius:50px;font-size:13px;font-family:Inter,sans-serif;font-weight:600;text-decoration:none;box-shadow:0 6px 16px rgba(0,0,0,.25);">
+    <i class="fas fa-mobile-alt"></i> Versão Mobile</a></body>`);
+  res.send(html);
+});
 app.get('/pedido-sucesso', (req, res) => res.send(renderPage('pedido-sucesso.html')));
 app.get('/pedido-cancelado', (req, res) => res.send(renderPage('pedido-cancelado.html')));
 app.get('/comprovante', (req, res) => res.send(renderPage('comprovante.html')));
