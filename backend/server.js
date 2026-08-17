@@ -668,9 +668,12 @@ app.get('/painel', (req, res) => {
       } catch (e) {}
     </script></head>`);
   }
-  html = html.replace('</body>', `<a id="openMobilePanelBtn" href="/painel-mobile" title="Versão Mobile"
+  const lastBody = html.lastIndexOf('</body>');
+  if (lastBody !== -1) {
+    html = html.substring(0, lastBody) + `<a id="openMobilePanelBtn" href="/painel-mobile" title="Versao Mobile"
     style="position:fixed;bottom:18px;right:18px;z-index:9999;display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1a73e8,#4285f4);color:#fff;padding:10px 16px;border-radius:50px;font-size:13px;font-family:Inter,sans-serif;font-weight:600;text-decoration:none;box-shadow:0 6px 16px rgba(0,0,0,.25);">
-    <i class="fas fa-mobile-alt"></i> Versão Mobile</a></body>`);
+    <i class="fas fa-mobile-alt"></i> Versao Mobile</a>` + html.substring(lastBody);
+  }
   res.send(html);
 });
 app.get('/pedido-sucesso', (req, res) => res.send(renderPage('pedido-sucesso.html')));
