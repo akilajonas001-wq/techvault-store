@@ -735,3 +735,94 @@ document.addEventListener('click', function(e) {
     closeVariantPanel();
   }
 });
+
+/* Lightbox */
+var lightboxIndex = 0;
+var lightboxImages = [];
+
+function openLightbox(idx) {
+  var track = document.getElementById('carouselTrack');
+  if (!track) return;
+  var slides = track.querySelectorAll('.carousel-slide');
+  lightboxImages = [];
+  slides.forEach(function(slide) {
+    var img = slide.querySelector('img');
+    if (img) lightboxImages.push(img.src);
+  });
+  if (!lightboxImages.length) return;
+  lightboxIndex = idx || 0;
+  var overlay = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lightboxImg');
+  var counter = document.getElementById('lightboxCounter');
+  lbImg.src = lightboxImages[lightboxIndex];
+  counter.textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length;
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  // hide arrows if only 1 image
+  var arrows = overlay.querySelectorAll('.lightbox-arrow');
+  arrows.forEach(function(a) { a.style.display = lightboxImages.length > 1 ? '' : 'none'; });
+  counter.style.display = lightboxImages.length > 1 ? '' : 'none';
+}
+
+function closeLightbox(e) {
+  if (e && e.target !== e.currentTarget && !e.target.closest('.lightbox-close')) return;
+  var overlay = document.getElementById('lightbox');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function lightboxPrev(e) {
+  if (e) e.stopPropagation();
+  lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
+  updateLightbox();
+}
+
+function lightboxNext(e) {
+  if (e) e.stopPropagation();
+  lightboxIndex = (lightboxIndex + 1) % lightboxImages.length;
+  updateLightbox();
+}
+
+function updateLightbox() {
+  var lbImg = document.getElementById('lightboxImg');
+  var counter = document.getElementById('lightboxCounter');
+  lbImg.src = lightboxImages[lightboxIndex];
+  counter.textContent = (lightboxIndex + 1) + ' / ' + lightboxImages.length;
+}
+
+// Event delegation: click on carousel slide image opens lightbox
+document.addEventListener('click', function(e) {
+  var slideImg = e.target.closest('.carousel-slide img');
+  if (slideImg) {
+    e.preventDefault();
+    e.stopPropagation();
+    var slide = slideImg.closest('.carousel-slide');
+    if (slide) openLightbox(parseInt(slide.dataset.index) || 0);
+  }
+});
+
+// Keyboard: Escape closes, arrows navigate
+document.addEventListener('keydown', function(e) {
+  var overlay = document.getElementById('lightbox');
+  if (!overlay || !overlay.classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox({ currentTarget: overlay, target: overlay });
+  if (e.key === 'ArrowLeft') lightboxPrev();
+  if (e.key === 'ArrowRight') lightboxNext();
+});
+
+// Touch swipe on lightbox
+(function() {
+  var startX = 0;
+  var overlay = document.getElementById('lightbox');
+  if (!overlay) return;
+  overlay.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+  }, { passive: true });
+  overlay.addEventListener('touchend', function(e) {
+    var diff = startX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) lightboxNext();
+      else lightboxPrev();
+    }
+  }, { passive: true });
+})();

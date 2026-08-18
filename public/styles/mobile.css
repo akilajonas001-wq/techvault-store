@@ -1534,3 +1534,29 @@
     font-size: 14px;
   }
 }
+
+/* Lightbox mobile */
+@media (max-width: 768px) {
+  .lightbox-img-wrap {
+    padding: 12px;
+  }
+  .lightbox-arrow {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 15px !important;
+  }
+  .lightbox-prev { left: 6px !important; }
+  .lightbox-next { right: 6px !important; }
+  .lightbox-close {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 17px;
+  }
+  .lightbox-counter {
+    font-size: 12px;
+    padding: 4px 12px;
+    bottom: 12px;
+  }
+}
