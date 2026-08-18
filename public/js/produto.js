@@ -330,21 +330,34 @@ async function loadProduct(productId) {
     
     const specsHtml = buildSpecsHtml(baseSpecs);
     
-    // Build variant selector
+    // Build variant selector (collapsible)
     let variantHtml = '';
     if (product.variantes && product.variantes.length > 0) {
-      variantHtml = '<div class="variant-section"><h3><i class="fas fa-layer-group"></i> Opções do Produto</h3><div class="variant-list">';
+      const v0 = product.variantes[0];
+      const v0Preco = v0.preco || product.preco;
+      const showSearch = product.variantes.length > 12;
+      variantHtml = '<div class="variant-section" id="variantSection">' +
+        '<h3><i class="fas fa-layer-group"></i> Opções do Produto</h3>' +
+        '<div class="variant-trigger" id="variantTrigger" onclick="toggleVariantPanel()">' +
+          (v0.imagem ? '<img class="variant-trigger-img" id="variantTriggerImg" src="' + escapeHtml(v0.imagem) + '" alt="">' : '') +
+          '<div class="variant-trigger-info">' +
+            '<div class="variant-trigger-label">Modelo selecionado</div>' +
+            '<div class="variant-trigger-name" id="variantTriggerName">' + escapeHtml(v0.nome || product.nome) + '</div>' +
+          '</div>' +
+          '<div class="variant-trigger-price" id="variantTriggerPrice">R$ ' + v0Preco.toFixed(2).replace('.', ',') + '</div>' +
+          '<div class="variant-trigger-chevron"><i class="fas fa-chevron-down"></i></div>' +
+        '</div>' +
+        '<div class="variant-panel" id="variantPanel">' +
+          (showSearch ? '<div class="variant-panel-search"><input type="text" placeholder="Buscar modelo..." oninput="searchVariants(this.value)" onclick="event.stopPropagation()"></div>' : '') +
+          '<div class="variant-panel-inner" id="variantPanelInner">';
       product.variantes.forEach(function(v, idx) {
         const selected = idx === 0 ? ' selected' : '';
-        const vPreco = v.preco || product.preco;
-        variantHtml += '<div class="variant-item' + selected + '" data-variant="' + idx + '" onclick="selectVariant(' + idx + ')">' +
-          (v.imagem ? '<img class="variant-img" src="' + escapeHtml(v.imagem) + '" alt="' + escapeHtml(v.nome || product.nome) + '">' : '') +
-          '<div class="variant-name">' + escapeHtml(v.nome || product.nome) + '</div>' +
-          '<div class="variant-price">R$ ' + vPreco.toFixed(2).replace('.', ',') + '</div>' +
-          (v.especificacoes ? '<div class="variant-specs">' + escapeHtml(Object.values(v.especificacoes).filter(Boolean).join(' | ')) + '</div>' : '') +
+        variantHtml += '<div class="variant-grid-item' + selected + '" data-variant="' + idx + '" data-name="' + escapeHtml((v.nome || '').toLowerCase()) + '" onclick="selectVariant(' + idx + ')">' +
+          (v.imagem ? '<img class="variant-grid-img" src="' + escapeHtml(v.imagem) + '" alt="' + escapeHtml(v.nome || '') + '">' : '') +
+          '<div class="variant-grid-name">' + escapeHtml(v.nome || '') + '</div>' +
         '</div>';
       });
-      variantHtml += '</div></div>';
+      variantHtml += '</div></div></div>';
     }
     
     // Build color selector
@@ -486,12 +499,23 @@ function selectVariant(idx) {
   // Update gallery with the subcategory's photos (falls back to product photos)
   applyVariantGallery(selectedVariant);
   
-  // Highlight selected
-  document.querySelectorAll('.variant-item').forEach(function(el) {
+  // Update trigger card
+  const triggerImg = document.getElementById('variantTriggerImg');
+  const triggerName = document.getElementById('variantTriggerName');
+  const triggerPrice = document.getElementById('variantTriggerPrice');
+  if (triggerImg && selectedVariant.imagem) triggerImg.src = selectedVariant.imagem;
+  if (triggerName) triggerName.textContent = selectedVariant.nome || currentProduct.nome;
+  if (triggerPrice) triggerPrice.textContent = 'R$ ' + (selectedVariant.preco || currentProduct.preco).toFixed(2).replace('.', ',');
+  
+  // Highlight selected in grid
+  document.querySelectorAll('.variant-grid-item').forEach(function(el) {
     el.classList.remove('selected');
   });
-  const items = document.querySelectorAll('.variant-item');
-  if (items[idx]) items[idx].classList.add('selected');
+  const gridItems = document.querySelectorAll('.variant-grid-item');
+  if (gridItems[idx]) gridItems[idx].classList.add('selected');
+  
+  // Collapse panel after selection
+  closeVariantPanel();
   
   // Update specs table with variant-specific values
   if (baseSpecs && selectedVariant.especificacoes) {
@@ -502,6 +526,35 @@ function selectVariant(idx) {
       specsSection.outerHTML = newSpecsHtml;
     }
   }
+}
+
+function toggleVariantPanel() {
+  var panel = document.getElementById('variantPanel');
+  var trigger = document.getElementById('variantTrigger');
+  if (!panel || !trigger) return;
+  var isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    closeVariantPanel();
+  } else {
+    panel.classList.add('open');
+    trigger.classList.add('open');
+  }
+}
+
+function closeVariantPanel() {
+  var panel = document.getElementById('variantPanel');
+  var trigger = document.getElementById('variantTrigger');
+  if (panel) panel.classList.remove('open');
+  if (trigger) trigger.classList.remove('open');
+}
+
+function searchVariants(query) {
+  var items = document.querySelectorAll('.variant-grid-item');
+  var q = (query || '').toLowerCase().trim();
+  items.forEach(function(el) {
+    var name = el.getAttribute('data-name') || '';
+    el.style.display = (!q || name.indexOf(q) !== -1) ? '' : 'none';
+  });
 }
 
 function selectColor(idx) {
@@ -674,3 +727,11 @@ if (searchInput) {
     }
   });
 }
+
+// Close variant panel when clicking outside
+document.addEventListener('click', function(e) {
+  var section = document.getElementById('variantSection');
+  if (section && !section.contains(e.target)) {
+    closeVariantPanel();
+  }
+});

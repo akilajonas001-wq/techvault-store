@@ -842,12 +842,17 @@
   }
 
   .variant-section {
-    padding: 12px !important;
+    margin: 14px 0 !important;
   }
 
-  .variant-item {
-    padding: 10px !important;
-    font-size: 13px !important;
+  .variant-trigger {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .variant-trigger-img {
+    width: 40px !important;
+    height: 40px !important;
   }
 
   /* ===========================================
