@@ -8,6 +8,7 @@ let selectedColor = null;
 let selectedColorIndex = null;
 let selectedSize = null;
 let selectedSizeIndex = null;
+let selectedQty = 1;
 let baseSpecs = null;
 let baseGalleryImages = [];
 
@@ -436,6 +437,7 @@ async function loadProduct(productId) {
             '<div class="shipping-price"><span class="old-shipping">R$ 14,99</span> <span class="free-shipping-badge"><i class="fas fa-truck"></i> Frete Grátis</span></div>' +
             '<div class="stock-info">' + (!product.paused ? '<i class="fas fa-check-circle" style="color:#00a650;"></i> Disponível' : '<i class="fas fa-times-circle" style="color:var(--danger);"></i> <span style="color:var(--danger);">Indisponível</span>') + '</div>' +
           '</div>' +
+          '<div class="qty-section"><h3><i class="fas fa-hashtag"></i> Quantidade</h3><div class="qty-selector"><button class="qty-btn" id="qtyMinus" onclick="changeQty(-1)" disabled>-</button><div class="qty-value" id="qtyValue">1</div><button class="qty-btn" id="qtyPlus" onclick="changeQty(1)">+</button></div></div>' +
           '<div class="action-buttons">' +
             '<button class="btn btn-primary" onclick="addToCartFromProduct()"' + (product.paused ? ' disabled' : '') + '>' +
               '<i class="fas fa-cart-plus"></i> Adicionar ao carrinho' +
@@ -580,6 +582,16 @@ function searchVariants(query) {
   });
 }
 
+function changeQty(delta) {
+  selectedQty = Math.max(1, Math.min(6, selectedQty + delta));
+  var el = document.getElementById('qtyValue');
+  if (el) el.textContent = selectedQty;
+  var minusBtn = document.getElementById('qtyMinus');
+  var plusBtn = document.getElementById('qtyPlus');
+  if (minusBtn) minusBtn.disabled = selectedQty <= 1;
+  if (plusBtn) plusBtn.disabled = selectedQty >= 6;
+}
+
 function selectColor(idx) {
   if (!currentProduct || !currentProduct.colors || !currentProduct.colors[idx]) return;
   selectedColor = currentProduct.colors[idx];
@@ -661,7 +673,7 @@ function getSelectedVariantData() {
       nome: selectedVariant.nome || currentProduct.nome,
       preco: selectedVariant.preco || currentProduct.preco,
       imagem: selectedVariant.imagem || currentProduct.imagem,
-      quantidade: 1,
+      quantidade: selectedQty,
       categoria: currentProduct.categoria,
       variantSpecs: selectedVariant.especificacoes || null
     };
@@ -674,7 +686,7 @@ function getSelectedVariantData() {
     nome: currentProduct.nome,
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,
-    quantidade: 1,
+    quantidade: selectedQty,
     categoria: currentProduct.categoria
   };
 }
