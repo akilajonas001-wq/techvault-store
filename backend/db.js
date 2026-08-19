@@ -238,6 +238,11 @@ async function migrateUserProfileColumns() {
     console.error('Erro ao adicionar colors:', e.message);
   }
   try {
+    await query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS sizes TEXT DEFAULT '[]'`);
+  } catch (e) {
+    console.error('Erro ao adicionar sizes:', e.message);
+  }
+  try {
     await query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS trackingnumber TEXT DEFAULT ''`);
   } catch (e) {
     console.error('Erro ao adicionar trackingnumber:', e.message);
@@ -511,6 +516,7 @@ const parseProduct = (p) => p ? {
   specs: JSON.parse(p.specs || '{}'),
   variants: JSON.parse(p.variants || '[]'),
   colors: JSON.parse(p.colors || '[]'),
+  sizes: JSON.parse(p.sizes || '[]'),
   especificacoes: JSON.parse(p.specs || '{}'),
   variantes: JSON.parse(p.variants || '[]'),
   frete: p.frete || '',
@@ -537,7 +543,7 @@ async function updateProduct(id, data) {
   let idx = 1;
   for (const [key, val] of Object.entries(data)) {
     if (key === 'id') continue;
-    if (key === 'imagens' || key === 'specs' || key === 'variants' || key === 'colors') {
+    if (key === 'imagens' || key === 'specs' || key === 'variants' || key === 'colors' || key === 'sizes') {
       fields.push(`${key} = $${idx++}`); values.push(JSON.stringify(val));
     } else if (key === 'paused' || key === 'precoAlterado' || key === 'destaque') {
       fields.push(`${key} = $${idx++}`); values.push(val ? 1 : 0);
@@ -554,29 +560,30 @@ async function updateProduct(id, data) {
 async function createProduct(data) {
   try {
     await query(
-      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, frete, checkoutLink, supplierLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+      `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, sizes, frete, checkoutLink, supplierLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
       [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
        data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
        data.estoque || 'N/A', data.stock != null ? data.stock : -1,
        data.destaque ? 1 : 0, data.paused ? 1 : 0,
        data.avaliacao || 0,
        data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
-       JSON.stringify(data.colors || []),
+       JSON.stringify(data.colors || []), JSON.stringify(data.sizes || []),
        data.frete || '', data.checkoutLink || '', data.supplierLink || '',
        data.createdAt || new Date().toISOString()]
     );
   } catch (e) {
     if (e.message && e.message.includes('checkoutlink')) {
       try { await query(`ALTER TABLE products ADD COLUMN checkoutLink TEXT DEFAULT ''`); } catch {}
+      try { await query(`ALTER TABLE products ADD COLUMN sizes TEXT DEFAULT '[]'`); } catch {}
       await query(
-        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+        `INSERT INTO products (id, nome, descricao, preco, precoOriginal, categoria, imagem, imagens, estoque, stock, destaque, paused, avaliacao, reviews, specs, variants, colors, sizes, frete, checkoutLink, createdAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
         [data.id, data.nome, data.descricao || '', data.preco || 0, data.precoOriginal || null,
          data.categoria || '', data.imagem || '', JSON.stringify(data.imagens || []),
          data.estoque || 'N/A', data.stock != null ? data.stock : -1,
          data.destaque ? 1 : 0, data.paused ? 1 : 0,
          data.avaliacao || 0,
          data.reviews || 0, JSON.stringify(data.specs || {}), JSON.stringify(data.variants || []),
-         JSON.stringify(data.colors || []),
+         JSON.stringify(data.colors || []), JSON.stringify(data.sizes || []),
          data.frete || '', data.checkoutLink || '',
          data.createdAt || new Date().toISOString()]
       );

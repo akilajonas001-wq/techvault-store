@@ -6,6 +6,8 @@ let selectedVariant = null;
 let selectedVariantIndex = null;
 let selectedColor = null;
 let selectedColorIndex = null;
+let selectedSize = null;
+let selectedSizeIndex = null;
 let baseSpecs = null;
 let baseGalleryImages = [];
 
@@ -374,6 +376,22 @@ async function loadProduct(productId) {
       '</div></div>';
     }
     
+    // Build size selector
+    let sizeHtml = '';
+    if (product.sizes && product.sizes.length > 0) {
+      sizeHtml = '<div class="size-section"><h3><i class="fas fa-ruler"></i> Tamanho</h3><div class="size-list">' +
+        product.sizes.map(function(s, i) {
+          var parts = s.split(' - ');
+          var label = parts[0] || s;
+          var detail = parts[1] || '';
+          return '<div class="size-item' + (i === 0 ? ' selected' : '') + '" data-size-index="' + i + '" onclick="selectSize(' + i + ')">' +
+            '<span class="size-label">' + escapeHtml(label) + '</span>' +
+            (detail ? '<span class="size-detail">' + escapeHtml(detail) + '</span>' : '') +
+          '</div>';
+        }).join('') +
+      '</div></div>';
+    }
+
     const allImages = (product.imagens && product.imagens.length > 0) ? product.imagens : [product.imagem];
     baseGalleryImages = allImages;
     const thumbsHtml = allImages.map((img, i) =>
@@ -412,6 +430,7 @@ async function loadProduct(productId) {
           '</div>' +
           variantHtml +
           colorHtml +
+          sizeHtml +
           '<div class="price-section">' +
             '<div class="price" id="productPrice">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
             '<div class="shipping-price"><span class="old-shipping">R$ 14,99</span> <span class="free-shipping-badge"><i class="fas fa-truck"></i> Frete Grátis</span></div>' +
@@ -446,6 +465,10 @@ async function loadProduct(productId) {
     // Auto-select first color
     if (product.colors && product.colors.length > 0) {
       selectColor(0);
+    }
+    // Auto-select first size
+    if (product.sizes && product.sizes.length > 0) {
+      selectSize(0);
     }
 
     loadRelatedProducts(product.categoria, product.id);
@@ -564,6 +587,33 @@ function selectColor(idx) {
   document.querySelectorAll('.color-item').forEach(function(el, i) {
     el.classList.toggle('selected', i === idx);
   });
+  tryMatchColorSize();
+}
+
+function selectSize(idx) {
+  if (!currentProduct || !currentProduct.sizes || !currentProduct.sizes[idx]) return;
+  selectedSize = currentProduct.sizes[idx];
+  selectedSizeIndex = idx;
+  document.querySelectorAll('.size-item').forEach(function(el, i) {
+    el.classList.toggle('selected', i === idx);
+  });
+  tryMatchColorSize();
+}
+
+function tryMatchColorSize() {
+  if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes.length) return;
+  if (selectedColorIndex == null || selectedSizeIndex == null) return;
+  var cor = String(selectedColor || '').toLowerCase();
+  var tam = String(selectedSize || '').split(' - ')[0].trim().toLowerCase();
+  var found = -1;
+  currentProduct.variantes.forEach(function(v, i) {
+    var name = String(v.nome || '').toLowerCase();
+    var parts = name.split(' - ');
+    var vCor = (parts[0] || '').trim();
+    var vTam = (parts[1] || '').trim().split(' ')[0];
+    if (vCor === cor && vTam === tam) found = i;
+  });
+  if (found >= 0) selectVariant(found);
 }
 
 function applyVariantGallery(variant) {
@@ -604,9 +654,10 @@ function getSelectedVariantData() {
     const idx = selectedVariantIndex != null ? selectedVariantIndex : 0;
     return {
       id: currentProduct.id,
-      cartKey: currentProduct.id + '-v' + idx + (selectedColorIndex != null ? '-c' + selectedColorIndex : ''),
+      cartKey: currentProduct.id + '-v' + idx + (selectedColorIndex != null ? '-c' + selectedColorIndex : '') + (selectedSizeIndex != null ? '-s' + selectedSizeIndex : ''),
       variantIndex: idx,
       cor: selectedColor || null,
+      tamanho: selectedSize || null,
       nome: selectedVariant.nome || currentProduct.nome,
       preco: selectedVariant.preco || currentProduct.preco,
       imagem: selectedVariant.imagem || currentProduct.imagem,
@@ -617,8 +668,9 @@ function getSelectedVariantData() {
   }
   return {
     id: currentProduct.id,
-    cartKey: currentProduct.id + (selectedColorIndex != null ? '-c' + selectedColorIndex : ''),
+    cartKey: currentProduct.id + (selectedColorIndex != null ? '-c' + selectedColorIndex : '') + (selectedSizeIndex != null ? '-s' + selectedSizeIndex : ''),
     cor: selectedColor || null,
+    tamanho: selectedSize || null,
     nome: currentProduct.nome,
     preco: currentProduct.preco,
     imagem: currentProduct.imagem,

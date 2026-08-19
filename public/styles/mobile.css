@@ -855,6 +855,17 @@
     height: 40px !important;
   }
 
+  .size-section {
+    padding: 14px !important;
+    margin: 0 0 14px !important;
+  }
+  .size-item {
+    padding: 8px 12px !important;
+    min-width: 40px !important;
+  }
+  .size-label { font-size: 12px !important; }
+  .size-detail { font-size: 10px !important; }
+
   /* ===========================================
      HOMEPAGE PRODUCT CARDS - MOBILE
      =========================================== */
