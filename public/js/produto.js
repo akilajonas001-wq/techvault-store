@@ -508,12 +508,8 @@ function selectVariant(idx) {
   selectedVariant = currentProduct.variantes[idx];
   selectedVariantIndex = idx;
   
-  // Update price (use || to fallback to main price when variant preco is 0)
-  const priceEl = document.getElementById('productPrice');
-  if (priceEl) {
-    const displayPrice = selectedVariant.preco || currentProduct.preco;
-    priceEl.textContent = 'R$ ' + displayPrice.toFixed(2).replace('.', ',');
-  }
+  // Update price with qty
+  updatePriceDisplay();
 
   // Update description with subcategory-specific text
   const descEl = document.getElementById('productDescription');
@@ -582,6 +578,20 @@ function searchVariants(query) {
   });
 }
 
+function getUnitPrice() {
+  if (!currentProduct) return 0;
+  if (selectedVariant) return selectedVariant.preco || currentProduct.preco;
+  return currentProduct.preco;
+}
+
+function updatePriceDisplay() {
+  var priceEl = document.getElementById('productPrice');
+  if (!priceEl) return;
+  var unit = getUnitPrice();
+  var total = unit * selectedQty;
+  priceEl.textContent = 'R$ ' + total.toFixed(2).replace('.', ',');
+}
+
 function changeQty(delta) {
   selectedQty = Math.max(1, Math.min(6, selectedQty + delta));
   var el = document.getElementById('qtyValue');
@@ -590,6 +600,7 @@ function changeQty(delta) {
   var plusBtn = document.getElementById('qtyPlus');
   if (minusBtn) minusBtn.disabled = selectedQty <= 1;
   if (plusBtn) plusBtn.disabled = selectedQty >= 6;
+  updatePriceDisplay();
 }
 
 function selectColor(idx) {

@@ -192,12 +192,13 @@ function addToCart(produto) {
     showNotification('Produto indisponível no momento', 'error');
     return;
   }
+  const qty = produto.quantidade || 1;
   const existingItem = cart.find(item => String(item.cartKey || item.id) === String(produto.cartKey || produto.id));
 
   if (existingItem) {
-    existingItem.quantidade += 1;
+    existingItem.quantidade += qty;
   } else {
-    cart.push({ ...produto, quantidade: 1 });
+    cart.push({ ...produto, quantidade: qty });
   }
 
   saveCart();
