@@ -2,7 +2,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([
     loadCategories(),
     loadFeaturedProducts(),
-    loadOffers()
+    loadOffers(),
+    loadSuggestions()
   ]);
   triggerStagger();
 });
@@ -203,4 +204,81 @@ function triggerStagger() {
       }
     });
   });
+}
+
+async function loadSuggestions() {
+  try {
+    const response = await fetch('/api/products');
+    const allProducts = await response.json();
+    const history = getViewHistory();
+    const container = document.getElementById('suggestionsProducts');
+    if (!container) return;
+
+    var suggestions = [];
+
+    if (history.length > 0) {
+      var viewedCats = {};
+      history.forEach(function(v) {
+        if (v.categoria) viewedCats[v.categoria] = (viewedCats[v.categoria] || 0) + 1;
+      });
+      var sortedCats = Object.keys(viewedCats).sort(function(a, b) { return viewedCats[b] - viewedCats[a]; });
+      var viewedIds = {};
+      history.forEach(function(v) { viewedIds[v.id] = true; });
+
+      sortedCats.forEach(function(cat) {
+        var catProducts = allProducts.filter(function(p) {
+          return p.categoria === cat && !viewedIds[p.id] && !p.paused;
+        });
+        shuffleArray(catProducts);
+        suggestions = suggestions.concat(catProducts.slice(0, 4));
+      });
+
+      if (suggestions.length < 8) {
+        var remaining = allProducts.filter(function(p) {
+          return !viewedIds[p.id] && !p.paused && !suggestions.find(function(s) { return s.id === p.id; });
+        });
+        shuffleArray(remaining);
+        suggestions = suggestions.concat(remaining.slice(0, 8 - suggestions.length));
+      }
+    } else {
+      var available = allProducts.filter(function(p) { return !p.paused; });
+      shuffleArray(available);
+      suggestions = available.slice(0, 8);
+    }
+
+    suggestions = suggestions.slice(0, 8);
+
+    container.innerHTML = suggestions.map(function(product) {
+      var inWish = isInWishlist(product.id);
+      return '<div class="product-card" onclick="window.location.href=\'/produto/' + product.id + '\'">' +
+        '<div class="product-image">' +
+          '<img src="' + escapeHtml(product.imagem) + '" alt="' + escapeHtml(product.nome) + '" loading="lazy">' +
+          '<button class="wishlist-btn' + (inWish ? ' active' : '') + '" onclick="event.stopPropagation(); toggleWishlist(' + product.id + ', this)">' +
+            '<i class="' + (inWish ? 'fas' : 'far') + ' fa-heart"></i>' +
+          '</button>' +
+          '<button class="quick-add-btn" onclick="event.stopPropagation(); quickAdd(' + product.id + ', \'' + escapeHtml(product.nome).replace(/'/g, "&#39;") + '\', ' + product.preco + ', \'' + escapeHtml(product.imagem) + '\')">' +
+            '<i class="fas fa-plus"></i>' +
+          '</button>' +
+        '</div>' +
+        '<div class="product-info">' +
+          '<div class="product-name">' + escapeHtml(product.nome) + '</div>' +
+          '<div class="product-price">R$ ' + product.preco.toFixed(2).replace('.', ',') + '</div>' +
+          '<div class="product-shipping"><i class="fas fa-truck"></i> Frete Grátis</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    triggerStagger();
+  } catch (e) {
+    console.error('Erro ao carregar sugestões:', e);
+  }
+}
+
+function shuffleArray(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
 }

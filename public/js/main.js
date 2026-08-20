@@ -432,6 +432,28 @@ function saveWishlist(list) {
   localStorage.setItem('techvault-wishlist', JSON.stringify(list));
 }
 
+function getViewHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('techvault-viewed') || '[]');
+  } catch { return []; }
+}
+
+function trackProductView(product) {
+  if (!product || !product.id) return;
+  var history = getViewHistory();
+  history = history.filter(function(v) { return v.id !== product.id; });
+  history.unshift({
+    id: product.id,
+    nome: product.nome,
+    preco: product.preco,
+    imagem: product.imagem,
+    categoria: product.categoria || '',
+    ts: Date.now()
+  });
+  if (history.length > 20) history = history.slice(0, 20);
+  localStorage.setItem('techvault-viewed', JSON.stringify(history));
+}
+
 function toggleWishlist(productId, btn) {
   let list = getWishlist();
   const idx = list.indexOf(productId);

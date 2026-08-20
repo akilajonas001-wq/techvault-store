@@ -476,6 +476,7 @@ async function loadProduct(productId) {
     loadRelatedProducts(product.categoria, product.id);
     loadComments(product.id);
     updateCommentAuth();
+    if (typeof trackProductView === 'function') trackProductView(product);
     if (!product.variantes || product.variantes.length === 0) {
       initCarousel(allImages.length);
     }
