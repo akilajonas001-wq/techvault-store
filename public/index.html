@@ -239,20 +239,106 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* Banner rotativo sofisticado */
+    /* Banner carousel */
     .hero-banner {
       max-width: 1400px;
       margin: 16px auto 0;
       padding: 0;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
     }
 
-    .banner {
-      border-radius: 0;
-      overflow: hidden;
+    .banner-track {
+      display: flex;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: transform;
+    }
+
+    .banner-slide {
+      min-width: 100%;
+      flex-shrink: 0;
+    }
+
+    .banner-slide img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
+    .banner-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+      opacity: 0;
+    }
+
+    .hero-banner:hover .banner-arrow { opacity: 1; }
+    .banner-arrow:hover { background: rgba(0,0,0,0.7); transform: translateY(-50%) scale(1.08); }
+    .banner-arrow-left { left: 12px; }
+    .banner-arrow-right { right: 12px; }
+
+    .banner-dots {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 3;
+    }
+
+    .banner-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+      padding: 0;
+    }
+
+    .banner-dot.active {
+      background: #fff;
+      transform: scale(1.2);
     }
 
     @media (min-width: 769px) {
-      .banner { max-height: none; }
+      .banner-arrow { opacity: 0.85; }
+    }
+
+    @media (max-width: 768px) {
+      .hero-banner { border-radius: 12px; margin: 10px; }
+      .banner-arrow { width: 34px; height: 34px; font-size: 14px; opacity: 0.9; }
+      .banner-arrow-left { left: 8px; }
+      .banner-arrow-right { right: 8px; }
+      .banner-dots { bottom: 8px; gap: 6px; }
+      .banner-dot { width: 8px; height: 8px; }
+    }
+
+    @media (min-width: 401px) and (max-width: 768px) {
+      .hero-banner { margin: 12px; }
+    }
+
+    @media (max-width: 400px) {
+      .hero-banner { margin: 8px; border-radius: 10px; }
+      .banner-arrow { width: 30px; height: 30px; font-size: 12px; }
     }
 
     /* Categorias */
@@ -1024,14 +1110,6 @@
       #userMenu { display: none !important; }
       .hamburger { display: flex; }
 
-      .banner {
-        min-height: 220px;
-      aspect-ratio: 1280 / 490;
-      }
-      .banner img {
-        object-fit: cover;
-      }
-
       .categories-section { margin: 32px auto; padding: 0 12px; }
 
       .categories-grid {
@@ -1210,9 +1288,16 @@
   <!--HEADER-->
 
   <!-- Banner Principal -->
-  <section class="hero-banner">
-    <div class="banner">
-      <img src="/images/bannernovo.jpg" alt="TechVault - Promoção" style="width:100%;height:auto;border-radius:16px;object-fit:cover;">
+  <section class="hero-banner" id="heroBanner">
+    <div class="banner-track" id="bannerTrack">
+      <div class="banner-slide"><img src="/images/bannernovo.jpg" alt="TechVault - Promoção"></div>
+      <div class="banner-slide"><img src="/images/bannernoovo2.jpg" alt="TechVault - Promoção"></div>
+    </div>
+    <button class="banner-arrow banner-arrow-left" onclick="bannerPrev()"><i class="fas fa-chevron-left"></i></button>
+    <button class="banner-arrow banner-arrow-right" onclick="bannerNext()"><i class="fas fa-chevron-right"></i></button>
+    <div class="banner-dots" id="bannerDots">
+      <button class="banner-dot active" onclick="bannerGo(0)"></button>
+      <button class="banner-dot" onclick="bannerGo(1)"></button>
     </div>
   </section>
 
@@ -1600,6 +1685,46 @@
     function showOffers() {
       document.getElementById('ofertas').scrollIntoView({ behavior: 'smooth' });
     }
+
+    // Banner carousel
+    var bannerIdx = 0;
+    var bannerTotal = document.querySelectorAll('.banner-slide').length;
+    var bannerTimer = null;
+
+    function bannerGo(i) {
+      bannerIdx = i;
+      document.getElementById('bannerTrack').style.transform = 'translateX(-' + (i * 100) + '%)';
+      document.querySelectorAll('.banner-dot').forEach(function(d, j) {
+        d.classList.toggle('active', j === i);
+      });
+      resetBannerTimer();
+    }
+
+    function bannerNext() {
+      bannerGo((bannerIdx + 1) % bannerTotal);
+    }
+
+    function bannerPrev() {
+      bannerGo((bannerIdx - 1 + bannerTotal) % bannerTotal);
+    }
+
+    function resetBannerTimer() {
+      clearInterval(bannerTimer);
+      bannerTimer = setInterval(bannerNext, 5000);
+    }
+
+    resetBannerTimer();
+
+    // Touch swipe
+    (function() {
+      var el = document.getElementById('heroBanner');
+      var startX = 0;
+      el.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, {passive: true});
+      el.addEventListener('touchend', function(e) {
+        var diff = startX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) { diff > 0 ? bannerNext() : bannerPrev(); }
+      }, {passive: true});
+    })();
   </script>
 </body>
 </html>
