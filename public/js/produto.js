@@ -333,9 +333,10 @@ async function loadProduct(productId) {
     
     const specsHtml = buildSpecsHtml(baseSpecs);
     
-    // Build variant selector (collapsible)
+    // Build variant selector (collapsible) — skip if colors + sizes handle it
     let variantHtml = '';
-    if (product.variantes && product.variantes.length > 0) {
+    var hasColorSize = product.colors && product.colors.length > 0 && product.sizes && product.sizes.length > 0;
+    if (product.variantes && product.variantes.length > 0 && !hasColorSize) {
       const v0 = product.variantes[0];
       const v0Preco = v0.preco || product.preco;
       const showSearch = product.variantes.length > 12;
