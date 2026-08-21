@@ -280,7 +280,7 @@
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: #2d3748;
+  background: var(--primary-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -543,9 +543,10 @@
 
 .trust-badge i {
   font-size: 42px;
-  color: #2d3748;
-  background: none;
-  -webkit-text-fill-color: #2d3748;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .trust-badge span {
