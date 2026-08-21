@@ -553,12 +553,27 @@
   .categories-section,
   .products-section,
   .offers-section,
-  .sellers-section,
-  .benefits-section,
-  .trust-section,
-  .newsletter-section {
+  .sellers-section {
     padding: 0 12px !important;
-    margin: 24px auto !important;
+    margin: 32px auto !important;
+    text-align: center;
+  }
+
+  .benefits-section {
+    padding: 0 12px !important;
+    margin: 40px auto !important;
+    text-align: center;
+  }
+
+  .trust-section {
+    padding: 0 12px !important;
+    margin: 40px auto !important;
+    text-align: center;
+  }
+
+  .newsletter-section {
+    padding: 20px 16px !important;
+    margin: 40px auto !important;
     text-align: center;
   }
 
