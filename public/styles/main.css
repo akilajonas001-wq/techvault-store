@@ -24,12 +24,19 @@ body {
 
 /* Variáveis de cores */
 :root {
-  --primary: #1a73e8;
-  --primary-light: #4285f4;
-  --primary-dark: #1557b0;
-  --primary-gradient: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  --primary: #0f172a;
+  --primary-light: #1e293b;
+  --primary-dark: #020617;
+  --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   --secondary: #1e293b;
-  --text: #1e293b;
+  --accent: #f59e0b;
+  --accent-light: #fbbf24;
+  --accent-dark: #d97706;
+  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  --tech: #6366f1;
+  --tech-light: #818cf8;
+  --tech-gradient: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+  --text: #0f172a;
   --text-light: #64748b;
   --text-muted: #94a3b8;
   --bg-light: #f8fafc;
@@ -169,23 +176,23 @@ body {
 
 .login-link {
   color: var(--primary);
-  background: rgba(26,115,232,0.08);
+  background: rgba(245, 158, 11, 0.08);
 }
 
 .login-link:hover {
-  background: rgba(26,115,232,0.15);
-  color: var(--primary-dark);
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-dark);
 }
 
 .register-link {
   color: white;
   background: var(--primary-gradient);
-  box-shadow: 0 2px 4px rgba(26,115,232,0.2);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.3);
 }
 
 .register-link:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(26,115,232,0.3);
+  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.4);
 }
 
 #userMenu {
@@ -276,7 +283,7 @@ body {
 
 .search-box input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26,115,232,0.08);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
 }
 
 .search-box button {
@@ -421,7 +428,7 @@ img, video, iframe, svg {
 }
 
 .notification-info {
-  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 @keyframes slideIn {
@@ -450,8 +457,8 @@ img, video, iframe, svg {
    TEXT SELECTION
    =========================================== */
 ::selection {
-  background: rgba(26, 115, 232, 0.2);
-  color: #1e293b;
+  background: rgba(245, 158, 11, 0.2);
+  color: #0f172a;
 }
 
 /* ===========================================
@@ -730,8 +737,8 @@ img, video, iframe, svg {
 
 .header-new .search-box:focus-within {
   background: var(--white);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.12);
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
 }
 
 .header-new .search-box .search-box-icon {
@@ -783,7 +790,7 @@ img, video, iframe, svg {
 
 .header-new .search-box button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(26, 115, 232, 0.35);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
 }
 
 /* ---- Ícones de ação (Minha Conta, Pedidos, Favoritos, Carrinho) ---- */
@@ -825,17 +832,17 @@ img, video, iframe, svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(45, 55, 72, 0.08);
-  color: #2d3748;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font-size: 20px;
   transition: all 0.25s ease;
 }
 
 .header-new .header-icon-link:hover .header-icon-circle {
-  background: #2d3748;
+  background: #f59e0b;
   color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(45, 55, 72, 0.3);
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
 }
 
 .header-new .header-icon-label {
@@ -905,8 +912,8 @@ img, video, iframe, svg {
 
 /* ---- Linha 2: barra de navegação ---- */
 .header-new .header-nav {
-  background: #2d3748;
-  box-shadow: 0 3px 10px rgba(45, 55, 72, 0.3);
+  background: #0f172a;
+  box-shadow: 0 3px 10px rgba(2, 6, 23, 0.4);
 }
 
 .header-new .header-nav-inner {
@@ -1087,18 +1094,18 @@ img, video, iframe, svg {
 
 /* ===========================================
    NOVO TEMA NAVY (HEADER AZUL-MARINHO)
-   Fundo azul-marinho + acento laranja
+   Fundo escuro premium + acento dourado
    =========================================== */
 .header-new {
-  --navy-1: #2d3748;
-  --navy-2: #2d3748;
-  --navy-deep: #2d3748;
-  --accent: #ff7a1a;
-  --accent-light: #ffa94d;
-  --accent-gradient: linear-gradient(135deg, #ff8a00 0%, #ff5e3a 100%);
-  background: #2d3748 !important;
+  --navy-1: #0f172a;
+  --navy-2: #1e293b;
+  --navy-deep: #020617;
+  --accent: #f59e0b;
+  --accent-light: #fbbf24;
+  --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  background: #0f172a !important;
   border-bottom: none !important;
-  box-shadow: 0 4px 24px rgba(45, 55, 72, 0.4) !important;
+  box-shadow: 0 4px 24px rgba(2, 6, 23, 0.5) !important;
 }
 
 /* Logo em chip branco para destacar no navy */
@@ -1220,8 +1227,8 @@ img, video, iframe, svg {
 
 /* ---- Linha 2: nav mais escura pra dar profundidade ---- */
 .header-new .header-nav {
-  background: #2d3748;
-  box-shadow: 0 3px 12px rgba(45, 55, 72, 0.35);
+  background: #0f172a;
+  box-shadow: 0 3px 12px rgba(2, 6, 23, 0.5);
 }
 
 /* ===========================================
