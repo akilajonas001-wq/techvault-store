@@ -364,9 +364,10 @@ async function loadProduct(productId) {
       variantHtml += '</div></div></div>';
     }
     
-    // Build color selector
+    // Build color selector — skip if variantes already handle it
     let colorHtml = '';
-    if (product.colors && product.colors.length > 0) {
+    var hasVariants = product.variantes && product.variantes.length > 0;
+    if (product.colors && product.colors.length > 0 && !hasVariants) {
       colorHtml = '<div class="color-section"><h3><i class="fas fa-palette"></i> Cor</h3><div class="color-list">' +
         product.colors.map(function(c, i) {
           const swatch = colorSwatch(c);
@@ -465,8 +466,8 @@ async function loadProduct(productId) {
     if (product.variantes && product.variantes.length > 0) {
       selectVariant(0);
     }
-    // Auto-select first color
-    if (product.colors && product.colors.length > 0) {
+    // Auto-select first color (only if no variantes handle it)
+    if (product.colors && product.colors.length > 0 && !hasVariants) {
       selectColor(0);
     }
     // Auto-select first size
