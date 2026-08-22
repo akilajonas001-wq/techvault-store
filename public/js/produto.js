@@ -613,6 +613,19 @@ function selectColor(idx) {
     el.classList.toggle('selected', i === idx);
   });
   tryMatchColorSize();
+  tryMatchColorOnly();
+}
+
+function tryMatchColorOnly() {
+  if (!currentProduct || !currentProduct.variantes || !currentProduct.variantes.length) return;
+  if (selectedColorIndex == null) return;
+  var cor = String(selectedColor || '').toLowerCase().trim();
+  var found = -1;
+  currentProduct.variantes.forEach(function(v, i) {
+    var name = String(v.nome || '').toLowerCase().trim();
+    if (name === cor || name.split(' - ')[0].trim() === cor) found = i;
+  });
+  if (found >= 0) selectVariant(found);
 }
 
 function selectSize(idx) {
