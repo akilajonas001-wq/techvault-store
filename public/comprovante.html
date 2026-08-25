@@ -92,9 +92,9 @@
 
   <script>
     const orderId = window.location.pathname.split('/').pop();
-    const STORE_CPF = '709.589.644-59';
-    const STORE_NAME = 'Akila Jonas';
-    const STORE_EMAIL = 'akilajonas001@gmail.com';
+    const STORE_CNPJ = '___.___.___/____-__';
+    const STORE_NAME = 'TechVault';
+    const STORE_EMAIL = 'contato@techvault.com.br';
 
     async function loadReceipt() {
       try {
@@ -150,8 +150,8 @@
                   <div class="value">${STORE_NAME}</div>
                 </div>
                 <div class="receipt-field">
-                  <label>CPF</label>
-                  <div class="value">${STORE_CPF}</div>
+                  <label>CNPJ</label>
+                  <div class="value">${STORE_CNPJ}</div>
                 </div>
                 <div class="receipt-field">
                   <label>E-mail</label>
@@ -247,7 +247,7 @@
           </div>
           <div class="receipt-footer">
             <p><strong>TechVault Store</strong> — Tecnologia e Inovação<br>
-            CPF: ${STORE_CPF} | ${STORE_EMAIL}<br>
+            CNPJ: ${STORE_CNPJ} | ${STORE_EMAIL}<br>
             Este é um comprovante eletrônico. Guarde para futuras referências.<br>
             Emitido em ${dateStr} às ${timeStr}</p>
           </div>
