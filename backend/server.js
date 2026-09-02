@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./db');
 const { authenticate, adminAuth } = require('./middleware/auth');
+const { sendPaymentConfirmedEmail, sendAbandonedCartEmail } = require('./email');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -127,6 +128,11 @@ async function applyMpPaymentToOrder(payment) {
   if (newStatus && order.status !== newStatus) {
     await db.updateOrderStatus(order.id, newStatus);
     console.log(`>>> Pedido #${order.id} atualizado para "${newStatus}" via Mercado Pago (payment ${payment.id})`);
+
+    if (newStatus === 'aprovado' && order.usuario?.email) {
+      sendPaymentConfirmedEmail(order.usuario.nome || 'Cliente', order.usuario.email, order)
+        .catch(e => console.error('Erro email pagamento:', e.message));
+    }
   }
   if (String(order.mpPaymentId || '') !== String(payment.id)) {
     await db.updateOrderMpPayment(order.id, payment.id);
@@ -710,6 +716,11 @@ async function markAbandonedOrders() {
       if (o.status === 'pendente' && !o.mpPaymentId && o.createdAt && o.createdAt < cutoff) {
         await db.updateOrderStatus(o.id, 'abandonado');
         console.log(`>>> Pedido #${o.id} marcado como abandonado (sem pagamento iniciado em 24h)`);
+
+        if (o.usuario?.email) {
+          sendAbandonedCartEmail(o.usuario.nome || 'Cliente', o.usuario.email, o.itens, o.id)
+            .catch(e => console.error('Erro email abandonado:', e.message));
+        }
       }
     }
   } catch (e) {

@@ -1,20 +1,10 @@
 const express = require('express');
 const db = require('../db');
-const nodemailer = require('nodemailer');
 const { requireAuth } = require('../middleware/auth');
+const emailModule = require('../email');
 
 const router = express.Router();
 const PIX_KEY = process.env.PIX_KEY || 'techvault@picpay.com';
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
-    pass: process.env.EMAIL_PASS
-  },
-  connectionTimeout: 5000,
-  greetingTimeout: 5000
-});
 
 // ========== PRODUTOS ==========
 
@@ -201,8 +191,7 @@ router.post('/orders', requireAuth, async (req, res) => {
       estado: endereco?.estado || ''
     }).catch(e => console.error('Erro perfil:', e.message));
 
-    transporter.sendMail({
-      from: process.env.EMAIL_USER || 'akilajonas001@gmail.com',
+    emailModule.brevoSend({
       to: 'akilajonas001@gmail.com',
       subject: `Novo Pedido #${newOrder.id} - TechVault`,
       html: `<h1>Novo Pedido</h1><p>Pedido #${newOrder.id} de ${user.nome} - Aguardando pagamento</p>`
@@ -405,6 +394,9 @@ router.post('/payments/card', requireAuth, async (req, res) => {
         method: data.payment_method_id || '', installments: data.installments || 1
       });
       console.log(`>>> Pedido #${order.id} aprovado via cartão (payment ${data.id})`);
+
+      emailModule.sendPaymentConfirmedEmail(order.usuario?.nome || 'Cliente', order.usuario?.email || order.cliente?.email, order)
+        .catch(e => console.error('Erro email pagamento:', e.message));
     }
 
     res.json({
@@ -443,6 +435,9 @@ router.get('/payments/:orderId/status', requireAuth, async (req, res) => {
         method: payment.payment_method_id || '', installments: payment.installments || 1
       });
       console.log(`>>> Pedido #${order.id} aprovado via polling (payment ${payment.id})`);
+
+      emailModule.sendPaymentConfirmedEmail(order.usuario?.nome || 'Cliente', order.usuario?.email || order.cliente?.email, order)
+        .catch(e => console.error('Erro email pagamento:', e.message));
     }
 
     res.json({

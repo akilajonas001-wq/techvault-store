@@ -4,6 +4,7 @@ const db = require('../db');
 const { OAuth2Client } = require('google-auth-library');
 const { signToken } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
+const { sendWelcomeEmail } = require('../email');
 
 const router = express.Router();
 
@@ -79,6 +80,8 @@ router.post('/register', async (req, res) => {
       success: true, token,
       user: { id: user.id, nome: user.nome, email: user.email, username: user.username, admin: user.admin, role: user.role || null }
     });
+
+    sendWelcomeEmail(user.nome, user.email).catch(e => console.error('Erro email boas-vindas:', e.message));
   } catch (error) {
     console.error('Erro no registro:', error);
     res.status(500).json({ error: 'Erro ao registrar usuário' });
@@ -183,6 +186,8 @@ router.post('/auth/google-register', async (req, res) => {
       success: true, token, needsUsername,
       user: { id: user.id, nome: user.nome, email: user.email, username: user.username || null, admin: user.admin, role: user.role || null, avatar: user.avatar }
     });
+
+    sendWelcomeEmail(user.nome, user.email).catch(e => console.error('Erro email boas-vindas:', e.message));
   } catch (error) {
     console.error('Erro no registro com Google:', error);
     res.status(500).json({ error: 'Erro ao registrar com Google' });
