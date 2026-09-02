@@ -169,6 +169,29 @@ function paymentConfirmedHtml(nome, order) {
   return baseTemplate(body);
 }
 
+// ==================== 4. CÓDIGO DE RECUPERAÇÃO DE SENHA ====================
+
+function resetCodeHtml(nome, codigo, minutos) {
+  const body = `
+    <h2 style="margin:0 0 8px;color:#333;font-size:22px;">Recuperação de senha 🔐</h2>
+    <p style="margin:0 0 20px;color:#666;font-size:15px;line-height:1.7;">
+      Oi ${nome}, recebemos um pedido pra redefinir sua senha na <strong>TechVault</strong>.
+      Se foi você, use o código abaixo pra concluir a troca de senha.
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin:20px 0;text-align:center;">
+      <p style="margin:0 0 8px;color:#64748b;font-size:13px;font-weight:600;letter-spacing:1px;">SEU CÓDIGO DE VERIFICAÇÃO</p>
+      <p style="margin:0;font-size:40px;font-weight:800;letter-spacing:8px;color:#1a73e8;">${codigo}</p>
+    </div>
+    <p style="margin:0 0 24px;color:#888;font-size:13px;line-height:1.6;text-align:center;">
+      ⏳ Este código é válido por <strong>${minutos} minutos</strong>. Após esse prazo, será preciso solicitar outro.
+    </p>
+    <p style="margin:24px 0 0;color:#999;font-size:12px;line-height:1.6;">
+      Se você não pediu esta redefinição, pode ignorar este email com segurança.
+      Sua senha continua a mesma e nenhuma alteração foi feita.
+    </p>`;
+  return baseTemplate(body);
+}
+
 // ==================== EXPORTS ====================
 
 module.exports = {
@@ -193,6 +216,14 @@ module.exports = {
       to: email,
       subject: '✅ Pagamento confirmado - Pedido #' + order.id,
       html: paymentConfirmedHtml(nome, order)
+    });
+  },
+
+  async sendResetCodeEmail(nome, email, codigo, minutos = 10) {
+    return brevoSend({
+      to: email,
+      subject: '🔐 Código de recuperação de senha - TechVault',
+      html: resetCodeHtml(nome, codigo, minutos)
     });
   },
 

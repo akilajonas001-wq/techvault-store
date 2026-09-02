@@ -5,6 +5,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { signToken } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
 const { sendWelcomeEmail } = require('../email');
+const emailModule = require('../email');
 
 const router = express.Router();
 
@@ -114,6 +115,73 @@ router.post('/login', loginLimiter, async (req, res) => {
   } catch (error) {
     console.error('Erro no login:', error);
     res.status(500).json({ error: 'Erro ao fazer login' });
+  }
+});
+
+// Solicitar código de recuperação de senha
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+
+    const user = await db.userByEmail(email);
+    // Resposta genérica por segurança (não revela se o email existe)
+    if (!user || !user.senha) {
+      return res.json({ success: true });
+    }
+
+    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    const expiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+    await db.setResetCode(email, codigo, expiry);
+
+    emailModule.sendResetCodeEmail(user.nome || 'Cliente', email, codigo)
+      .catch(e => console.error('Erro email reset:', e.message));
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Erro forgot-password:', e);
+    res.status(500).json({ error: 'Erro ao solicitar recuperação' });
+  }
+});
+
+// Validar código e redefinir senha
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, codigo, novaSenha } = req.body;
+
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    if (!codigo || codigo.length < 6) {
+      return res.status(400).json({ error: 'Código inválido' });
+    }
+    if (!novaSenha || novaSenha.length < 6) {
+      return res.status(400).json({ error: 'A nova senha deve ter pelo menos 6 caracteres' });
+    }
+
+    const reset = await db.getResetCode(email);
+    if (!reset || !reset.resetcode || String(reset.resetcode) !== String(codigo)) {
+      return res.status(400).json({ error: 'Código incorreto' });
+    }
+
+    const expiry = new Date(reset.resetcodeexpiry);
+    if (isNaN(expiry.getTime()) || expiry < new Date()) {
+      return res.status(400).json({ error: 'Código expirado. Solicite um novo.' });
+    }
+
+    const novaSenhaHash = await bcrypt.hash(novaSenha, 10);
+    const user = await db.userByEmail(email);
+    if (user) {
+      await db.updateUser(user.id, { senha: novaSenhaHash });
+      await db.clearResetCode(email);
+    }
+
+    res.json({ success: true, message: 'Senha redefinida com sucesso!' });
+  } catch (e) {
+    console.error('Erro reset-password:', e);
+    res.status(500).json({ error: 'Erro ao redefinir senha' });
   }
 });
 

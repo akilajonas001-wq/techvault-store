@@ -257,6 +257,16 @@ async function migrateUserProfileColumns() {
   } catch (e) {
     console.error('Erro ao adicionar processado:', e.message);
   }
+  try {
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS resetCode TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar resetCode:', e.message);
+  }
+  try {
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS resetCodeExpiry TEXT DEFAULT ''`);
+  } catch (e) {
+    console.error('Erro ao adicionar resetCodeExpiry:', e.message);
+  }
 }
 
 async function migrateFromJson() {
@@ -1059,6 +1069,19 @@ async function removePushSubscription(endpoint) {
   await query(`DELETE FROM push_subscriptions WHERE endpoint = $1`, [endpoint]);
 }
 
+async function setResetCode(email, code, expiry) {
+  await query(`UPDATE users SET resetCode = $1, resetCodeExpiry = $2 WHERE email = $3`, [code, expiry, email]);
+}
+
+async function getResetCode(email) {
+  const result = await query(`SELECT resetCode, resetCodeExpiry FROM users WHERE email = $1`, [email]);
+  return result.rows.length ? result.rows[0] : null;
+}
+
+async function clearResetCode(email) {
+  await query(`UPDATE users SET resetCode = '', resetCodeExpiry = '' WHERE email = $1`, [email]);
+}
+
 async function allPushSubscriptions() {
   const result = await query(`SELECT * FROM push_subscriptions`);
   return result.rows;
@@ -1092,5 +1115,6 @@ module.exports = {
   userAddresses, createAddress, updateAddress, deleteAddress,
   saveImage, getImage, deleteImage, deleteProductImages,
   trackVisit, countVisits, countVisitsRange, countVisitsAll,
-  savePushSubscription, removePushSubscription, allPushSubscriptions, pushSubscriptionsByRole
+  savePushSubscription, removePushSubscription, allPushSubscriptions, pushSubscriptionsByRole,
+  setResetCode, getResetCode, clearResetCode
 };
