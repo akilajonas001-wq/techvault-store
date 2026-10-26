@@ -8,7 +8,18 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString: DATABASE_URL, max: 5, idleTimeoutMillis: 10000, connectionTimeoutMillis: 10000, ssl: { rejectUnauthorized: false } });
+// Postgres na nuvem (Render, Neon, Supabase) exige SSL; um Postgres local normalmente não o oferece.
+// PGSSL=false|true força um dos modos; por padrão usamos SSL só fora de localhost.
+const isLocalDb = /@(localhost|127\.0\.0\.1|\[::1\])(:|\/)/.test(DATABASE_URL);
+const useSSL = process.env.PGSSL ? process.env.PGSSL !== 'false' : !isLocalDb;
+
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  max: 5,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
+  ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {})
+});
 
 pool.on('error', (err) => console.error('Erro inesperado no pool do banco:', err));
 
