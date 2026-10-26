@@ -1,9 +1,48 @@
+<style>
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .header-instagram-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 23px;
+    color: #fff;
+    background: linear-gradient(45deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+    box-shadow: 0 4px 12px rgba(238, 42, 123, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .header-instagram-link:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 18px rgba(238, 42, 123, 0.5);
+  }
+  @media (max-width: 768px) {
+    .header-instagram-link { width: 36px; height: 36px; font-size: 19px; margin-left: 4px; }
+  }
+</style>
 <header class="header header-new">
-  <!-- ===== LINHA 1: LOGO + BUSCA + AÇÕES ===== -->
+  <!-- ===== LINHA 1: LOGO + INSTAGRAM + BUSCA + AÇÕES ===== -->
   <div class="header-top">
-    <a href="/" class="logo" aria-label="TechVault - Início">
-      <img src="/images/logo.png" alt="TechVault" style="height: 44px; width: auto;">
-    </a>
+    <div class="header-brand">
+      <a href="/" class="logo" aria-label="TechVault - Início">
+        <img src="/images/logo.png" alt="TechVault" style="height: 44px; width: auto;">
+      </a>
+
+      <a href="https://www.instagram.com/techvaultoficial"
+         class="header-instagram-link"
+         target="_blank" rel="noopener noreferrer"
+         title="Instagram da TechVault (@techvaultoficial)"
+         aria-label="Instagram da TechVault (@techvaultoficial)">
+        <i class="fab fa-instagram" aria-hidden="true"></i>
+      </a>
+    </div>
 
     <div class="search-box">
       <i class="fas fa-search search-box-icon" aria-hidden="true"></i>

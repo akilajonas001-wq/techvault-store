@@ -148,6 +148,73 @@
       font-size: 14px;
     }
 
+    /* ===== QR CODE DO INSTAGRAM (base da página) ===== */
+    .footer-social-qr {
+      max-width: 1400px;
+      margin: 40px auto 0;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+
+    .footer-social-qr-img {
+      width: 148px;
+      height: auto;
+      display: block;
+      border-radius: 14px;
+      background: #fff;
+      padding: 8px;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.38);
+      transition: transform 0.2s ease;
+    }
+
+    .footer-social-qr a:hover .footer-social-qr-img {
+      transform: scale(1.04);
+    }
+
+    .footer-social-qr-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+
+    .footer-social-qr-text strong {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-social-qr-text strong i {
+      font-size: 19px;
+      background: linear-gradient(45deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .footer-social-qr-text span {
+      color: rgba(255, 255, 255, 0.65);
+      font-size: 13px;
+    }
+
+    .footer-social-qr-text a {
+      color: #ff8a00;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .footer-social-qr-text a:hover {
+      text-decoration: underline;
+    }
+
     @media (max-width: 768px) {
       .footer {
         text-align: center;
@@ -207,6 +274,7 @@
         <h3>Contato</h3>
         <ul>
           <li><a href="mailto:privacidadetechvault@gmail.com"><i class="far fa-envelope" style="margin-right: 8px;"></i>privacidadetechvault@gmail.com</a></li>
+          <li><a href="https://www.instagram.com/techvaultoficial" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram" style="margin-right: 8px;"></i>@techvaultoficial</a></li>
         </ul>
       </div>
     </div>
@@ -230,8 +298,18 @@
         </div>
       </div>
     </div>
+    <div class="footer-social-qr">
+      <a href="https://www.instagram.com/techvaultoficial" target="_blank" rel="noopener noreferrer" aria-label="Abrir o Instagram da TechVault">
+        <img src="/images/qrcode.jpeg" alt="QR code do Instagram @techvaultoficial" class="footer-social-qr-img" width="148" height="159" loading="lazy">
+      </a>
+      <div class="footer-social-qr-text">
+        <strong><i class="fab fa-instagram" aria-hidden="true"></i> Siga a TechVault no Instagram</strong>
+        <span>@techvaultoficial</span>
+        <a href="https://www.instagram.com/techvaultoficial" target="_blank" rel="noopener noreferrer">Abrir no Instagram &rarr;</a>
+      </div>
+    </div>
     <div class="footer-bottom">
       <p>&copy; 2026 TechVault Marketplace. Todos os direitos reservados.</p>
-      <p style="margin-top: 8px; font-size: 12px;">CNPJ: ___.___.___/____-__ - Dois Irmãos, Recife - PE</p>
+      <p style="margin-top: 8px; font-size: 12px;">CPF: 709.589.644-59 - Akila Jonas Do Nascimento</p>
     </div>
   </footer>
