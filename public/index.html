@@ -343,6 +343,56 @@
       .banner-arrow { width: 30px; height: 30px; font-size: 12px; }
     }
 
+    .promo-banner {
+      max-width: 1400px;
+      margin: 40px auto 0;
+      padding: 0 24px;
+    }
+
+    .promo-banner a {
+      display: block;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .promo-banner a:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+    }
+
+    .promo-banner-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      aspect-ratio: 2064 / 512;
+      object-fit: cover;
+    }
+
+    @media (max-width: 1024px) {
+      .promo-banner {
+        padding: 0 16px;
+        margin-top: 32px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .promo-banner {
+        padding: 0 12px;
+        margin-top: 24px;
+      }
+
+      .promo-banner a {
+        border-radius: 12px;
+      }
+
+      .promo-banner-img {
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+      }
+    }
+
     /* Categorias */
     .categories-section {
       max-width: 1400px;
@@ -1314,6 +1364,13 @@
     </div>
     <div class="products-grid stagger-children" id="suggestionsProducts">
     </div>
+  </section>
+
+  <!-- Banner Promocional -->
+  <section class="promo-banner reveal">
+    <a href="/busca?ordem=novidades">
+      <img src="/images/bannernovo.jpg" alt="Promoções Natalinas da TechVault" class="promo-banner-img" loading="lazy">
+    </a>
   </section>
 
   <!-- Seção de Benefícios -->
